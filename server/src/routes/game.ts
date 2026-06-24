@@ -28,6 +28,7 @@ import {
   TECHS, TECH_BY_KEY, levelOf, upgradeCost, upgradeTicks, reqsMet, espionageLevel,
 } from "../game/tech.js";
 import { config } from "../config.js";
+import bcrypt from "bcryptjs";
 
 export const gameRouter = Router();
 gameRouter.use(requireAuth);
@@ -664,6 +665,19 @@ gameRouter.get("/ranking", async (_req, res) => {
     }))
     .sort((a, b) => b.roids - a.roids).slice(0, 50);
   res.json({ ranking: ranked });
+});
+
+// Alterar a própria senha (precisa da senha atual).
+gameRouter.post("/change-password", async (req: AuthedRequest, res) => {
+  const parsed = z.object({ current: z.string(), next: z.string().min(6).max(100) }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "Nova senha precisa de 6 a 100 caracteres" });
+  const user = await prisma.user.findUnique({ where: { id: req.userId! } });
+  if (!user) return res.status(404).json({ error: "Usuario nao encontrado" });
+  if (!(await bcrypt.compare(parsed.data.current, user.password))) {
+    return res.status(400).json({ error: "Senha atual incorreta" });
+  }
+  await prisma.user.update({ where: { id: user.id }, data: { password: await bcrypt.hash(parsed.data.next, 10) } });
+  res.json({ ok: true });
 });
 
 // Auto-exílio: cai numa galáxia aleatória não-privada (máx 3 por planeta).

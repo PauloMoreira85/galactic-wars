@@ -149,6 +149,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [qty, setQty] = useState<Record<string, number>>({});
   const [shipBusy, setShipBusy] = useState<string | null>(null);
   const [section, setSection] = useState<Section>("planeta");
+  const [showIntro, setShowIntro] = useState(() => localStorage.getItem("gw_intro_hidden") !== "1");
   const [zoom, setZoom] = useState<{ src: string; alt: string } | null>(null);
   const [alerts, setAlerts] = useState({ underAttack: false, incomingDefense: false, galaxyUnderAttack: false });
   const countdown = useCountdown(view);
@@ -399,6 +400,25 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
         {section === "planeta" && (
           <>
+            {showIntro ? (
+              <div className="panel intro-guide">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                  <h2 style={{ margin: 0 }}>🚀 Primeiros passos, Comandante</h2>
+                  <button className="link" onClick={() => { localStorage.setItem("gw_intro_hidden", "1"); setShowIntro(false); }}>ocultar</button>
+                </div>
+                <ol className="intro-steps">
+                  <li><b>Compre roids</b> aqui na Página Principal (botão "+ roid de …"). Mais roids = mais recursos por tick.</li>
+                  <li><b>Pesquise</b> (🔬) pra desbloquear construções; depois <b>construa</b> (🛠️).</li>
+                  <li>Em <b>Naves, Inteligência e Sabotagem</b> a cadeia é: pesquisa → fábrica → libera a próxima.</li>
+                  <li>Construa naves nas fábricas (<b>Naves</b>) e monte uma frota em <b>Frotas</b>.</li>
+                  <li>Na <b>Galáxia</b>, envie a frota: mesma galáxia = só transporte (defesa); outras = atacar.</li>
+                  <li>Você tem <b>proteção de novato por 72 ticks</b> — ninguém te ataca. Cresça à vontade.</li>
+                </ol>
+                <div className="roid-count">💡 A raça dos inimigos é segredo — descubra espionando (Inteligência). Tudo detalhado na <b>Árvore Tecnológica</b> (Ferramentas).</div>
+              </div>
+            ) : (
+              <button className="link" style={{ marginBottom: 12 }} onClick={() => setShowIntro(true)}>❔ Como jogar</button>
+            )}
             <div className="panel race-banner">
               {view.race.img && (
                 <ArtImg src={view.race.img} alt={view.race.name} className="race-portrait" placeholder="🛸" onZoom={(s, a) => setZoom({ src: s, alt: a })} />

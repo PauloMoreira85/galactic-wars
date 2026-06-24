@@ -308,6 +308,8 @@ export const api = {
 
   autoExile: () =>
     request<PlanetView>("/game/auto-exile", { method: "POST" }),
+  changePassword: (current: string, next: string) =>
+    request<{ ok: true }>("/game/change-password", { method: "POST", body: JSON.stringify({ current, next }) }),
 
   traffic: () =>
     request<{

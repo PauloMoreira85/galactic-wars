@@ -113,6 +113,11 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
           <button type="submit" disabled={busy} style={{ width: "100%" }}>
             {busy ? "..." : mode === "login" ? "Entrar no comando" : "Fundar planeta"}
           </button>
+          {mode === "login" && (
+            <div className="roid-count" style={{ marginTop: 8, textAlign: "center" }}>
+              Esqueceu a senha? Fale com o administrador para redefini-la.
+            </div>
+          )}
         </form>
       </div>
 
