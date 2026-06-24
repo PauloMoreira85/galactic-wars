@@ -159,8 +159,8 @@ export function Galaxy({ view, onChanged }: { view: PlanetView; onChanged: () =>
               return (
                 <tr key={sl.slot} style={isSelf ? { background: "rgba(79,124,255,0.12)" } : undefined}>
                   <td className="rank-num">{sl.slot}</td>
-                  <td title={sl.online ? "online" : "offline"}>{sl.online ? "🟢" : "⚫"}</td>
-                  <td className="roid-count">{idle(sl.idleMs)}</td>
+                  <td title={sl.online == null ? "visível só na sua galáxia" : sl.online ? "online" : "offline"}>{sl.online == null ? "—" : sl.online ? "🟢" : "⚫"}</td>
+                  <td className="roid-count">{sl.idleMs == null ? "—" : idle(sl.idleMs)}</td>
                   <td>
                     <span style={sl.role ? { color: ROLE_COLOR[sl.role], fontWeight: 700, textShadow: `0 0 6px ${ROLE_COLOR[sl.role]}` } : undefined}
                       title={sl.role ? ROLE_LABEL[sl.role] : undefined}>

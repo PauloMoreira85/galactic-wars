@@ -196,9 +196,10 @@ gameRouter.get("/galaxy/:galaxy/:system", async (req: AuthedRequest, res) => {
   if (!Number.isInteger(galaxy) || !Number.isInteger(system) || galaxy < 1 || system < 1) {
     return res.status(400).json({ error: "Coordenadas invalidas" });
   }
-  const view: any = await viewSystem(galaxy, system);
-  // Agentes que EU possuo (nível da minha Inteligência): P(≥2) M(≥3) T(≥4) D(≥5).
   const me = await prisma.planet.findUnique({ where: { userId: req.userId! } });
+  // Online/inatividade só na PRÓPRIA galáxia (em outras, vem por espionagem).
+  const view: any = await viewSystem(galaxy, system, me?.galaxy ?? null);
+  // Agentes que EU possuo (nível da minha Inteligência): P(≥2) M(≥3) T(≥4) D(≥5).
   const lvl = me ? espionageLevel(parseTech(me.tech)) : 0;
   view.agents = { P: lvl >= 2, M: lvl >= 3, T: lvl >= 4, D: lvl >= 5 };
   res.json(view);

@@ -214,8 +214,8 @@ export const api = {
         roids?: number;
         score?: number;
         rank?: number;
-        online?: boolean;
-        idleMs?: number;
+        online?: boolean | null;
+        idleMs?: number | null;
         protected?: boolean;
         role?: "cg" | "me" | "mg" | "md" | null;
       }[];

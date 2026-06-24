@@ -214,7 +214,7 @@ const RACE_TAG: Record<string, string> = { humanos: "Hum", daharan: "Dah", raksh
 const ONLINE_MS = 5 * 60 * 1000;
 
 // Visão rica de um sistema: cabeçalho da galáxia + 15 slots com pontuação/rank/status.
-export async function viewSystem(galaxy: number, system: number) {
+export async function viewSystem(galaxy: number, system: number, viewerGalaxy: number | null = null) {
   const nowMs = Date.now();
   const all = await prisma.planet.findMany({ include: { user: { select: { username: true, race: true, lastSeen: true } } } });
   const fleets = await prisma.fleet.findMany();
@@ -248,6 +248,8 @@ export async function viewSystem(galaxy: number, system: number) {
     const p: any = byslot.get(slot);
     if (!p) { slots.push({ slot, occupied: false }); continue; }
     const idleMs = nowMs - new Date(p.user.lastSeen).getTime();
+    // Online/inatividade só visível na própria galáxia; fora dela vem null.
+    const sameGalaxy = viewerGalaxy == null || galaxy === viewerGalaxy;
     slots.push({
       slot, occupied: true, planetId: p.id, name: p.name, preposition: p.preposition,
       commander: p.user.username, race: p.user.race, raceTag: RACE_TAG[p.user.race] ?? "?",
@@ -255,7 +257,8 @@ export async function viewSystem(galaxy: number, system: number) {
       allianceTag: tags[p.id] ?? null,
       roids: p.roidMetalium + p.roidCarbonum + p.roidPlutonium,
       score: scoreOf(p), rank: rankById[p.id],
-      online: idleMs < ONLINE_MS, idleMs,
+      online: sameGalaxy ? idleMs < ONLINE_MS : null,
+      idleMs: sameGalaxy ? idleMs : null,
       protected: nowTick < p.createdTick + NEWBIE_PROTECTION_TICKS,
     });
   }
