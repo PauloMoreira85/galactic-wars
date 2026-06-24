@@ -34,6 +34,10 @@ export interface RaceInfo {
   tagline: string;
   lore: string;
   img?: string;
+  strengths?: string[];
+  weaknesses?: string[];
+  charImg?: string;
+  ships?: { name: string; classe: string; roider: boolean }[];
 }
 
 // Nave real da tabela oficial.

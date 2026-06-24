@@ -42,13 +42,10 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
   const wide = mode === "register";
 
   return (
-    <div className="app">
-      <div className="brand" style={{ justifyContent: "center" }}>
-        <span style={{ fontSize: 36 }}>🪐</span>
-        <div>
-          <h1>Galactic Wars</h1>
-          <div className="sub">conquiste os roids. domine a galáxia.</div>
-        </div>
+    <div className="landing">
+      <div className="landing-hero">
+        <img src="/art/logo/wild-screen.jpg" alt="Galactic Wars" />
+        <div className="landing-tagline">Conquiste os roids. Domine a galáxia.</div>
       </div>
 
       <div className={`panel ${wide ? "auth-wide" : "auth-wrap"}`} style={wide ? { maxWidth: 760, margin: "4vh auto 0" } : undefined}>
@@ -115,6 +112,43 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
           </button>
         </form>
       </div>
+
+      {/* Showcase das raças */}
+      <div className="landing-races">
+        <h2 className="landing-h2">As 5 Raças do Universo</h2>
+        {races.map((r, i) => (
+          <div className={`race-show ${i % 2 ? "flip" : ""}`} key={r.key}>
+            {r.charImg && (
+              <div className="race-show-char">
+                <img src={r.charImg} alt={r.name} loading="lazy" onError={(e) => (e.currentTarget.style.display = "none")} />
+              </div>
+            )}
+            <div className="race-show-info">
+              <h3>{r.name}</h3>
+              <div className="race-show-tag">{r.tagline}</div>
+              <p className="race-show-lore">{r.lore}</p>
+              <div className="race-show-cols">
+                <div>
+                  <div className="rs-label good">✓ Forças</div>
+                  {(r.strengths ?? []).map((s, k) => <div key={k} className="rs-item">{s}</div>)}
+                </div>
+                <div>
+                  <div className="rs-label bad">✗ Fraquezas</div>
+                  {(r.weaknesses ?? []).map((s, k) => <div key={k} className="rs-item">{s}</div>)}
+                </div>
+              </div>
+              {r.ships && r.ships.length > 0 && (
+                <div className="race-show-ships">
+                  <span className="rs-label">Naves:</span>{" "}
+                  {r.ships.map((s) => s.name + (s.roider ? " ⛏️" : "")).join(" · ")}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="landing-foot">Galactic Wars · {new Date().getFullYear()}</div>
     </div>
   );
 }

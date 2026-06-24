@@ -4,12 +4,20 @@ import { z } from "zod";
 import { prisma } from "../db.js";
 import { signToken } from "../auth.js";
 import { STARTING, SLOTS_PER_SYSTEM } from "../game/constants.js";
-import { RACE_KEYS, publicRaces } from "../game/races.js";
+import { RACE_KEYS, publicRaces, type RaceKey } from "../game/races.js";
+import { unitsOfRace, CLASS_LABEL } from "../game/catalog.js";
 
 export const authRouter = Router();
 
-// Lista publica de racas para a tela de registro.
-authRouter.get("/races", (_req, res) => res.json({ races: publicRaces() }));
+// Lista publica de racas para a tela inicial/registro (com personagem + naves).
+authRouter.get("/races", (_req, res) => {
+  const races = publicRaces().map((r) => ({
+    ...r,
+    charImg: `/art/personagem/${r.key}.jpg`,
+    ships: unitsOfRace(r.key as RaceKey).map((u) => ({ name: u.nome, classe: CLASS_LABEL[u.classe], roider: u.roider })),
+  }));
+  res.json({ races });
+});
 
 const registerSchema = z.object({
   email: z.string().email(),
