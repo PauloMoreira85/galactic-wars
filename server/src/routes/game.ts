@@ -32,6 +32,18 @@ import { config } from "../config.js";
 export const gameRouter = Router();
 gameRouter.use(requireAuth);
 
+// Round encerrado: congela AÇÕES (mutações). Leituras (GET) seguem liberadas.
+gameRouter.use(async (req, res, next) => {
+  if (req.method === "GET") return next();
+  try {
+    const st = await prisma.gameState.findUnique({ where: { id: 1 } });
+    if (st && st.tickNumber >= config.roundTicks) {
+      return res.status(403).json({ error: "Round encerrado — aguarde o próximo round." });
+    }
+  } catch { /* em dúvida, deixa passar */ }
+  next();
+});
+
 // Monta o "snapshot" do planeta + dados derivados pro front.
 async function planetView(userId: string) {
   const planet = await prisma.planet.findUnique({
@@ -131,7 +143,10 @@ async function planetView(userId: string) {
     units,
     queue,
     effects: { prodMul: planet.prodMul, travelMul: planet.travelMul, espionage: espionageLevel(levels) },
-    game: { tickNumber: tick, lastTickAt: state?.lastTickAt ?? null, tickIntervalSeconds: config.tickIntervalSeconds },
+    game: {
+      tickNumber: tick, lastTickAt: state?.lastTickAt ?? null, tickIntervalSeconds: config.tickIntervalSeconds,
+      roundTicks: config.roundTicks, roundEnded: tick >= config.roundTicks,
+    },
   };
 }
 

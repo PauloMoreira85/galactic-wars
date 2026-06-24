@@ -42,8 +42,17 @@ async function advance() {
 
     const intervalMs = config.tickIntervalSeconds * 1000;
     const elapsed = Date.now() - new Date(state.lastTickAt).getTime();
-    const due = Math.floor(elapsed / intervalMs);
+    let due = Math.floor(elapsed / intervalMs);
     if (due <= 0) return;
+
+    // Round acabou: não processa mais ticks (jogo congela no roundTicks).
+    const remaining = config.roundTicks - state.tickNumber;
+    if (remaining <= 0) {
+      // Mantém o lastTickAt em dia pra não acumular "due" gigante quando resetar.
+      await prisma.gameState.update({ where: { id: 1 }, data: { lastTickAt: new Date() } });
+      return;
+    }
+    if (due > remaining) due = remaining; // só avança até o fim do round
 
     await processTicks(due);
     await processTax(due); // desvia o imposto da galaxia pro fundo

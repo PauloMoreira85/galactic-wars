@@ -15,6 +15,9 @@ export const config = {
   port,
   jwtSecret,
   tickIntervalSeconds: Number(process.env.TICK_INTERVAL_SECONDS ?? 3600),
+  // Duração do round em ticks. Ao atingir, o round encerra (congela ações e
+  // declara o campeão). Reinício é manual (script reset-round).
+  roundTicks: Number(process.env.ROUND_TICKS ?? 1200),
   // Pasta do client buildado a servir em produção (sobrescrevível por env).
   clientDist: process.env.CLIENT_DIST ?? "",
 };

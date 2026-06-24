@@ -321,6 +321,12 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
       {/* ===== Conteúdo ===== */}
       <main className="content">
+        {game.roundEnded && (
+          <div className="panel round-ended">
+            🏆 <b>Round encerrado!</b>{ranking[0] && <> Campeão: <b>{ranking[0].username}</b> — {ranking[0].planet} ({ranking[0].coords})</>}. As ações estão congeladas; aguarde o próximo round.
+          </div>
+        )}
+
         {/* Cabeçalho de status no topo, como no print da época */}
         <div className="status-header">
           <div className="sh-commander">
@@ -337,7 +343,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             <div className="sh-cell"><span>Roids</span><b>{fmt(planet.roids.total)}</b></div>
             <div className="sh-cell"><span>Pontuação</span><b>{fmt(planet.score)}</b></div>
             <div className="sh-cell"><span>Ranking</span><b>#{planet.rank}</b></div>
-            <div className="sh-cell"><span>Tick</span><b>#{game.tickNumber}{countdown ? ` · ${countdown}` : ""}</b></div>
+            <div className="sh-cell"><span>Tick</span><b>#{game.tickNumber} / {game.roundTicks}{countdown ? ` · ${countdown}` : ""}</b></div>
             <div className="sh-cell"><span>Online</span><b>{view.onlineCount}</b></div>
             <div className="sh-cell"><span>Moral</span><b>—</b></div>
           </div>

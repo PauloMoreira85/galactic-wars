@@ -118,6 +118,8 @@ export interface PlanetView {
     tickNumber: number;
     lastTickAt: string | null;
     tickIntervalSeconds: number;
+    roundTicks: number;
+    roundEnded: boolean;
   };
 }
 
