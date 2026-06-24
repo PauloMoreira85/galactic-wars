@@ -16,6 +16,13 @@ RUN curl -fsSL -o /tmp/phpbb.zip "https://download.phpbb.com/pub/release/3.3/${P
     && mkdir -p /opt/phpbb && cp -a /tmp/phpBB3/. /opt/phpbb/ \
     && rm -rf /tmp/phpbb.zip /tmp/phpBB3
 
+# Pacote de idioma Portugues (Brasil) — comunidade suportephpbb (GPL, compat. 3.3).
+# Fica em /opt/phpbb/language/pt_br; o entrypoint garante a copia pro webroot.
+RUN curl -fsSL -o /tmp/ptbr.tar.gz "https://github.com/suportephpbb/phpbb/archive/refs/heads/master.tar.gz" \
+    && mkdir -p /tmp/ptbr && tar xzf /tmp/ptbr.tar.gz -C /tmp/ptbr --strip-components=1 \
+    && cp -a /tmp/ptbr/language/pt_br /opt/phpbb/language/pt_br \
+    && rm -rf /tmp/ptbr /tmp/ptbr.tar.gz
+
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
