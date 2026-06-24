@@ -30,7 +30,7 @@ services:
 
   # ===== Fórum do Universo: phpBB + MariaDB =====
   forum-db:
-    image: bitnami/mariadb:latest
+    image: bitnamilegacy/mariadb:latest
     restart: unless-stopped
     environment:
       - MARIADB_USER=phpbb
@@ -41,7 +41,7 @@ services:
       - forum-db:/bitnami/mariadb
 
   forum:
-    image: bitnami/phpbb:latest
+    image: bitnamilegacy/phpbb:latest
     restart: unless-stopped
     depends_on: [forum-db]
     environment:
