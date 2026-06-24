@@ -152,7 +152,7 @@ body::after {
 .race-show { display: flex; gap: 18px; align-items: stretch; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 8px 26px rgba(0,0,0,0.4); }
 .race-show.flip { flex-direction: row-reverse; }
 .race-show-char { flex-shrink: 0; width: 220px; }
-.race-show-char img, .race-show-char video { width: 220px; height: 280px; object-fit: cover; border-radius: 10px; border: 1px solid var(--border-strong); display: block; background: #05101e; }
+.race-show-char img, .race-show-char video { width: 220px; height: 320px; object-fit: contain; object-position: center; border-radius: 10px; border: 1px solid var(--border-strong); display: block; background: #05101e; }
 .race-show-info { flex: 1; min-width: 0; }
 .race-show-info h3 { font-family: "Orbitron", sans-serif; font-size: 22px; letter-spacing: 1px; color: var(--accent); text-shadow: 0 0 10px var(--glow); margin: 0 0 2px; }
 .race-show-tag { color: var(--carbonum); font-size: 13px; margin-bottom: 8px; }
@@ -168,7 +168,7 @@ body::after {
 @media (max-width: 640px) {
   .race-show, .race-show.flip { flex-direction: column; }
   .race-show-char, .race-show-char img, .race-show-char video { width: 100%; }
-  .race-show-char img, .race-show-char video { height: 220px; }
+  .race-show-char img, .race-show-char video { height: 360px; }
 }
 
 /* Menu */
