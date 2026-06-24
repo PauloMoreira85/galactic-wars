@@ -1,0 +1,84 @@
+/* Importa todo o tema prosilver e recolore pro visual do Galactic Wars
+   (escuro com acento ciano). Caminho relativo a styles/galactic/theme/. */
+@import url("../../prosilver/theme/stylesheet.css");
+
+/* ===================== Base ===================== */
+html, body {
+  background: #0a0f16 !important;
+  color: #c9d6e2 !important;
+}
+#wrap, .wrap { background: transparent !important; border-color: rgba(37,211,255,.12) !important; }
+a { color: #25d3ff !important; }
+a:hover { color: #7fe6ff !important; }
+hr, .divider { border-color: rgba(37,211,255,.10) !important; }
+
+/* ===================== Cabeçalho ===================== */
+.headerbar {
+  background-color: #0e1622 !important;
+  background-image: linear-gradient(180deg, #10202e, #0a0f16) !important;
+  color: #eaf6ff !important;
+  border: 1px solid rgba(37,211,255,.20) !important;
+  border-radius: 8px;
+}
+#site-description h1, #site-description h1 a { color: #eaf6ff !important; }
+#site-description .siteslogan, #site-description span { color: #7fd6ec !important; }
+
+/* ===================== Barra de navegação ===================== */
+.navbar {
+  background: #0e1622 !important;
+  background-image: none !important;
+  border: 1px solid rgba(37,211,255,.15) !important;
+}
+.nav-main a, .navbar a, .linklist a, .dropdown-extended a { color: #bfe9f5 !important; }
+.linklist { border-color: rgba(37,211,255,.10) !important; }
+
+/* ===================== Caixas de categoria / fórum ===================== */
+.forabg, .forumbg {
+  background-color: #0e1a26 !important;
+  background-image: linear-gradient(180deg, #13202e, #0d1620) !important;
+  border: 1px solid rgba(37,211,255,.18) !important;
+}
+ul.topiclist li.header dt, ul.topiclist li.header dd { color: #9fe3f3 !important; text-shadow: none !important; }
+
+/* Linhas (fóruns/tópicos) */
+ul.topiclist li.row { background: #0c131c !important; }
+ul.topiclist li.row:hover { background: #101a26 !important; }
+ul.topiclist dd, ul.topiclist dt { border-color: rgba(37,211,255,.08) !important; }
+a.forumtitle, a.topictitle { color: #dff3fb !important; }
+a.forumtitle:hover, a.topictitle:hover { color: #25d3ff !important; }
+.forum-description, dd.lastpost span, .topic-poster, .row .posts, .row .topics,
+.responsive-show, dl.mini dt, dl.mini dd { color: #8aa0b3 !important; }
+
+/* ===================== Painéis e posts ===================== */
+.panel { background: #0e1722 !important; color: #c9d6e2 !important; border: 1px solid rgba(37,211,255,.12) !important; }
+.bg1 { background: #0c131c !important; }
+.bg2 { background: #0e1722 !important; }
+.bg3 { background: #10202e !important; }
+.post.bg1, .post.bg2 { background: #0c131c !important; border-color: rgba(37,211,255,.10) !important; }
+.postbody, .content, .content h2, h2, h3 { color: #dbe7f0 !important; }
+.postprofile { background: #0e1722 !important; border-color: rgba(37,211,255,.10) !important; color: #8aa0b3 !important; }
+
+/* ===================== Tabelas ===================== */
+table.table1 { background: transparent !important; }
+table.table1 thead th { color: #9fe3f3 !important; }
+table.table1 tbody tr { background: #0c131c !important; }
+table.table1 td { color: #c9d6e2 !important; border-color: rgba(255,255,255,.04) !important; }
+
+/* ===================== Inputs e botões ===================== */
+input.inputbox, textarea, .inputbox, select {
+  background: #0a121b !important; color: #dbe7f0 !important;
+  border: 1px solid rgba(37,211,255,.25) !important;
+}
+.inputbox:focus { border-color: #25d3ff !important; box-shadow: 0 0 0 2px rgba(37,211,255,.15) !important; }
+.button, button, a.button, input.button1, input.button2 {
+  background: #11202e !important;
+  background-image: linear-gradient(180deg, #14283a, #0e1a26) !important;
+  color: #bfe9f5 !important; border: 1px solid rgba(37,211,255,.35) !important;
+}
+.button:hover, a.button:hover { color: #fff !important; border-color: #25d3ff !important; }
+
+/* ===================== Diversos ===================== */
+.notice, .rules { background: #101a26 !important; border-color: rgba(37,211,255,.15) !important; }
+.error { color: #ff7a7a !important; }
+#page-footer .copyright, .copyright { color: #5e7385 !important; }
+fieldset.fields1, fieldset { background: transparent !important; }

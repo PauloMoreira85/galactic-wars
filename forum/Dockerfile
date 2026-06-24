@@ -23,6 +23,9 @@ RUN curl -fsSL -o /tmp/ptbr.tar.gz "https://github.com/suportephpbb/phpbb/archiv
     && cp -a /tmp/ptbr/language/pt_br /opt/phpbb/language/pt_br \
     && rm -rf /tmp/ptbr /tmp/ptbr.tar.gz
 
+# Estilo Galactic (filho do prosilver). O entrypoint sincroniza pro webroot.
+COPY styles/galactic /opt/phpbb/styles/galactic
+
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 

@@ -8,5 +8,10 @@ fi
 if [ -d /opt/phpbb/language/pt_br ] && [ ! -d /var/www/html/language/pt_br ]; then
   cp -a /opt/phpbb/language/pt_br /var/www/html/language/pt_br
 fi
+# Sincroniza o estilo Galactic a cada deploy (sempre, pra refletir ajustes de CSS).
+if [ -d /opt/phpbb/styles/galactic ]; then
+  rm -rf /var/www/html/styles/galactic
+  cp -a /opt/phpbb/styles/galactic /var/www/html/styles/galactic
+fi
 chown -R www-data:www-data /var/www/html
 exec apache2-foreground
