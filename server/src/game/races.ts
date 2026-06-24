@@ -72,9 +72,9 @@ export const RACES: Record<RaceKey, RaceDef> = {
   },
   mech: {
     key: "mech",
-    name: "Mech",
+    name: "c-Mech",
     tagline: "Clonam a nave inimiga ao acertá-la em combate",
-    lore: "Seres mecanicos auto-replicantes. Quando uma nave Mech acerta uma nave inimiga, ela e CLONADA para a frota Mech. E assim que os Mech acabam com naves de todas as racas: nao constroem, capturam replicando em pleno combate.",
+    lore: "Seres mecanicos auto-replicantes. Quando uma nave c-Mech acerta uma nave inimiga, ela e CLONADA para a frota c-Mech. E assim que os c-Mech acabam com naves de todas as racas: nao constroem, capturam replicando em pleno combate.",
     strengths: ["Assimilam (roubam) naves inimigas em combate", "Ganham pontuação assimilando", "Crescem com a frota do inimigo"],
     weaknesses: ["Difícil de dominar", "Perdem a própria nave ao assimilar"],
     traits: { ...NEUTRAL, cloneOnHit: true, canBuildAllRaces: false },

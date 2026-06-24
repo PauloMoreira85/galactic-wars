@@ -44,7 +44,10 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
   return (
     <div className="landing">
       <div className="landing-hero">
-        <img src="/art/logo/wild-screen.jpg" alt="Galactic Wars" />
+        {/* Vídeo da logo (se existir wild-screen.mp4); senão mostra a imagem (poster). */}
+        <video className="landing-hero-media" autoPlay loop muted playsInline poster="/art/logo/wild-screen.jpg">
+          <source src="/art/logo/wild-screen.mp4" type="video/mp4" />
+        </video>
         <div className="landing-tagline">Conquiste os roids. Domine a galáxia.</div>
       </div>
 
@@ -120,7 +123,10 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
           <div className={`race-show ${i % 2 ? "flip" : ""}`} key={r.key}>
             {r.charImg && (
               <div className="race-show-char">
-                <img src={r.charImg} alt={r.name} loading="lazy" onError={(e) => (e.currentTarget.style.display = "none")} />
+                {/* Vídeo do personagem (<key>.mp4) com a imagem como poster/fallback. */}
+                <video autoPlay loop muted playsInline poster={r.charImg}>
+                  <source src={r.charImg.replace(/\.jpg$/, ".mp4")} type="video/mp4" />
+                </video>
               </div>
             )}
             <div className="race-show-info">

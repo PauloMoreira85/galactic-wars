@@ -144,14 +144,14 @@ body::after {
 /* ===== Página inicial (landing) ===== */
 .landing { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 18px 16px 60px; }
 .landing-hero { text-align: center; margin-bottom: 18px; }
-.landing-hero img { width: 100%; max-width: 880px; border-radius: 12px; border: 1px solid var(--border-strong); box-shadow: 0 0 40px rgba(37,211,255,0.15); }
+.landing-hero img, .landing-hero-media { width: 100%; max-width: 880px; border-radius: 12px; border: 1px solid var(--border-strong); box-shadow: 0 0 40px rgba(37,211,255,0.15); display: block; margin: 0 auto; }
 .landing-tagline { font-family: "Orbitron", sans-serif; letter-spacing: 2px; color: #cfeeff; text-shadow: 0 0 10px var(--glow); margin-top: 10px; font-size: 14px; }
 .landing-h2 { font-family: "Orbitron", sans-serif; text-align: center; letter-spacing: 3px; text-transform: uppercase; color: #eaffff; text-shadow: 0 0 12px var(--glow); margin: 34px 0 18px; }
 
 .race-show { display: flex; gap: 18px; align-items: stretch; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 8px 26px rgba(0,0,0,0.4); }
 .race-show.flip { flex-direction: row-reverse; }
 .race-show-char { flex-shrink: 0; width: 220px; }
-.race-show-char img { width: 220px; height: 280px; object-fit: cover; border-radius: 10px; border: 1px solid var(--border-strong); }
+.race-show-char img, .race-show-char video { width: 220px; height: 280px; object-fit: cover; border-radius: 10px; border: 1px solid var(--border-strong); display: block; background: #05101e; }
 .race-show-info { flex: 1; min-width: 0; }
 .race-show-info h3 { font-family: "Orbitron", sans-serif; font-size: 22px; letter-spacing: 1px; color: var(--accent); text-shadow: 0 0 10px var(--glow); margin: 0 0 2px; }
 .race-show-tag { color: var(--carbonum); font-size: 13px; margin-bottom: 8px; }
@@ -166,8 +166,8 @@ body::after {
 
 @media (max-width: 640px) {
   .race-show, .race-show.flip { flex-direction: column; }
-  .race-show-char, .race-show-char img { width: 100%; }
-  .race-show-char img { height: 220px; }
+  .race-show-char, .race-show-char img, .race-show-char video { width: 100%; }
+  .race-show-char img, .race-show-char video { height: 220px; }
 }
 
 /* Menu */

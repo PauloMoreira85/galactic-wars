@@ -8,7 +8,7 @@ function fmt(n: number) {
 type Tool = "universo" | "unidades" | "techtree" | "calculadora" | "procura" | "rankings" | "graficos" | "espionagem";
 
 const RACE_LABEL: Record<string, string> = {
-  Humana: "Humanos", Daharan: "Daharan", Rakshasa: "Rakshasa", "c-Mech": "Mech", Insecta: "Insecta",
+  Humana: "Humanos", Daharan: "Daharan", Rakshasa: "Rakshasa", "c-Mech": "c-Mech", Insecta: "Insecta",
 };
 
 // Kit de Ferramentas — página separada com menu próprio (estilo toolkit do GW).
