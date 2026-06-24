@@ -1,0 +1,5 @@
+# HTTPS automático (Let's Encrypt) + proxy pro app. Troque o domínio se precisar.
+galacticwar.com.br, www.galacticwar.com.br {
+	reverse_proxy app:3001
+	encode gzip
+}

@@ -1,0 +1,15 @@
+node_modules/
+dist/
+build/
+*.log
+.env
+.env.local
+server/prisma/*.db
+server/prisma/*.db-journal
+server/prisma/*.db-wal
+server/prisma/*.db-shm
+client/public/art/ships_raw/
+client/public/art/races_raw/
+client/public/art/ships/*/
+client/public/art/races/*/
+.DS_Store

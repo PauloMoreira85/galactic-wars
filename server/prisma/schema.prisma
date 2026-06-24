@@ -1,0 +1,365 @@
+// Galactic Wars - schema do banco
+// Dev: SQLite. Prod: troque provider para "postgresql".
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  race      String   @default("humanos")
+  associado Boolean  @default(false) // benefícios: trocar nome 3x, galáxia privada
+  nameChanges Int    @default(0)     // trocas de nome usadas (máx 3 p/ associado)
+  createdAt DateTime @default(now())
+  lastSeen  DateTime @default(now())
+  planet    Planet?
+}
+
+model Planet {
+  id          String @id @default(cuid())
+  name        String
+  preposition String @default("de") // "de" | "da" | "do" → "Líder {prep} Planeta"
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Coordenadas no mapa da galaxia (usadas nas fases de frota/combate)
+  galaxy Int @default(1)
+  system Int @default(1)
+  slot   Int @default(1)
+
+  // Estoque de recursos
+  metalium  Int @default(0)
+  carbonum  Int @default(0)
+  plutonium Int @default(0)
+
+  // Contadores de roids por recurso (cada roid produz seu recurso por tick)
+  roidMetalium  Int @default(0)
+  roidCarbonum  Int @default(0)
+  roidPlutonium Int @default(0)
+
+  // Frota: contagem de naves por classe (nomes tematicos vem da raca)
+  shipCaca      Int @default(0)
+  shipCorveta   Int @default(0)
+  shipFragata   Int @default(0)
+  shipDestroyer Int @default(0)
+  shipCruzador  Int @default(0)
+  shipNavemae   Int @default(0)
+
+  // Roiders (legado). Frota agora e um mapa por nome de nave (units JSON).
+  roider1 Int @default(0)
+  roider2 Int @default(0)
+
+  // Hangar real: { "NomeDaNave": quantidade } (tabela oficial de unidades)
+  units String @default("{}")
+
+  // Maior classe ja pesquisada (legado - substituido por `tech`)
+  researchTier Int @default(0)
+
+  // Niveis de tecnologias/construcoes (JSON: { chave: nivel }) + efeitos denormalizados
+  tech      String @default("{}")
+  prodMul   Int    @default(100) // % de producao dos roids (100 = base)
+  travelMul Int    @default(100) // % do tempo de viagem (100 = base, <100 = mais rapido)
+
+  // Vagas de frota compradas (permanentes). Limita quantas frotas simultaneas.
+  fleetSlots Int @default(0)
+
+  // Tick em que o planeta foi criado (proteção de novato = createdTick + 72).
+  createdTick Int @default(0)
+
+  // Auto-exílios restantes (cai em galáxia aleatória não-privada). Máx 3 por planeta.
+  autoExiles Int @default(3)
+
+  buildOrders BuildOrder[]
+  fleets      Fleet[]
+
+  createdAt DateTime @default(now())
+
+  @@unique([galaxy, system, slot])
+}
+
+// Uma frota em movimento (ou voltando). As naves saem do hangar e ficam aqui
+// enquanto viajam. Resolve quando o tick atinge arriveTick.
+model Fleet {
+  id            String @id @default(cuid())
+  ownerPlanetId String
+  owner         Planet @relation(fields: [ownerPlanetId], references: [id], onDelete: Cascade)
+
+  name    String @default("Frota")
+  mission String @default("attack") // "attack" | "transport"
+  status  String @default("idle")   // "idle" (na base) | "outbound" | "engaged" | "returning"
+
+  // Batalha ao vivo (dura BATTLE_TICKS ticks no alvo)
+  battleStartTick Int?
+  battleTicksDone Int     @default(0)
+  battleState     String? // JSON com estado/acumuladores do combate
+  // Espolio (roids) carregado de volta para o planeta de origem
+  capMetalium  Int @default(0)
+  capCarbonum  Int @default(0)
+  capPlutonium Int @default(0)
+
+  // Origem (para retorno) e destino
+  originGalaxy Int
+  originSystem Int
+  originSlot   Int
+  targetGalaxy Int
+  targetSystem Int
+  targetSlot   Int
+
+  // Composicao da frota
+  fCaca      Int @default(0)
+  fCorveta   Int @default(0)
+  fFragata   Int @default(0)
+  fDestroyer Int @default(0)
+  fCruzador  Int @default(0)
+  fNavemae   Int @default(0)
+  fRoider1   Int @default(0)
+  fRoider2   Int @default(0)
+
+  // Composicao real da frota: { "NomeDaNave": quantidade }
+  units String @default("{}")
+
+  departTick Int
+  arriveTick Int
+
+  createdAt DateTime @default(now())
+
+  @@index([arriveTick])
+  @@index([ownerPlanetId])
+  @@index([targetGalaxy, targetSystem, targetSlot])
+}
+
+// Fila de construcao/pesquisa. Resolve quando o tick atinge completeTick.
+model BuildOrder {
+  id          String  @id @default(cuid())
+  planetId    String
+  planet      Planet  @relation(fields: [planetId], references: [id], onDelete: Cascade)
+  kind        String  // "ship" | "tech"
+  shipClass   String? // preenchido quando kind = "ship"
+  targetTier  Int?    // legado
+  techKey     String? // preenchido quando kind = "tech"
+  targetLevel Int?    // nivel alvo do upgrade
+  quantity    Int     @default(1)
+  startTick   Int
+  completeTick Int
+
+  @@index([completeTick])
+  @@index([planetId])
+}
+
+// Relatorio de combate gerado quando uma frota de ataque chega ao alvo.
+model BattleReport {
+  id               String   @id @default(cuid())
+  tick             Int
+  attackerPlanetId String
+  defenderPlanetId String
+  attackerName     String
+  defenderName     String
+  attackerCoords   String
+  defenderCoords   String
+  winner           String // "attacker" | "defender"
+  capturedMetalium Int      @default(0)
+  capturedCarbonum Int      @default(0)
+  capturedPlutonium Int     @default(0)
+  report           String // JSON detalhado (naves, perdas, PEM por classe)
+  createdAt        DateTime @default(now())
+
+  @@index([attackerPlanetId])
+  @@index([defenderPlanetId])
+}
+
+// Alianca: grupo de ate 60 planetas (cruza galaxias). Criador vira Lider.
+model Alliance {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  tag       String   @unique
+  createdAt DateTime @default(now())
+  members   AllianceMember[]
+  invites   AllianceInvite[]
+}
+
+model AllianceMember {
+  planetId   String   @id // 1 alianca por planeta
+  allianceId String
+  alliance   Alliance @relation(fields: [allianceId], references: [id], onDelete: Cascade)
+  role       String   @default("recruta") // lider | alto_comando | dc | scanner | porta_voz | recruta
+  joinedAt   DateTime @default(now())
+
+  @@index([allianceId])
+}
+
+model AllianceInvite {
+  id         String   @id @default(cuid())
+  allianceId String
+  alliance   Alliance @relation(fields: [allianceId], references: [id], onDelete: Cascade)
+  planetId   String   // planeta convidado
+  createdAt  DateTime @default(now())
+
+  @@unique([allianceId, planetId])
+  @@index([planetId])
+}
+
+// Acordo (tratado de não-agressão) entre duas galáxias, fechado pelos Ministros da Diplomacia.
+model GalaxyTreaty {
+  id         String   @id @default(cuid())
+  galaxyA    Int      // sempre o menor
+  galaxyB    Int      // sempre o maior
+  status     String   @default("proposed") // proposed | active
+  proposedBy Int      // galáxia que propôs
+  createdAt  DateTime @default(now())
+
+  @@unique([galaxyA, galaxyB])
+}
+
+// Governo de cada galaxia: Comandante (CG) + Ministros (ME/MG), imposto e fundo.
+model GalaxyState {
+  galaxy        Int     @id
+  name          String? // nome da galaxia (definido pelo CG)
+  flag          String? // bandeira (data URL base64, limitada)
+  isPrivate     Boolean @default(false) // galáxia privada (auto-exílio não cai aqui)
+  ownerPlanetId String? // dono da galáxia privada (associado que criou)
+  cgPlanetId    String? // Comandante de Galaxia (mais votado)
+  mePlanetId    String? // Ministro da Economia
+  mgPlanetId    String? // Ministro de Guerra
+  mdPlanetId    String? // Ministro da Diplomacia
+  taxRate       Int     @default(0) // % da producao desviada pro fundo
+  fundMetalium  Int     @default(0)
+  fundCarbonum  Int     @default(0)
+  fundPlutonium Int     @default(0)
+}
+
+// Relatório de espionagem guardado (Visualizar Espionagem).
+model SpyReport {
+  id           String   @id @default(cuid())
+  hash         String   @unique // código compartilhável p/ abrir nas Ferramentas
+  spyPlanetId  String
+  targetName   String
+  targetCoords String
+  agent        String
+  tick         Int
+  data         String   // JSON do intel
+  createdAt    DateTime @default(now())
+
+  @@index([spyPlanetId])
+}
+
+// Convite para entrar numa galáxia privada.
+model GalaxyInvite {
+  id       String @id @default(cuid())
+  galaxy   Int
+  planetId String
+
+  @@unique([galaxy, planetId])
+  @@index([planetId])
+}
+
+// Voto de cada planeta para CG (1 voto por planeta).
+model GalaxyVote {
+  voterPlanetId     String @id
+  galaxy            Int
+  candidatePlanetId String
+
+  @@index([galaxy])
+}
+
+// Cooldown de doacao: um planeta so recebe doacao a cada DONATION_WINDOW ticks.
+model DonationCooldown {
+  planetId String @id
+  lastTick Int
+}
+
+// Mensagem privada (1-a-1, com opção anônima).
+model PrivateMessage {
+  id         String   @id @default(cuid())
+  fromUserId String
+  fromName   String
+  toUserId   String
+  subject    String
+  body       String
+  anonymous  Boolean  @default(false)
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([toUserId])
+  @@index([fromUserId])
+}
+
+// Chat (salas: universo, gal-<n>, ali-<id>).
+model ChatMessage {
+  id         String   @id @default(cuid())
+  room       String   @default("universo")
+  authorName String
+  body       String
+  createdAt  DateTime @default(now())
+
+  @@index([room])
+}
+
+// Fórum: tópicos e posts (comunidade).
+model ForumTopic {
+  id         String      @id @default(cuid())
+  forum      String      // chave do fórum (geral, lixao, ...)
+  title      String
+  authorId   String
+  authorName String
+  createdAt  DateTime    @default(now())
+  bumpedAt   DateTime    @default(now())
+  posts      ForumPost[]
+
+  @@index([forum])
+}
+
+model ForumPost {
+  id         String     @id @default(cuid())
+  topicId    String
+  topic      ForumTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  authorId   String
+  authorName String
+  body       String
+  createdAt  DateTime   @default(now())
+
+  @@index([topicId])
+}
+
+// Efeito temporário num planeta (ex: sabotagem que reduz produção por X ticks).
+model PlanetEffect {
+  id          String @id @default(cuid())
+  planetId    String
+  kind        String // "proddebuff"
+  pct         Int    @default(0) // % de redução
+  expiresTick Int
+
+  @@index([planetId])
+  @@index([expiresTick])
+}
+
+// Cooldown de sabotagem por sabotador.
+model SabotageCooldown {
+  planetId String @id
+  lastTick Int
+}
+
+// Notícias: log de eventos do planeta (pesquisa, construção, combate, espionagem...).
+model News {
+  id        String   @id @default(cuid())
+  planetId  String
+  tick      Int
+  message   String
+  createdAt DateTime @default(now())
+
+  @@index([planetId])
+}
+
+// Estado global do universo (linha unica) - controla o relogio de ticks
+model GameState {
+  id         Int      @id @default(1)
+  tickNumber Int      @default(0)
+  lastTickAt DateTime @default(now())
+}

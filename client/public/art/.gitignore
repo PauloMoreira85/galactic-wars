@@ -1,0 +1,4 @@
+# JPGs de origem (nim.video) — fontes, não vão pro jogo nem pro deploy.
+# A arte final são os PNGs em ships/ e races/.
+ships_raw/
+races_raw/

@@ -1,0 +1,22 @@
+# Blueprint do Render. No painel: New > Blueprint > aponta pro repo.
+# Cria um Web Service Docker + disco persistente pro SQLite.
+services:
+  - type: web
+    name: galactic-wars
+    runtime: docker
+    plan: starter            # ~US$7/mês; "free" hiberna e PARARIA os ticks
+    healthCheckPath: /api/health
+    autoDeploy: true
+    disk:
+      name: data
+      mountPath: /data        # SQLite vive aqui (persiste entre deploys)
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        value: file:/data/prod.db
+      - key: JWT_SECRET
+        generateValue: true   # Render gera um segredo forte
+      - key: TICK_INTERVAL_SECONDS
+        value: "3600"         # 1h por tick (mude p/ testar, ex. 60)
