@@ -6,6 +6,6 @@ galacticwar.com.br, www.galacticwar.com.br {
 
 # Fórum do Universo (phpBB) no subdomínio.
 forum.galacticwar.com.br {
-	reverse_proxy forum:8080
+	reverse_proxy forum:80
 	encode gzip
 }

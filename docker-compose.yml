@@ -28,37 +28,26 @@ services:
       - caddy-data:/data
       - caddy-config:/config
 
-  # ===== Fórum do Universo: phpBB + MariaDB =====
+  # ===== Fórum do Universo: phpBB + MariaDB (imagens oficiais) =====
   forum-db:
-    image: bitnamilegacy/mariadb:latest
+    image: mariadb:11
     restart: unless-stopped
     environment:
-      - MARIADB_USER=phpbb
-      - MARIADB_PASSWORD=${FORUM_DB_PASSWORD}
-      - MARIADB_DATABASE=phpbb
-      - MARIADB_ROOT_PASSWORD=${FORUM_DB_ROOT_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${FORUM_DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: phpbb
+      MARIADB_USER: phpbb
+      MARIADB_PASSWORD: ${FORUM_DB_PASSWORD}
     volumes:
-      - forum-db:/bitnami/mariadb
+      - forum-db:/var/lib/mysql
 
   forum:
-    image: bitnamilegacy/phpbb:latest
+    build: ./forum
     restart: unless-stopped
     depends_on: [forum-db]
-    environment:
-      - PHPBB_DATABASE_HOST=forum-db
-      - PHPBB_DATABASE_PORT_NUMBER=3306
-      - PHPBB_DATABASE_NAME=phpbb
-      - PHPBB_DATABASE_USER=phpbb
-      - PHPBB_DATABASE_PASSWORD=${FORUM_DB_PASSWORD}
-      - PHPBB_USERNAME=admin
-      - PHPBB_PASSWORD=${PHPBB_PASSWORD}
-      - PHPBB_EMAIL=${PHPBB_EMAIL}
-      - PHPBB_FORUM_NAME=Galactic Wars
-      - PHPBB_FORUM_DESCRIPTION=Pela Conquista do Universo
     expose:
-      - "8080"
+      - "80"
     volumes:
-      - forum-data:/bitnami/phpbb
+      - forum-data:/var/www/html
 
 volumes:
   gw-data:
