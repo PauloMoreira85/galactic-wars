@@ -40,11 +40,10 @@ export function nativeRoiderName(race: RaceKey): string | null {
 
 // Uma unidade está desbloqueada para construir?
 export function isUnitUnlocked(race: RaceKey, u: UnitRow, levels: TechLevels): boolean {
-  if (u.roider) {
-    if (u.nome === nativeRoiderName(race)) return true; // roider nativo
-    return levelOf(levels, "pesqRoiderAvancado") >= 1; // roider superior
-  }
-  return levelOf(levels, CLASS_FACTORY[u.classe] ?? "") >= 1; // precisa da fábrica da classe
+  // Roider básico (classe mais baixa) já vem liberado.
+  if (u.roider && u.nome === nativeRoiderName(race)) return true;
+  // Todos os outros (incl. roider avançado) exigem a FÁBRICA da própria classe.
+  return levelOf(levels, CLASS_FACTORY[u.classe] ?? "") >= 1;
 }
 
 export function factoryFor(classe: ClasseCode): string | null {

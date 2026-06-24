@@ -538,7 +538,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                             </button>
                           </div>
                         ) : (
-                          <span className="roid-count">🔒 {u.roider ? "Roider Avançado" : "fábrica da classe"}</span>
+                          <span className="roid-count">🔒 requer fábrica da classe</span>
                         )}
                       </td>
                     </tr>

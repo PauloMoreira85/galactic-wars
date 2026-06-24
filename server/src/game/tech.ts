@@ -146,12 +146,8 @@ export const TECHS: TechDef[] = [
       { key: "sabAssimiladora", name: "Equipe Assimiladora", desc: "Roubo de Tecnologia (rouba uma tecnologia do alvo)." },
     ]
   ),
-  // --- Roider avancado (libera o roider de tier 2; o tier 1 vem desde o inicio) ---
-  {
-    key: "pesqRoiderAvancado", name: "Pesquisa: Roider Avançado", category: "naves", kind: "research", max: 1,
-    desc: "O roider básico já vem desbloqueado. Esta pesquisa libera o roider de categoria SUPERIOR (maior capacidade).",
-    requires: [], baseCost: { metalium: 8000, carbonum: 5000, plutonium: 4000 }, costGrowth: 1, baseTicks: 4,
-  },
+  // O roider básico (classe mais baixa) vem desde o início; o roider avançado
+  // libera junto com a FÁBRICA da classe dele (na cadeia de naves abaixo).
   // --- Naves (cadeia pesquisa -> fabrica) ---
   ...buildShipChain(),
 ];
