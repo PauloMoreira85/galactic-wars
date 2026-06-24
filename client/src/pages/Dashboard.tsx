@@ -4,7 +4,6 @@ import { Galaxy } from "./Galaxy";
 import { Trafego } from "./Trafego";
 import { Frotas } from "./Frotas";
 import { Ferramentas } from "./Ferramentas";
-import { navigate } from "../router";
 import { Combats } from "./Combats";
 import { Governo } from "./Governo";
 import { Noticias } from "./Noticias";
@@ -226,7 +225,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   function go(it: MenuItem) {
     if (it.soon) return;
     if (it.key === "ferramentas") { setTools(true); return; }
-    if (it.key === "forum") { navigate("/forum"); return; }
+    if (it.key === "forum") { window.open("https://forum.galacticwar.com.br", "_blank", "noopener"); return; }
     setSection(it.key as Section);
   }
 
