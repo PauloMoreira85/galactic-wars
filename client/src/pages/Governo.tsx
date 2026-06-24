@@ -34,13 +34,36 @@ export function Governo() {
     try { setGov(await fn()); } catch (e: any) { setError(e.message ?? "Falha"); }
   }
 
+  // Aceita QUALQUER imagem: redimensiona pra no máx 256px e comprime até caber
+  // (a bandeira é exibida pequena, ~48px). Assim o tamanho do arquivo não importa.
   function onFlagFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 45000) { setError("Imagem muito grande (máx ~45KB)"); return; }
-    const reader = new FileReader();
-    reader.onload = () => act(() => api.govFlag(String(reader.result)));
-    reader.readAsDataURL(file);
+    setError("");
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const max = 256;
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * scale));
+      const h = Math.max(1, Math.round(img.height * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { setError("Não foi possível processar a imagem."); return; }
+      ctx.drawImage(img, 0, 0, w, h);
+      let out = canvas.toDataURL("image/webp", 0.9);
+      const webpOk = out.startsWith("data:image/webp"); // navegadores antigos caem pra png
+      const type = webpOk ? "image/webp" : "image/jpeg";
+      let q = 0.9;
+      out = canvas.toDataURL(type, q);
+      while (out.length > 55000 && q > 0.3) { q -= 0.1; out = canvas.toDataURL(type, q); }
+      if (out.length > 55000) { setError("Não consegui comprimir a bandeira o suficiente — tente outra imagem."); return; }
+      act(() => api.govFlag(out));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); setError("Não foi possível ler a imagem."); };
+    img.src = url;
   }
 
   if (!gov) return <div className="panel"><div className="roid-count">Carregando governo...</div></div>;
@@ -97,7 +120,7 @@ export function Governo() {
           </div>
           <div className="roid-row">
             <div>
-              Bandeira da galáxia <span className="roid-count">(imagem, máx ~45KB)</span>
+              Bandeira da galáxia <span className="roid-count">(qualquer imagem — redimensiono automaticamente)</span>
               {gov.flag && <div style={{ marginTop: 6 }}><img src={gov.flag} alt="bandeira" style={{ height: 48, borderRadius: 4, border: "1px solid var(--border)" }} /></div>}
             </div>
             <input type="file" accept="image/*" onChange={onFlagFile} style={{ maxWidth: 200 }} />
