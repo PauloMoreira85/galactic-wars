@@ -203,6 +203,7 @@ export const api = {
         occupied: boolean;
         planetId?: string;
         name?: string;
+        preposition?: string;
         commander?: string;
         race?: string;
         raceTag?: string;

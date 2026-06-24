@@ -289,7 +289,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
       {/* ===== Barra lateral ===== */}
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <span>🪐</span> GALACTIC<br />WARS
+          <img src="/art/logo/brasao.jpg" alt="Galactic Wars" className="sidebar-logo" />
         </div>
 
         <nav className="menu">

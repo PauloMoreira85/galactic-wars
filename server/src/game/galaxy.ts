@@ -249,7 +249,7 @@ export async function viewSystem(galaxy: number, system: number) {
     if (!p) { slots.push({ slot, occupied: false }); continue; }
     const idleMs = nowMs - new Date(p.user.lastSeen).getTime();
     slots.push({
-      slot, occupied: true, planetId: p.id, name: p.name,
+      slot, occupied: true, planetId: p.id, name: p.name, preposition: p.preposition,
       commander: p.user.username, race: p.user.race, raceTag: RACE_TAG[p.user.race] ?? "?",
       role: roleOf(p.id),
       allianceTag: tags[p.id] ?? null,

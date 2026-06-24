@@ -72,6 +72,7 @@ body::after {
   text-shadow: 0 0 6px var(--glow), 0 0 18px var(--glow); margin-bottom: 16px;
 }
 .sidebar-brand span { display: block; font-size: 28px; margin-bottom: 4px; filter: drop-shadow(0 0 6px var(--glow)); }
+.sidebar-logo { width: 100%; max-width: 170px; height: auto; border-radius: 8px; filter: drop-shadow(0 0 8px var(--glow)); }
 
 .status-box {
   border: 1px solid var(--border); border-radius: 8px; background: rgba(4,12,24,0.6);
@@ -281,7 +282,7 @@ td { font-family: var(--mono); }
 /* Arte (naves/raças) com placeholder enquanto não há PNG */
 .ship-cell { display: flex; align-items: center; gap: 10px; }
 .ship-thumb { width: 40px; height: 40px; object-fit: contain; border-radius: 6px; border: 1px solid var(--border); background: rgba(0,0,0,0.35); flex-shrink: 0; }
-.race-portrait { width: 120px; height: 120px; object-fit: cover; border-radius: 10px; border: 1px solid var(--border-strong); box-shadow: 0 0 18px rgba(37,211,255,0.18); flex-shrink: 0; }
+.race-portrait { width: 140px; height: 140px; object-fit: contain; border-radius: 10px; flex-shrink: 0; filter: drop-shadow(0 0 12px rgba(37,211,255,0.3)); }
 .art-missing {
   display: inline-flex; align-items: center; justify-content: center;
   background: rgba(37,211,255,0.05); border: 1px dashed var(--border); border-radius: 6px;
