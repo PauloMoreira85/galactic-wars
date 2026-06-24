@@ -340,7 +340,35 @@ td { font-family: var(--mono); }
 
 @media (max-width: 760px) {
   .layout { flex-direction: column; }
-  .sidebar { width: 100%; height: auto; position: static; border-right: none; border-bottom: 1px solid var(--border); }
-  .menu { display: flex; flex-wrap: wrap; gap: 4px; }
-  .content { padding: 16px; }
+  .sidebar { width: 100%; height: auto; position: static; border-right: none; border-bottom: 1px solid var(--border); padding: 10px 10px 6px; }
+  .sidebar-brand { margin-bottom: 8px; }
+  .sidebar-logo { max-width: 130px; }
+  /* Menu vira barra de "chips" que quebra linha */
+  .menu { display: flex; flex-wrap: wrap; gap: 6px; }
+  .menu > div { display: contents; }
+  .menu-sep { display: none; }
+  .menu-link { width: auto; padding: 5px 10px; font-size: 12.5px; line-height: 1.2;
+    border: 1px solid var(--border); border-left: 1px solid var(--border); border-radius: 6px; }
+  .menu-link.active { border-color: var(--accent); }
+
+  .content { padding: 12px 10px 48px; max-width: 100%; }
+  .section-title { font-size: 16px; letter-spacing: 1px; margin: 2px 0 12px; }
+  /* Tabelas largas rolam na horizontal dentro do painel */
+  .panel { padding: 14px 12px; overflow-x: auto; }
+  table { font-size: 12px; }
+  .panel h2 { font-size: 14px; }
+
+  /* Cabeçalho de status mais compacto */
+  .status-header { padding: 10px 12px; gap: 10px; }
+  .sh-commander { padding-right: 10px; }
+  .sh-grid { gap: 3px 12px; }
+
+  /* Banner da raça empilha (não espreme o brasão) */
+  .race-banner { flex-direction: column; text-align: center; }
+  .race-banner .race-lore { max-width: 100%; }
+  .race-portrait, .race-portrait.art-missing { width: 120px; height: 120px; margin: 0 auto; }
+
+  .action-tabs { gap: 6px; }
+  .action-tab { padding: 6px 10px; font-size: 12px; }
+  .resource-bar { gap: 12px; padding: 10px 12px; }
 }
