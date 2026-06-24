@@ -82,6 +82,7 @@ export interface TechItem {
   ticks: number | null;
   reqsMet: boolean;
   requires: { name: string; level: number }[];
+  affordable: boolean;
   canStart: boolean;
 }
 

@@ -90,6 +90,7 @@ async function planetView(userId: string) {
       key: def.key, name: def.name, category: def.category, kind: def.kind, desc: def.desc,
       level, max: def.max, maxed, cost, ticks: maxed ? null : upgradeTicks(def, level),
       reqsMet: ok, requires: def.requires.map((r) => ({ name: TECH_BY_KEY[r.key]?.name ?? r.key, level: r.level })),
+      affordable: !!cost && afford(cost),
       canStart: !maxed && ok && !!cost && afford(cost),
     };
   });

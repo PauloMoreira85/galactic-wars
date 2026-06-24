@@ -263,6 +263,9 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                     🔒 requer: {t.requires.map((r) => r.name).join(", ")}
                   </div>
                 )}
+                {t.reqsMet && !t.maxed && !t.affordable && (
+                  <div className="roid-count" style={{ color: "#e6a23c" }}>⚠️ liberado — faltam recursos</div>
+                )}
                 {t.cost && (
                   <div className="roid-count">
                     {fmt(t.cost.metalium)}M · {fmt(t.cost.carbonum)}C · {fmt(t.cost.plutonium)}P · {t.ticks} ticks
