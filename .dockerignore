@@ -15,8 +15,12 @@ Imagens
 *.md
 client/public/art/ships_raw
 client/public/art/races_raw
-client/public/art/ships/*/
-client/public/art/races/*/
+# Exclui só o conteúdo das subpastas de arte BRUTA (jpgs por raça/nave),
+# sem excluir os PNGs finais direto na pasta. ATENÇÃO: o Docker faz
+# filepath.Clean nos padrões e remove a barra final, então "ships/*/" virava
+# "ships/*" e excluía os próprios PNGs. Use "*/*" pra pegar só 1 nível abaixo.
+client/public/art/ships/*/*
+client/public/art/races/*/*
 **/*_raw
 
 client/public/art/animados
