@@ -45,8 +45,8 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
     <div className="landing">
       <div className="landing-hero">
         {/* Vídeo da logo (se existir wild-screen.mp4); senão mostra a imagem (poster). */}
-        <video className="landing-hero-media" autoPlay loop muted playsInline poster="/art/logo/wild-screen.jpg">
-          <source src="/art/logo/wild-screen.mp4" type="video/mp4" />
+        <video className="landing-hero-media" autoPlay loop muted playsInline poster="/art/logo/logo.jpg">
+          <source src="/art/logo/logo.mp4" type="video/mp4" />
         </video>
         <div className="landing-tagline">Conquiste os roids. Domine a galáxia.</div>
       </div>

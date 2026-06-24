@@ -13,3 +13,5 @@ client/public/art/races_raw/
 client/public/art/ships/*/
 client/public/art/races/*/
 .DS_Store
+
+client/public/art/animados/
