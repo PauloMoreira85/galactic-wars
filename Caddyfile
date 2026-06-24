@@ -3,3 +3,9 @@ galacticwar.com.br, www.galacticwar.com.br {
 	reverse_proxy app:3001
 	encode gzip
 }
+
+# Fórum do Universo (phpBB) no subdomínio.
+forum.galacticwar.com.br {
+	reverse_proxy forum:8080
+	encode gzip
+}
