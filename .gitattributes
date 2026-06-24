@@ -1,0 +1,5 @@
+# Garante LF (Linux) em scripts e arquivos sensíveis ao fim de linha.
+* text=auto
+*.sh text eol=lf
+entrypoint.sh text eol=lf
+Dockerfile text eol=lf
