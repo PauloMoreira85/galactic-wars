@@ -41,15 +41,25 @@ async function advance() {
     if (!state) return;
 
     const intervalMs = config.tickIntervalSeconds * 1000;
-    const elapsed = Date.now() - new Date(state.lastTickAt).getTime();
-    let due = Math.floor(elapsed / intervalMs);
-    if (due <= 0) return;
+    // Ticks ALINHADOS ao relógio: as fronteiras são múltiplos do intervalo desde
+    // o epoch (ex.: 5min -> :00, :05, :10...). Assim os jogadores se guiam pelo
+    // relógio do celular/PC e o tick nunca cai em segundo "quebrado".
+    const now = Date.now();
+    const nowBoundary = Math.floor(now / intervalMs) * intervalMs;
+    const lastBoundary = Math.floor(new Date(state.lastTickAt).getTime() / intervalMs) * intervalMs;
+    let due = Math.floor((nowBoundary - lastBoundary) / intervalMs);
+    if (due <= 0) {
+      // Sem tick novo; se o lastTickAt estava desalinhado (legado), realinha sem contar tick.
+      if (new Date(state.lastTickAt).getTime() !== lastBoundary) {
+        await prisma.gameState.update({ where: { id: 1 }, data: { lastTickAt: new Date(lastBoundary) } });
+      }
+      return;
+    }
 
     // Round acabou: não processa mais ticks (jogo congela no roundTicks).
     const remaining = config.roundTicks - state.tickNumber;
     if (remaining <= 0) {
-      // Mantém o lastTickAt em dia pra não acumular "due" gigante quando resetar.
-      await prisma.gameState.update({ where: { id: 1 }, data: { lastTickAt: new Date() } });
+      await prisma.gameState.update({ where: { id: 1 }, data: { lastTickAt: new Date(nowBoundary) } });
       return;
     }
     if (due > remaining) due = remaining; // só avança até o fim do round
@@ -59,9 +69,8 @@ async function advance() {
     await processEffects(due, state.tickNumber + due); // debuffs de sabotagem
 
     const newTickNumber = state.tickNumber + due;
-    const newLastTick = new Date(
-      new Date(state.lastTickAt).getTime() + due * intervalMs
-    );
+    // Mantém o lastTickAt alinhado: fronteira + nº de ticks aplicados.
+    const newLastTick = new Date(lastBoundary + due * intervalMs);
     await prisma.gameState.update({
       where: { id: 1 },
       data: { tickNumber: newTickNumber, lastTickAt: newLastTick },
@@ -79,7 +88,8 @@ export async function startTickEngine() {
   await ensureGameState();
   await advance(); // catch-up de ticks perdidos enquanto estava offline
   // Checa de tempos em tempos; processa quando um intervalo completo passou.
-  const checkMs = Math.min(config.tickIntervalSeconds * 1000, 30_000);
+  // Checa com frequência pra processar logo na virada do relógio (tick alinhado).
+  const checkMs = Math.min(config.tickIntervalSeconds * 1000, 5_000);
   timer = setInterval(() => {
     advance().catch((e) => console.error("[tick] erro:", e));
   }, checkMs);
