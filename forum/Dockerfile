@@ -14,6 +14,7 @@ ARG PHPBB_VERSION=3.3.17
 RUN curl -fsSL -o /tmp/phpbb.zip "https://download.phpbb.com/pub/release/3.3/${PHPBB_VERSION}/phpBB-${PHPBB_VERSION}.zip" \
     && unzip -q /tmp/phpbb.zip -d /tmp \
     && mkdir -p /opt/phpbb && cp -a /tmp/phpBB3/. /opt/phpbb/ \
+    && rm -f /opt/phpbb/config.php \
     && rm -rf /tmp/phpbb.zip /tmp/phpBB3
 
 # Pacote de idioma Portugues (Brasil) — comunidade suportephpbb (GPL, compat. 3.3).
