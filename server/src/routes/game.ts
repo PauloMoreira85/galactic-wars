@@ -198,8 +198,8 @@ gameRouter.get("/galaxy/:galaxy/:system", async (req: AuthedRequest, res) => {
     return res.status(400).json({ error: "Coordenadas invalidas" });
   }
   const me = await prisma.planet.findUnique({ where: { userId: req.userId! } });
-  // Online/inatividade só na PRÓPRIA galáxia (em outras, vem por espionagem).
-  const view: any = await viewSystem(galaxy, system, me?.galaxy ?? null);
+  // Online/inatividade só na própria galáxia; raça é segredo (própria/MG/espionada).
+  const view: any = await viewSystem(galaxy, system, me ? { id: me.id, galaxy: me.galaxy } : null);
   // Agentes que EU possuo (nível da minha Inteligência): P(≥2) M(≥3) T(≥4) D(≥5).
   const lvl = me ? espionageLevel(parseTech(me.tech)) : 0;
   view.agents = { P: lvl >= 2, M: lvl >= 3, T: lvl >= 4, D: lvl >= 5 };
@@ -656,11 +656,10 @@ gameRouter.get("/combats/:id", async (req: AuthedRequest, res) => {
 });
 
 gameRouter.get("/ranking", async (_req, res) => {
-  const planets = await prisma.planet.findMany({ include: { user: { select: { username: true, race: true } } } });
+  const planets = await prisma.planet.findMany({ include: { user: { select: { username: true } } } });
   const ranked = planets
     .map((p) => ({
       username: p.user.username,
-      race: (isRaceKey(p.user.race) ? RACES[p.user.race] : RACES.humanos).name,
       planet: p.name, coords: `${p.galaxy}:${p.system}:${p.slot}`, roids: totalRoids(p),
     }))
     .sort((a, b) => b.roids - a.roids).slice(0, 50);
@@ -784,7 +783,7 @@ gameRouter.get("/tools/planets", async (_req, res) => {
   const nowTick = state?.tickNumber ?? 0;
   const list = planets.map((p) => ({
     name: p.name, commander: p.user.username, coords: `${p.galaxy}:${p.system}:${p.slot}`,
-    galaxy: p.galaxy, race: (isRaceKey(p.user.race) ? RACES[p.user.race] : RACES.humanos).name,
+    galaxy: p.galaxy,
     roids: totalRoids(p),
     score: scoreOfUnits(parseUnits(p.units)) + (fscore[p.id] || 0),
     protected: nowTick < p.createdTick + 72,

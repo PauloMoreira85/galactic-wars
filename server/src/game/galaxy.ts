@@ -214,7 +214,7 @@ const RACE_TAG: Record<string, string> = { humanos: "Hum", daharan: "Dah", raksh
 const ONLINE_MS = 5 * 60 * 1000;
 
 // Visão rica de um sistema: cabeçalho da galáxia + 15 slots com pontuação/rank/status.
-export async function viewSystem(galaxy: number, system: number, viewerGalaxy: number | null = null) {
+export async function viewSystem(galaxy: number, system: number, viewer: { id: string; galaxy: number } | null = null) {
   const nowMs = Date.now();
   const all = await prisma.planet.findMany({ include: { user: { select: { username: true, race: true, lastSeen: true } } } });
   const fleets = await prisma.fleet.findMany();
@@ -243,6 +243,16 @@ export async function viewSystem(galaxy: number, system: number, viewerGalaxy: n
   const roleOf = (id: string): string | null =>
     gst?.cgPlanetId === id ? "cg" : gst?.mgPlanetId === id ? "mg" : gst?.mePlanetId === id ? "me" : gst?.mdPlanetId === id ? "md" : null;
 
+  // Raça é SEGREDO: só aparece pro próprio planeta, pro MG desta galáxia, ou
+  // pra quem já espionou o alvo (fica salvo). Resto vê "?".
+  const viewerGalaxy = viewer?.galaxy ?? null;
+  const isMG = !!viewer && gst?.mgPlanetId === viewer.id;
+  const spiedRace = new Set<string>();
+  if (viewer) {
+    const reports = await prisma.spyReport.findMany({ where: { spyPlanetId: viewer.id }, select: { targetCoords: true, targetName: true } });
+    reports.forEach((r) => spiedRace.add(`${r.targetCoords}|${r.targetName}`));
+  }
+
   const slots = [];
   for (let slot = 1; slot <= SLOTS_PER_SYSTEM; slot++) {
     const p: any = byslot.get(slot);
@@ -250,9 +260,12 @@ export async function viewSystem(galaxy: number, system: number, viewerGalaxy: n
     const idleMs = nowMs - new Date(p.user.lastSeen).getTime();
     // Online/inatividade só visível na própria galáxia; fora dela vem null.
     const sameGalaxy = viewerGalaxy == null || galaxy === viewerGalaxy;
+    const showRace = viewer?.id === p.id || isMG || spiedRace.has(`${galaxy}:${system}:${slot}|${p.name}`);
     slots.push({
       slot, occupied: true, planetId: p.id, name: p.name, preposition: p.preposition,
-      commander: p.user.username, race: p.user.race, raceTag: RACE_TAG[p.user.race] ?? "?",
+      commander: p.user.username,
+      race: showRace ? p.user.race : null,
+      raceTag: showRace ? (RACE_TAG[p.user.race] ?? "?") : null,
       role: roleOf(p.id),
       allianceTag: tags[p.id] ?? null,
       roids: p.roidMetalium + p.roidCarbonum + p.roidPlutonium,

@@ -209,8 +209,8 @@ export const api = {
         name?: string;
         preposition?: string;
         commander?: string;
-        race?: string;
-        raceTag?: string;
+        race?: string | null;
+        raceTag?: string | null;
         allianceTag?: string | null;
         roids?: number;
         score?: number;
@@ -370,7 +370,7 @@ export const api = {
 
   ranking: () =>
     request<{
-      ranking: { username: string; race: string; planet: string; coords: string; roids: number }[];
+      ranking: { username: string; planet: string; coords: string; roids: number }[];
     }>("/game/ranking"),
 
   toolUnits: () =>
@@ -384,7 +384,7 @@ export const api = {
   toolTechtree: () =>
     request<{ techs: { key: string; name: string; category: string; kind: string; desc: string; max: number; requires: { name: string; level: number }[] }[] }>("/game/tools/techtree"),
   toolPlanets: () =>
-    request<{ planets: { name: string; commander: string; coords: string; galaxy: number; race: string; roids: number; score: number; protected: boolean }[]; totalUsers: number }>("/game/tools/planets"),
+    request<{ planets: { name: string; commander: string; coords: string; galaxy: number; roids: number; score: number; protected: boolean }[]; totalUsers: number }>("/game/tools/planets"),
   spyReports: () =>
     request<{ reports: { id: string; hash: string; targetName: string; targetCoords: string; agent: string; tick: number; intel: any }[] }>("/game/spy-reports"),
 

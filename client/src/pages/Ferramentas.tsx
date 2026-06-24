@@ -195,10 +195,10 @@ function Universo() {
       <div className="cost">Pontuação total do universo: <b>{fmt(totalScore)}</b></div>
       <h2 style={{ marginTop: 16 }}>Top 10 comandantes</h2>
       <table>
-        <thead><tr><th className="rank-num">#</th><th>Comandante</th><th>Planeta</th><th>Raça</th><th>Coord.</th><th>Pontuação</th></tr></thead>
+        <thead><tr><th className="rank-num">#</th><th>Comandante</th><th>Planeta</th><th>Coord.</th><th>Pontuação</th></tr></thead>
         <tbody>
           {data.planets.slice(0, 10).map((p, i) => (
-            <tr key={p.coords}><td className="rank-num">{i + 1}º</td><td>{p.commander}</td><td><b>{p.name}</b></td><td className="roid-count">{p.race}</td><td>{p.coords}</td><td>{fmt(p.score)}</td></tr>
+            <tr key={p.coords}><td className="rank-num">{i + 1}º</td><td>{p.commander}</td><td><b>{p.name}</b></td><td>{p.coords}</td><td>{fmt(p.score)}</td></tr>
           ))}
         </tbody>
       </table>
@@ -259,10 +259,10 @@ function ProcuraPlanetas() {
       </div>
       <div className="cost" style={{ marginBottom: 6 }}>{shown.length} planeta(s)</div>
       <table>
-        <thead><tr><th>Planeta</th><th>Comandante</th><th>Raça</th><th>Coord.</th><th>Roids</th><th>Pontuação</th></tr></thead>
+        <thead><tr><th>Planeta</th><th>Comandante</th><th>Coord.</th><th>Roids</th><th>Pontuação</th></tr></thead>
         <tbody>
           {shown.slice(0, 100).map((p) => (
-            <tr key={p.coords}><td><b>{p.name}</b>{p.protected && " 🛡️"}</td><td>{p.commander}</td><td className="roid-count">{p.race}</td><td>{p.coords}</td><td>{fmt(p.roids)}</td><td>{fmt(p.score)}</td></tr>
+            <tr key={p.coords}><td><b>{p.name}</b>{p.protected && " 🛡️"}</td><td>{p.commander}</td><td>{p.coords}</td><td>{fmt(p.roids)}</td><td>{fmt(p.score)}</td></tr>
           ))}
         </tbody>
       </table>

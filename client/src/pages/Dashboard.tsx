@@ -3,7 +3,6 @@ import { api, clearToken, type PlanetView, type Resource, type TechItem } from "
 import { Galaxy } from "./Galaxy";
 import { Trafego } from "./Trafego";
 import { Frotas } from "./Frotas";
-import { Ferramentas } from "./Ferramentas";
 import { Combats } from "./Combats";
 import { Governo } from "./Governo";
 import { Noticias } from "./Noticias";
@@ -152,7 +151,6 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [section, setSection] = useState<Section>("planeta");
   const [zoom, setZoom] = useState<{ src: string; alt: string } | null>(null);
   const [alerts, setAlerts] = useState({ underAttack: false, incomingDefense: false, galaxyUnderAttack: false });
-  const [tools, setTools] = useState(false);
   const countdown = useCountdown(view);
 
   useEffect(() => {
@@ -226,13 +224,12 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
   function go(it: MenuItem) {
     if (it.soon) return;
-    if (it.key === "ferramentas") { setTools(true); return; }
+    if (it.key === "ferramentas") { window.open("/ferramentas", "_blank", "noopener"); return; }
     if (it.key === "forum") { window.open("https://forum.galacticwar.com.br", "_blank", "noopener"); return; }
     setSection(it.key as Section);
   }
 
   if (!view) return <div className="app">Carregando o universo...</div>;
-  if (tools) return <Ferramentas onClose={() => setTools(false)} />;
 
   const { planet, game } = view;
   const cost = planet.nextRoidCost;
@@ -430,14 +427,13 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
               <h2>Ranking — top comandantes</h2>
               <table>
                 <thead>
-                  <tr><th className="rank-num">#</th><th>Comandante</th><th>Raça</th><th>Planeta</th><th>Coord.</th><th>Roids</th></tr>
+                  <tr><th className="rank-num">#</th><th>Comandante</th><th>Planeta</th><th>Coord.</th><th>Roids</th></tr>
                 </thead>
                 <tbody>
                   {ranking.map((r, i) => (
                     <tr key={i}>
                       <td className="rank-num">{i + 1}</td>
                       <td>{r.username}</td>
-                      <td>{r.race}</td>
                       <td>{r.planet}</td>
                       <td>{r.coords}</td>
                       <td>{r.roids}</td>

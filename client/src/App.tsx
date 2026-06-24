@@ -2,9 +2,15 @@ import { useState } from "react";
 import { getToken } from "./api";
 import { Auth } from "./pages/Auth";
 import { Dashboard } from "./pages/Dashboard";
+import { Ferramentas } from "./pages/Ferramentas";
 
 export default function App() {
   const [authed, setAuthed] = useState(!!getToken());
   if (!authed) return <Auth onAuthed={() => setAuthed(true)} />;
+  // Ferramentas abre numa aba separada (URL /ferramentas) — dá pra consultar
+  // espionagens enquanto mexe nas frotas/naves na aba principal.
+  if (window.location.pathname.replace(/\/+$/, "") === "/ferramentas") {
+    return <Ferramentas onClose={() => { window.location.href = "/"; }} />;
+  }
   return <Dashboard onLogout={() => setAuthed(false)} />;
 }
