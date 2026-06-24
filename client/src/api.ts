@@ -61,6 +61,7 @@ export interface QueueItem {
   id: string;
   kind: "ship" | "tech";
   shipClass: string | null;
+  key: string | null;
   label: string;
   quantity: number;
   ticksRemaining: number;

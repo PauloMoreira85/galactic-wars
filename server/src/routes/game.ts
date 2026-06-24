@@ -96,7 +96,7 @@ async function planetView(userId: string) {
   }));
 
   const queue = orders.map((o) => ({
-    id: o.id, kind: o.kind, shipClass: o.shipClass,
+    id: o.id, kind: o.kind, shipClass: o.shipClass, key: o.techKey ?? null,
     label: o.kind === "ship" && o.shipClass
       ? `${o.quantity}x ${o.shipClass}`
       : `${TECH_BY_KEY[o.techKey ?? ""]?.name ?? o.techKey} (nv ${o.targetLevel})`,

@@ -271,11 +271,15 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             <div>
               {t.maxed ? (
                 <span className="roid-count">máx</span>
-              ) : (
-                <button disabled={!t.canStart || shipBusy !== null} onClick={() => doUpgrade(t.key)}>
-                  {shipBusy === t.key ? "..." : verb}
-                </button>
-              )}
+              ) : (() => {
+                const inQueue = view!.queue.some((q) => q.kind === "tech" && q.key === t.key);
+                const progress = kind === "research" ? "Pesquisando…" : "Construindo…";
+                return (
+                  <button disabled={!t.canStart || shipBusy !== null || inQueue} onClick={() => doUpgrade(t.key)}>
+                    {shipBusy === t.key ? "..." : inQueue ? progress : verb}
+                  </button>
+                );
+              })()}
             </div>
           </div>
         ))}
