@@ -100,13 +100,6 @@ export function Galaxy({ view, onChanged }: { view: PlanetView; onChanged: () =>
     } catch (e: any) { setError(e.message ?? "Falha"); }
   }
 
-  async function doAutoExile() {
-    if (!window.confirm(`Auto-exílio: seu planeta vai cair numa galáxia aleatória (não-privada). Restam ${view.planet.autoExiles}. Confirmar?`)) return;
-    setError("");
-    try { await api.autoExile(); onChanged(); }
-    catch (e: any) { setError(e.message ?? "Falha"); }
-  }
-
   const myCoords = view.planet.coords;
   const statusLabel: Record<string, string> = {
     outbound: "→ indo", engaged: "⚔️ em combate", returning: "↩ voltando",
@@ -270,6 +263,7 @@ export function Galaxy({ view, onChanged }: { view: PlanetView; onChanged: () =>
         </div>
       )}
 
+      {sameGalaxy && (
       <div className="panel">
         <h2>Tráfego atual — suas frotas</h2>
         {fleets.length === 0 ? (
@@ -305,22 +299,7 @@ export function Galaxy({ view, onChanged }: { view: PlanetView; onChanged: () =>
           </table>
         )}
       </div>
-
-      <div className="panel">
-        <h2>🪂 Auto-exílio</h2>
-        <div className="cost">
-          Faz o seu planeta cair numa <b>galáxia aleatória</b> (não-privada). Útil pra fugir de uma vizinhança ruim. Você perde os cargos de governo da galáxia atual.
-        </div>
-        <div className="roid-row">
-          <div className="roid-label"><div>
-            <div><b>Exilar planeta</b></div>
-            <div className="roid-count">restam {view.planet.autoExiles} de 3 auto-exílios</div>
-          </div></div>
-          <button disabled={view.planet.autoExiles <= 0} onClick={doAutoExile}>
-            {view.planet.autoExiles > 0 ? "🪂 auto-exílio" : "sem exílios"}
-          </button>
-        </div>
-      </div>
+      )}
     </>
   );
 }

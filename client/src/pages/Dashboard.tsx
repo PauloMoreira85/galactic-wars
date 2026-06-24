@@ -14,6 +14,7 @@ import { Chat } from "./Chat";
 import { Mensagens } from "./Mensagens";
 import { Sabotagem } from "./Sabotagem";
 import { Inteligencia } from "./Inteligencia";
+import { Preferencias } from "./Preferencias";
 
 const RES_META: { key: Resource; label: string }[] = [
   { key: "metalium", label: "Metalium" },
@@ -64,7 +65,7 @@ function useCountdown(view: PlanetView | null) {
   return `${m}m ${s.toString().padStart(2, "0")}s`;
 }
 
-type Section = "planeta" | "galaxia" | "frotas" | "trafego" | "pesquisa" | "construcao" | "naves" | "recursos" | "combates" | "votacao" | "noticias" | "aliancas" | "associados" | "forum" | "forumgalaxia" | "chat" | "mensagens" | "sabotagem" | "intel";
+type Section = "planeta" | "galaxia" | "frotas" | "trafego" | "pesquisa" | "construcao" | "naves" | "recursos" | "combates" | "votacao" | "noticias" | "aliancas" | "associados" | "preferencias" | "forum" | "forumgalaxia" | "chat" | "mensagens" | "sabotagem" | "intel";
 
 interface MenuItem {
   key: string;
@@ -110,7 +111,7 @@ const MENU: MenuItem[][] = [
   [
     { key: "aliancas", label: "Alianças" },
     { key: "associados", label: "Associados" },
-    { key: "preferencias", label: "Preferências", soon: true },
+    { key: "preferencias", label: "Preferências" },
   ],
   [
     { key: "ferramentas", label: "Ferramentas" },
@@ -132,6 +133,7 @@ const TITLES: Record<Section, string> = {
   noticias: "Notícias",
   aliancas: "Alianças",
   associados: "Associados",
+  preferencias: "Preferências",
   forum: "Fórum do Universo",
   forumgalaxia: "Fórum da Galáxia",
   chat: "Chat do Universo",
@@ -586,6 +588,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         {section === "aliancas" && <Aliancas />}
 
         {section === "associados" && <Associados onChanged={refresh} />}
+        {section === "preferencias" && <Preferencias view={view} onChanged={refresh} />}
 
         {section === "forum" && <Forum />}
 
