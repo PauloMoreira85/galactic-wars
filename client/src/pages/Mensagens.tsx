@@ -26,6 +26,15 @@ export function Mensagens() {
     try { setData(await api.pmSend(to, subject, body, anon)); setTo(""); setSubject(""); setBody(""); setAnon(false); setTab("enviadas"); }
     catch (e: any) { setError(e.message ?? "Falha"); }
   }
+  // Responder: pré-preenche a aba Nova com o remetente e "Re: assunto".
+  function reply(m: { from: string; subject: string }) {
+    setError("");
+    setTo(m.from);
+    setSubject(m.subject.toLowerCase().startsWith("re:") ? m.subject : `Re: ${m.subject}`);
+    setBody("");
+    setAnon(false);
+    setTab("nova");
+  }
 
   if (!data) return <div className="panel"><div className="roid-count">Carregando...</div></div>;
 
@@ -49,7 +58,10 @@ export function Mensagens() {
                     <tr style={{ cursor: "pointer", fontWeight: m.read ? 400 : 700 }} onClick={() => read(m.id)}>
                       <td>{m.read ? "" : "🔵"}</td><td>{m.from}</td><td>{m.subject}</td><td className="roid-count">{when(m.at)}</td>
                     </tr>
-                    {open === m.id && <tr><td></td><td colSpan={3} style={{ whiteSpace: "pre-wrap", color: "var(--text)", padding: "8px 8px 14px" }}>{m.body}</td></tr>}
+                    {open === m.id && <tr><td></td><td colSpan={3} style={{ color: "var(--text)", padding: "8px 8px 14px" }}>
+                      <div style={{ whiteSpace: "pre-wrap" }}>{m.body}</div>
+                      {m.from !== "Anônimo" && <div style={{ marginTop: 10 }}><button onClick={() => reply(m)}>↩ responder</button></div>}
+                    </td></tr>}
                   </Fragment>
                 ))}
               </tbody>
