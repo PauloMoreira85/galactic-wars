@@ -94,8 +94,8 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
                             <button title="tudo desta nave → Base" disabled={busy} onClick={() => setEdits({ ...edits, [f.id]: { ...edits[f.id], [name]: 0 } })}
                               style={{ padding: "2px 5px", margin: 0, fontSize: 12, lineHeight: 1 }}>«</button>
                             <input
-                              type="number" min={0} value={edits[f.id]?.[name] ?? 0}
-                              onChange={(e) => setEdits({ ...edits, [f.id]: { ...edits[f.id], [name]: Math.max(0, Number(e.target.value)) } })}
+                              type="number" min={0} placeholder="0" value={edits[f.id]?.[name] || ""}
+                              onChange={(e) => setEdits({ ...edits, [f.id]: { ...edits[f.id], [name]: e.target.value === "" ? 0 : Math.max(0, Math.floor(Number(e.target.value))) } })}
                               style={{ width: 54, margin: 0, padding: "3px 4px", textAlign: "center" }}
                             />
                             <button title="tudo desta nave (Base + frota) → esta frota" disabled={busy} onClick={() => setEdits({ ...edits, [f.id]: { ...edits[f.id], [name]: baseOf(name) + (f.units[name] ?? 0) } })}

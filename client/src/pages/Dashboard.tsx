@@ -628,8 +628,8 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                         {u.unlocked ? (
                           <div style={{ display: "flex", gap: 6 }}>
                             <input
-                              type="number" min={1} value={qty[u.name] ?? 1}
-                              onChange={(e) => setQty({ ...qty, [u.name]: Number(e.target.value) })}
+                              type="number" min={1} placeholder="1" value={qty[u.name] || ""}
+                              onChange={(e) => setQty({ ...qty, [u.name]: e.target.value === "" ? 0 : Math.max(1, Math.floor(Number(e.target.value))) })}
                               style={{ width: 80, margin: 0, padding: "4px 6px" }}
                             />
                             <button disabled={shipBusy !== null} onClick={() => doBuildUnit(u.name)}>
