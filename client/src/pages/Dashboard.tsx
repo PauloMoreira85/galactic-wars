@@ -247,6 +247,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     setShipBusy(name);
     try {
       setView(await api.buildUnit(name, Math.max(1, qty[name] || 1)));
+      setQty((q) => ({ ...q, [name]: 0 })); // zera o campo após mandar produzir
     } catch (e: any) {
       setError(e.message ?? "Falha");
     } finally {
@@ -560,10 +561,14 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
           </>
         )}
 
-        {(section === "pesquisa" || section === "construcao") && view.queue.length > 0 && (
+        {(section === "pesquisa" || section === "construcao") && (() => {
+          const wantKind = section === "pesquisa" ? "research" : "building";
+          const fila = view.queue.filter((q) => q.techKind === wantKind);
+          if (fila.length === 0) return null;
+          return (
           <div className="panel">
             <h2>Fila</h2>
-            {view.queue.map((q) => { const t = queueTag(q); return (
+            {fila.map((q) => { const t = queueTag(q); return (
               <div className="roid-row" key={q.id}>
                 <div>{t.icon} <span className="roid-count" style={{ color: t.color }}>{t.tag}:</span> {q.label}</div>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -573,7 +578,8 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
               </div>
             ); })}
           </div>
-        )}
+          );
+        })()}
 
         {section === "pesquisa" && (
           <>
@@ -647,10 +653,10 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
               {error && <div className="error" style={{ marginTop: 12 }}>{error}</div>}
             </div>
 
-            {view.queue.length > 0 && (
+            {view.queue.some((q) => q.kind === "ship") && (
               <div className="panel">
                 <h2>Fila de produção</h2>
-                {view.queue.map((q) => { const t = queueTag(q); return (
+                {view.queue.filter((q) => q.kind === "ship").map((q) => { const t = queueTag(q); return (
                   <div className="roid-row" key={q.id}>
                     <div>{t.icon} <span className="roid-count" style={{ color: t.color }}>{t.tag}:</span> {q.label}</div>
                     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
