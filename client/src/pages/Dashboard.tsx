@@ -426,7 +426,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                   <li><b>Pesquise</b> (🔬) pra desbloquear construções; depois <b>construa</b> (🛠️).</li>
                   <li>Em <b>Naves, Inteligência e Sabotagem</b> a cadeia é: pesquisa → fábrica → libera a próxima.</li>
                   <li>Construa naves nas fábricas (<b>Naves</b>) e monte uma frota em <b>Frotas</b>.</li>
-                  <li>Na <b>Galáxia</b>, envie a frota: mesma galáxia = só transporte (defesa); outras = atacar.</li>
+                  <li>Na <b>Galáxia</b>, envie a frota: mesma galáxia = só <b>defender</b> (aliados); outras = <b>atacar</b>.</li>
                   <li>Você tem <b>proteção de novato por 72 ticks</b> — ninguém te ataca. Cresça à vontade.</li>
                 </ol>
                 <div className="roid-count">💡 A raça dos inimigos é segredo — descubra espionando (Inteligência). Tudo detalhado na <b>Árvore Tecnológica</b> (Ferramentas).</div>

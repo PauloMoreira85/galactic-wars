@@ -6,7 +6,7 @@ function fmt(n: number) {
 }
 
 const STATUS_LABEL: Record<string, string> = {
-  idle: "na base", outbound: "indo", engaged: "em combate", returning: "voltando", garrison: "reforçando",
+  idle: "na base", outbound: "indo", engaged: "em combate", returning: "voltando", garrison: "defendendo",
 };
 
 // Gerenciamento de frotas (estilo "Frotas sob o seu comando"): Base + frotas
@@ -138,7 +138,7 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
         <h2>🚀 Enviar frota</h2>
         <div className="cost" style={{ marginBottom: 10 }}>
           Digite as coordenadas do alvo, escolha a ação e a frota (carregada e na base).
-          Mesma galáxia = só transporte (defesa); outra galáxia = atacar.
+          Mesma galáxia = só defesa; outra galáxia = atacar.
         </div>
         {fleets.filter((f) => f.idle && f.totalShips > 0).length === 0 ? (
           <div className="roid-count">Nenhuma frota carregada na base. Transfira naves pra uma frota acima.</div>
@@ -152,12 +152,12 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
             <input type="number" min={1} title="Slot" value={dSlot} onChange={(e) => setDSlot(Math.max(1, Number(e.target.value)))} style={{ width: 60, margin: 0, padding: "6px 6px", textAlign: "center" }} />
             <select value={dMission} onChange={(e) => setDMission(e.target.value as any)} style={{ width: "auto", margin: 0, background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
               <option value="attack">Atacar</option>
-              <option value="transport">Transportar (defesa)</option>
+              <option value="transport">Defender</option>
             </select>
-            <select value={dTicks} onChange={(e) => setDTicks(Number(e.target.value))} title={dMission === "attack" ? "ticks de combate" : "ticks de reforço"} style={{ width: "auto", margin: 0, background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
-              <option value={1}>{dMission === "attack" ? "atacar" : "reforçar"} 1 tick</option>
-              <option value={2}>{dMission === "attack" ? "atacar" : "reforçar"} 2 ticks</option>
-              <option value={3}>{dMission === "attack" ? "atacar" : "reforçar"} 3 ticks</option>
+            <select value={dTicks} onChange={(e) => setDTicks(Number(e.target.value))} title={dMission === "attack" ? "ticks de combate" : "ticks de defesa"} style={{ width: "auto", margin: 0, background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
+              <option value={1}>{dMission === "attack" ? "atacar" : "defender"} 1 tick</option>
+              <option value={2}>{dMission === "attack" ? "atacar" : "defender"} 2 ticks</option>
+              <option value={3}>{dMission === "attack" ? "atacar" : "defender"} 3 ticks</option>
             </select>
             <select value={dFleet} onChange={(e) => setDFleet(e.target.value)} style={{ width: "auto", margin: 0, background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
               <option value="">escolha a frota...</option>

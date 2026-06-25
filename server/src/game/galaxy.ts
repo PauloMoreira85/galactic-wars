@@ -152,7 +152,7 @@ export async function dispatchFleet(planetId: string, fleetId: string, target: C
         engageTicks,
       },
     });
-    await tx.news.create({ data: { planetId, tick, message: `${fleet.name} (${mission === "attack" ? "ataque" : "transporte"}) enviada para ${target.galaxy}:${target.system}:${target.slot} (chega em ${tt}t)` } });
+    await tx.news.create({ data: { planetId, tick, message: `${fleet.name} (${mission === "attack" ? "ataque" : "defesa"}) enviada para ${target.galaxy}:${target.system}:${target.slot} (chega em ${tt}t)` } });
     return { ok: true, arriveIn: tt };
   }, TX_OPTS);
 }

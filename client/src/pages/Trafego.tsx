@@ -30,7 +30,7 @@ export function Trafego() {
     <div className="panel">
       <h2>Tráfego — frotas chegando na galáxia {data.galaxy}</h2>
       <div className="cost" style={{ marginBottom: 10 }}>
-        🔴 ataque · 🟢 defesa/reforço · linha destacada = chegando no SEU planeta.
+        🔴 ataque · 🟢 defesa · linha destacada = chegando no SEU planeta.
         {data.incomingToMe > 0 && (
           <span style={{ color: "var(--danger)", marginLeft: 8 }}>⚠ {data.incomingToMe} ataque(s) vindo para você!</span>
         )}

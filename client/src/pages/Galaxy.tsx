@@ -106,7 +106,7 @@ export function Galaxy({ view, onChanged }: { view: PlanetView; onChanged: () =>
   const myScore = view.planet.score;
   function attackRange(sl: any): { ok: boolean; why: string } | null {
     if (`${galaxy}:${system}:${sl.slot}` === myCoords) return null; // é você
-    if (sameGalaxy) return { ok: false, why: "Mesma galáxia (aliado) — só transporte" };
+    if (sameGalaxy) return { ok: false, why: "Mesma galáxia (aliado) — só defesa" };
     if (sl.protected) return { ok: false, why: "Sob proteção de novato" };
     if ((view.game?.tickNumber ?? 0) < 72) return { ok: false, why: "Proteção inicial do jogo (tick < 72)" };
     if (myScore > 0 && (sl.score ?? 0) < (myScore * 50) / 100) return { ok: false, why: "Fora de alcance (alvo < 50% da sua pontuação)" };
@@ -242,9 +242,9 @@ export function Galaxy({ view, onChanged }: { view: PlanetView; onChanged: () =>
               style={{ width: "auto", margin: 0, background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px" }}
             >
               {!sameGalaxy && <option value="attack">Atacar</option>}
-              <option value="transport">Transportar (defesa)</option>
+              <option value="transport">Defender</option>
             </select>
-            <span>· {mission === "attack" ? "atacar" : "reforçar"} por:</span>
+            <span>· {mission === "attack" ? "atacar" : "defender"} por:</span>
             <select value={atkTicks} onChange={(e) => setAtkTicks(Number(e.target.value))}
               style={{ width: "auto", margin: 0, background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px" }}>
               <option value={1}>1 tick</option>
@@ -254,7 +254,7 @@ export function Galaxy({ view, onChanged }: { view: PlanetView; onChanged: () =>
           </div>
           {sameGalaxy && (
             <div className="cost" style={{ color: "var(--carbonum)" }}>
-              🤝 Planetas da sua galáxia ({myGalaxy}) são aliados — só é possível <b>transportar</b> (defesa). Para atacar, mire em outra galáxia.
+              🤝 Planetas da sua galáxia ({myGalaxy}) são aliados — só é possível <b>defender</b>. Para atacar, mire em outra galáxia.
             </div>
           )}
           <div className="cost" style={{ margin: "8px 0" }}>Escolha uma frota pronta na base para enviar:</div>
