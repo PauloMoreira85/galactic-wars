@@ -49,7 +49,7 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
       <div className="panel">
         <h2>Frotas sob o seu comando</h2>
         <div className="cost" style={{ marginBottom: 10 }}>
-          {view.planet.fleetSlots}/5 frotas criadas. Mova naves entre a <b>Base</b> e cada frota (só com a frota na base) e clique <b>salvar</b>. O envio é na aba <b>Galáxia</b> (mire o alvo e escolha a frota).
+          {view.planet.fleetSlots}/5 frotas criadas. Mova naves da <b>Base</b> para cada frota (só com a frota na base) e clique <b>transferir</b>. O envio é na aba <b>Galáxia</b> (mire o alvo e escolha a frota).
         </div>
 
         {fleets.length === 0 ? (
@@ -102,7 +102,7 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
                   {fleets.map((f) => (
                     <td key={f.id}>
                       {f.idle ? (
-                        <button disabled={busy} style={{ padding: "2px 8px", fontSize: 11 }} onClick={() => act(() => api.loadFleet(f.id, edits[f.id] || {}))}>salvar</button>
+                        <button disabled={busy} style={{ padding: "2px 8px", fontSize: 11 }} onClick={() => act(() => api.loadFleet(f.id, edits[f.id] || {}))}>transferir</button>
                       ) : f.canRecall ? (
                         <button disabled={busy} style={{ padding: "2px 8px", fontSize: 11 }} onClick={() => act(() => api.recallFleet(f.id))}>↩ recuar</button>
                       ) : <span className="roid-count">—</span>}
