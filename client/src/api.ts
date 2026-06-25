@@ -328,7 +328,7 @@ export const api = {
       }[];
       movements: {
         planet: string; owner: string; coords: string;
-        fleets: { name: string; mission: string; status: string; target: string; ships: number; ticks: number }[];
+        fleets: { name: string; mission: string; status: string; target: string; ships: number; ticks: number; captured: Record<Resource, number> }[];
       }[];
     }>("/game/traffic"),
 

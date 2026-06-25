@@ -74,16 +74,18 @@ export function Trafego() {
         <div key={i} style={{ marginBottom: 14 }}>
           <div className="combat-ini"><b>{m.planet}</b> <span className="roid-count">({m.coords}) · {m.owner}</span></div>
           <table>
-            <thead><tr><th>Frota</th><th>Tipo</th><th>Destino</th><th>Naves</th><th>Estado</th></tr></thead>
+            <thead><tr><th>Frota</th><th>Tipo</th><th>Destino</th><th>Naves</th><th>Espólio (M/C/P)</th><th>Estado</th></tr></thead>
             <tbody>
               {m.fleets.map((f, j) => {
                 const atk = f.mission === "attack";
+                const c = f.captured; const has = c.metalium || c.carbonum || c.plutonium;
                 return (
                   <tr key={j}>
                     <td>{f.name}</td>
                     <td style={{ color: atk ? "var(--danger)" : "var(--carbonum)" }}>{atk ? "🔴 ataque" : "🟢 defesa"}</td>
                     <td className="roid-count">{f.target}</td>
                     <td>{fmt(f.ships)}</td>
+                    <td className="roid-count" style={has ? { color: "var(--carbonum)" } : undefined}>{has ? `${fmt(c.metalium)}/${fmt(c.carbonum)}/${fmt(c.plutonium)}` : "—"}</td>
                     <td>{STATUS[f.status] ?? f.status}{f.status !== "engaged" && f.ticks > 0 ? ` · ${f.ticks}t` : ""}</td>
                   </tr>
                 );

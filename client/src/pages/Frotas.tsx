@@ -122,6 +122,15 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
                   ))}
                 </tr>
                 <tr className="fg-meta">
+                  <td>Espólio (M/C/P)</td><td>—</td>
+                  {fleets.map((f) => {
+                    const c = f.captured; const has = c.metalium || c.carbonum || c.plutonium;
+                    return <td key={f.id} className="roid-count" style={has ? { color: "var(--carbonum)" } : undefined}>
+                      {has ? `${fmt(c.metalium)}/${fmt(c.carbonum)}/${fmt(c.plutonium)} roids` : "—"}
+                    </td>;
+                  })}
+                </tr>
+                <tr className="fg-meta">
                   <td>Ações</td><td>—</td>
                   {fleets.map((f) => (
                     <td key={f.id}>

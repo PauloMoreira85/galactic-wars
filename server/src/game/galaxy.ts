@@ -344,6 +344,7 @@ export async function galaxyTraffic(planetId: string) {
       target: `${f.targetGalaxy}:${f.targetSystem}:${f.targetSlot}`,
       ships: totalUnits(parseUnits(f.units)),
       ticks: Math.max(0, f.arriveTick - nowTick),
+      captured: { metalium: f.capMetalium, carbonum: f.capCarbonum, plutonium: f.capPlutonium },
     });
   }
   const movements = [...byOwner.values()].sort((a, b) => a.coords.localeCompare(b.coords));
