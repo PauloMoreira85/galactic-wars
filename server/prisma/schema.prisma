@@ -363,6 +363,34 @@ model News {
   @@index([planetId])
 }
 
+// Anti multi-conta: IPs de onde cada conta acessou (login/registro/jogo).
+// Duas contas que compartilham um IP ficam "linkadas" e não podem interagir
+// (atacar/defender/aliar/PM) — a menos que o admin libere o par em AllowedPair.
+model AccountIp {
+  id        String   @id @default(cuid())
+  userId    String
+  ip        String
+  hits      Int      @default(1)
+  firstSeen DateTime @default(now())
+  lastSeen  DateTime @default(now())
+
+  @@unique([userId, ip])
+  @@index([ip])
+  @@index([userId])
+}
+
+// Par de contas LIBERADO manualmente pelo admin (apesar de IP em comum).
+// aId é sempre o menor id (ordenado) para o par ser único nos dois sentidos.
+model AllowedPair {
+  id        String   @id @default(cuid())
+  aId       String
+  bId       String
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@unique([aId, bId])
+}
+
 // Estado global do universo (linha unica) - controla o relogio de ticks
 model GameState {
   id         Int      @id @default(1)

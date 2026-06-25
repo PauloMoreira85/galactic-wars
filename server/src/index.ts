@@ -11,6 +11,9 @@ import { startTickEngine } from "./game/tick.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
+// Atrás do Caddy: confia no proxy para que req.ip = IP real do cliente
+// (via X-Forwarded-For). Necessário para a proteção anti multi-conta.
+app.set("trust proxy", true);
 app.use(cors());
 app.use(express.json({ limit: "256kb" }));
 

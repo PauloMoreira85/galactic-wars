@@ -5,6 +5,7 @@ import { randomBytes } from "node:crypto";
 import { prisma } from "../db.js";
 import { signToken } from "../auth.js";
 import { sendMail } from "../email.js";
+import { clientIp, recordIp } from "../game/ipguard.js";
 import { STARTING, SLOTS_PER_SYSTEM, GALAXIES } from "../game/constants.js";
 import { RACE_KEYS, publicRaces, type RaceKey } from "../game/races.js";
 import { unitsOfRace, CLASS_LABEL } from "../game/catalog.js";
@@ -92,6 +93,7 @@ authRouter.post("/register", async (req, res) => {
         },
       },
     });
+    await recordIp(user.id, clientIp(req));
     return res.json({ token: signToken(user.id), username: user.username });
   } catch (e: any) {
     console.error("[register] falha:", e?.message ?? e);
@@ -118,6 +120,7 @@ authRouter.post("/login", async (req, res) => {
     return res.status(401).json({ error: "Credenciais invalidas" });
   }
 
+  await recordIp(user.id, clientIp(req));
   return res.json({ token: signToken(user.id), username: user.username });
 });
 

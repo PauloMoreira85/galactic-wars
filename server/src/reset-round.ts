@@ -35,6 +35,9 @@ async function main() {
   await prisma.buildOrder.deleteMany();
   await prisma.planet.deleteMany();
   await prisma.user.deleteMany();
+  // Anti multi-conta: contas foram apagadas → limpa IPs e liberações.
+  await prisma.accountIp.deleteMany();
+  await prisma.allowedPair.deleteMany();
 
   // Reinicia o relógio do round.
   await prisma.gameState.upsert({

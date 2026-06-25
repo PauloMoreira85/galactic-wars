@@ -1,5 +1,6 @@
 import { prisma } from "../db.js";
 import { addNews } from "./news.js";
+import { isLinked, MULTI_BLOCK_MSG } from "./ipguard.js";
 
 // Envia uma mensagem privada para outro jogador (por username).
 export async function sendPM(fromUserId: string, fromName: string, toUsername: string, subject: string, body: string, anonymous: boolean) {
@@ -8,6 +9,8 @@ export async function sendPM(fromUserId: string, fromName: string, toUsername: s
   if (!body) throw new Error("Escreva uma mensagem");
   const target = await prisma.user.findUnique({ where: { username: toUsername }, include: { planet: true } });
   if (!target) throw new Error("Jogador nao encontrado");
+  // Anti multi-conta: não pode mandar PM pra conta do mesmo IP.
+  if (await isLinked(fromUserId, target.id)) throw new Error(MULTI_BLOCK_MSG);
   await prisma.privateMessage.create({ data: { fromUserId, fromName, toUserId: target.id, subject, body, anonymous } });
   if (target.planet) {
     const tick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;

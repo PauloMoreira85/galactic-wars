@@ -29,6 +29,7 @@ import {
   miningBonus, travelReductionTicks,
 } from "../game/tech.js";
 import { config } from "../config.js";
+import { clientIp, trackIp, isLinked, MULTI_BLOCK_MSG } from "../game/ipguard.js";
 import bcrypt from "bcryptjs";
 
 export const gameRouter = Router();
@@ -163,6 +164,7 @@ async function planetView(userId: string) {
 
 gameRouter.get("/me", async (req: AuthedRequest, res) => {
   await prisma.user.update({ where: { id: req.userId! }, data: { lastSeen: new Date() } }).catch(() => {});
+  trackIp(req.userId!, clientIp(req)); // anti multi-conta (1 escrita por IP/processo)
   const view = await planetView(req.userId!);
   if (!view) return res.status(404).json({ error: "Planeta nao encontrado" });
   res.json(view);
@@ -308,6 +310,11 @@ gameRouter.post("/fleets/:id/dispatch", async (req: AuthedRequest, res) => {
   const { galaxy, system, slot, mission, ticks } = parsed.data;
   const planet = await prisma.planet.findUnique({ where: { userId: req.userId! } });
   if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
+  // Anti multi-conta: não pode atacar/defender um planeta de conta do mesmo IP.
+  const target = await prisma.planet.findUnique({ where: { galaxy_system_slot: { galaxy, system, slot } }, select: { userId: true } });
+  if (target && target.userId !== req.userId && (await isLinked(req.userId!, target.userId))) {
+    return res.status(403).json({ error: MULTI_BLOCK_MSG });
+  }
   try { await dispatchFleet(planet.id, req.params.id, { galaxy, system, slot }, mission, ticks ?? 3); }
   catch (e: any) { return res.status(400).json({ error: e.message ?? "Falha ao enviar frota" }); }
   res.json({ ok: true });
@@ -521,14 +528,25 @@ gameRouter.post("/alliance/create", (req: AuthedRequest, res) => {
   if (!p.success) return res.status(400).json({ error: "Pedido invalido" });
   return allianceAction(req, res, (id) => createAlliance(id, p.data.name, p.data.tag));
 });
-gameRouter.post("/alliance/invite", (req: AuthedRequest, res) => {
+gameRouter.post("/alliance/invite", async (req: AuthedRequest, res) => {
   const p = z.object({ username: z.string() }).safeParse(req.body);
   if (!p.success) return res.status(400).json({ error: "Pedido invalido" });
+  // Anti multi-conta: não pode convidar uma conta do mesmo IP pra sua aliança.
+  const target = await prisma.user.findUnique({ where: { username: p.data.username }, select: { id: true } });
+  if (target && (await isLinked(req.userId!, target.id))) return res.status(403).json({ error: MULTI_BLOCK_MSG });
   return allianceAction(req, res, (id) => invitePlayer(id, p.data.username));
 });
-gameRouter.post("/alliance/accept", (req: AuthedRequest, res) => {
+gameRouter.post("/alliance/accept", async (req: AuthedRequest, res) => {
   const p = z.object({ allianceId: z.string() }).safeParse(req.body);
   if (!p.success) return res.status(400).json({ error: "Pedido invalido" });
+  // Anti multi-conta: não pode entrar numa aliança que contenha conta do mesmo IP.
+  const members = await prisma.allianceMember.findMany({ where: { allianceId: p.data.allianceId }, select: { planetId: true } });
+  if (members.length) {
+    const owners = await prisma.planet.findMany({ where: { id: { in: members.map((m) => m.planetId) } }, select: { userId: true } });
+    for (const o of owners) {
+      if (await isLinked(req.userId!, o.userId)) return res.status(403).json({ error: MULTI_BLOCK_MSG });
+    }
+  }
   return allianceAction(req, res, (id) => acceptInvite(id, p.data.allianceId));
 });
 gameRouter.post("/alliance/leave", (req: AuthedRequest, res) => allianceAction(req, res, (id) => leaveAlliance(id)));
