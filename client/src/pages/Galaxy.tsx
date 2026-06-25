@@ -71,7 +71,7 @@ export function Galaxy({ view, onChanged }: { view: PlanetView; onChanged: () =>
     setBusy(true);
     setError("");
     try {
-      await api.dispatchFleet(fleetId, { galaxy, system, slot: target.slot, mission, ticks: mission === "attack" ? atkTicks : undefined });
+      await api.dispatchFleet(fleetId, { galaxy, system, slot: target.slot, mission, ticks: atkTicks });
       setTarget(null);
       await loadFleets();
       onChanged();
@@ -231,17 +231,13 @@ export function Galaxy({ view, onChanged }: { view: PlanetView; onChanged: () =>
               {!sameGalaxy && <option value="attack">Atacar</option>}
               <option value="transport">Transportar (defesa)</option>
             </select>
-            {mission === "attack" && (
-              <>
-                {" "}· atacar por{" "}
-                <select value={atkTicks} onChange={(e) => setAtkTicks(Number(e.target.value))}
-                  style={{ background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "2px 6px" }}>
-                  <option value={1}>1 tick</option>
-                  <option value={2}>2 ticks</option>
-                  <option value={3}>3 ticks</option>
-                </select>
-              </>
-            )}
+            {" "}· {mission === "attack" ? "atacar" : "reforçar"} por{" "}
+            <select value={atkTicks} onChange={(e) => setAtkTicks(Number(e.target.value))}
+              style={{ background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "2px 6px" }}>
+              <option value={1}>1 tick</option>
+              <option value={2}>2 ticks</option>
+              <option value={3}>3 ticks</option>
+            </select>
           </div>
           {sameGalaxy && (
             <div className="cost" style={{ color: "var(--carbonum)" }}>

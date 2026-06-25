@@ -188,7 +188,7 @@ async function scheduleReturn(fleetId: string, fleet: { ownerPlanetId: string; a
 
 export async function processFleets(uptoTick: number) {
   const active = await prisma.fleet.findMany({
-    where: { status: { in: ["outbound", "engaged", "returning"] }, OR: [{ arriveTick: { lte: uptoTick } }, { status: "engaged" }] },
+    where: { status: { in: ["outbound", "engaged", "returning", "garrison"] }, OR: [{ arriveTick: { lte: uptoTick } }, { status: "engaged" }] },
   });
   if (active.length === 0) return;
 
@@ -198,6 +198,11 @@ export async function processFleets(uptoTick: number) {
       continue;
     }
     if (fleet.status === "engaged") { await advanceEngagement(fleet.id, uptoTick); continue; }
+    if (fleet.status === "garrison") {
+      // Guarnição: fica estacionada até arriveTick (= fim do reforço), aí volta.
+      if (fleet.arriveTick <= uptoTick) await scheduleReturn(fleet.id, fleet, parseUnits(fleet.units));
+      continue;
+    }
     if (fleet.arriveTick > uptoTick) continue;
 
     const targetPlanet = await prisma.planet.findUnique({
@@ -206,6 +211,11 @@ export async function processFleets(uptoTick: number) {
     if (fleet.mission === "attack" && targetPlanet) {
       await startEngagement(fleet.id, targetPlanet.id, fleet.arriveTick);
       await advanceEngagement(fleet.id, uptoTick);
+      continue;
+    }
+    // Transporte/defesa: estaciona como GUARNIÇÃO por engageTicks; volta depois.
+    if (targetPlanet) {
+      await prisma.fleet.update({ where: { id: fleet.id }, data: { status: "garrison", arriveTick: fleet.arriveTick + Math.max(1, fleet.engageTicks ?? 1) } });
       continue;
     }
     await scheduleReturn(fleet.id, fleet, parseUnits(fleet.units));

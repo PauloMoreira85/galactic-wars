@@ -45,7 +45,32 @@ interface BattleState {
   aLost: UnitMap; dLost: UnitMap;     // destruídas
   aPem: UnitMap; dPem: UnitMap;       // paralisadas (sobrevivem)
   rate: number;
+  // Quem compõe a defesa: "base" (planeta + frotas idle do dono) + cada frota de
+  // GUARNIÇÃO (reforço de aliado). Usado pra devolver sobreviventes a cada um.
+  defContributors?: { id: string; units: UnitMap }[];
   log?: LogEvent[];                   // log da ÚLTIMA rodada
+}
+
+// Distribui os sobreviventes (por tipo) entre os contribuintes, proporcional à
+// composição inicial de cada um (sobra vai pros maiores fracionários).
+function distributeUnits(survivors: UnitMap, contributors: { id: string; units: UnitMap }[]): Record<string, UnitMap> {
+  const out: Record<string, UnitMap> = {};
+  for (const c of contributors) out[c.id] = {};
+  for (const type of Object.keys(survivors)) {
+    const totalInit = contributors.reduce((a, c) => a + (c.units[type] || 0), 0);
+    if (totalInit <= 0) continue;
+    const surv = survivors[type];
+    const parts = contributors.map((c) => {
+      const init = c.units[type] || 0; const exact = (surv * init) / totalInit;
+      return { id: c.id, floor: Math.floor(exact), frac: exact - Math.floor(exact), init };
+    });
+    let assigned = 0;
+    for (const p of parts) { out[p.id][type] = p.floor; assigned += p.floor; }
+    let left = surv - assigned;
+    parts.sort((a, b) => b.frac - a.frac);
+    for (let i = 0; i < parts.length && left > 0; i++) { if (parts[i].init > 0) { out[parts[i].id][type]++; left--; } }
+  }
+  return out;
 }
 
 // Uma unidade dispara contra o lado inimigo (alvos por classe; aplica já as baixas).
@@ -108,23 +133,31 @@ export async function startEngagement(fleetId: string, defenderPlanetId: string,
   if (!fleet || !def) return;
 
   const atkInit = parseUnits(fleet.units);
-  // Defesa = naves na BASE + naves das frotas PARADAS (idle) no planeta.
-  // As frotas paradas são esvaziadas (entram na defesa); sobreviventes voltam pra base.
+  // Defesa = "base" (planeta + frotas PARADAS do dono, que são esvaziadas e cujos
+  // sobreviventes voltam pra base) + cada frota de GUARNIÇÃO (reforço de aliado),
+  // que é um contribuinte separado e recebe seus sobreviventes de volta.
+  let homeUnits = parseUnits(def.units);
   const idleFleets = await prisma.fleet.findMany({ where: { ownerPlanetId: defenderPlanetId, status: "idle" } });
-  let defInit = parseUnits(def.units);
   for (const f of idleFleets) {
     const u = parseUnits(f.units);
     if (totalUnits(u) > 0) {
-      defInit = addUnits(defInit, u);
+      homeUnits = addUnits(homeUnits, u);
       await prisma.fleet.update({ where: { id: f.id }, data: { units: "{}" } });
     }
   }
+  const garrison = await prisma.fleet.findMany({ where: { status: "garrison", targetGalaxy: def.galaxy, targetSystem: def.system, targetSlot: def.slot } });
+  const defContributors = [
+    { id: "base", units: homeUnits },
+    ...garrison.filter((g) => totalUnits(parseUnits(g.units)) > 0).map((g) => ({ id: g.id, units: parseUnits(g.units) })),
+  ];
+  let defInit: UnitMap = {};
+  for (const c of defContributors) defInit = addUnits(defInit, c.units);
   const ratio = fleetScore(atkInit) / Math.max(1, fleetScore(defInit));
   const rate = Math.max(CAP_MIN, Math.min(CAP_MAX, CAP_MAX - CAP_MIN * (ratio - 1)));
 
   const st: BattleState = {
     atkInit, defInit, aActive: { ...atkInit }, dActive: { ...defInit },
-    aLost: {}, dLost: {}, aPem: {}, dPem: {}, rate,
+    aLost: {}, dLost: {}, aPem: {}, dPem: {}, rate, defContributors,
   };
   await prisma.fleet.update({
     where: { id: fleetId },
@@ -196,12 +229,17 @@ export async function advanceEngagement(fleetId: string, tick: number) {
     }
   }
 
-  // Persiste: defensor (sobreviventes = ativos + paralisados), roids, estado, espólio.
+  // Persiste: distribui os sobreviventes entre base e guarnições; roids; estado; espólio.
   const defSurv = survivors(st.dActive, st.dPem);
+  const contributors = st.defContributors ?? [{ id: "base", units: st.defInit }];
+  const dist = distributeUnits(defSurv, contributors);
   await prisma.planet.update({
     where: { id: def.id },
-    data: { units: stringifyUnits(defSurv), roidMetalium: roids.metalium, roidCarbonum: roids.carbonum, roidPlutonium: roids.plutonium },
+    data: { units: stringifyUnits(dist["base"] ?? {}), roidMetalium: roids.metalium, roidCarbonum: roids.carbonum, roidPlutonium: roids.plutonium },
   });
+  for (const c of contributors) {
+    if (c.id !== "base") await prisma.fleet.update({ where: { id: c.id }, data: { units: stringifyUnits(dist[c.id] ?? {}) } });
+  }
   await prisma.fleet.update({
     where: { id: fleetId },
     data: { battleTicksDone: done, battleState: JSON.stringify(st), capMetalium: cap.metalium, capCarbonum: cap.carbonum, capPlutonium: cap.plutonium },
