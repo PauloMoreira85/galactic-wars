@@ -102,6 +102,17 @@ export function Galaxy({ view, onChanged }: { view: PlanetView; onChanged: () =>
   }
   const agentsIHave = data?.agents ?? { P: false, M: false, T: false, D: false };
 
+  // Alcance de ataque: 🟢 pode atacar / 🔴 não pode (mesma galáxia, proteção ou fora de range).
+  const myScore = view.planet.score;
+  function attackRange(sl: any): { ok: boolean; why: string } | null {
+    if (`${galaxy}:${system}:${sl.slot}` === myCoords) return null; // é você
+    if (sameGalaxy) return { ok: false, why: "Mesma galáxia (aliado) — só transporte" };
+    if (sl.protected) return { ok: false, why: "Sob proteção de novato" };
+    if ((view.game?.tickNumber ?? 0) < 72) return { ok: false, why: "Proteção inicial do jogo (tick < 72)" };
+    if (myScore > 0 && (sl.score ?? 0) < (myScore * 50) / 100) return { ok: false, why: "Fora de alcance (alvo < 50% da sua pontuação)" };
+    return { ok: true, why: "No alcance — você pode atacar" };
+  }
+
   return (
     <>
       <div className="panel">
@@ -136,13 +147,13 @@ export function Galaxy({ view, onChanged }: { view: PlanetView; onChanged: () =>
 
         <table>
           <thead>
-            <tr><th>Slot</th><th>St</th><th>Ativ</th><th>Líder</th><th>Planeta</th><th>Roids</th><th>Pontuação</th><th>Rank</th><th>Agentes</th><th></th></tr>
+            <tr><th>Slot</th><th>St</th><th>Ativ</th><th>Líder</th><th>Planeta</th><th>Roids</th><th>Pontuação</th><th>Rank</th><th title="🟢 pode atacar · 🔴 não pode">Alcance</th><th>Agentes</th><th></th></tr>
           </thead>
           <tbody>
             {data?.slots.map((sl) => {
               const isSelf = `${galaxy}:${system}:${sl.slot}` === myCoords;
               if (!sl.occupied) return (
-                <tr key={sl.slot} style={{ opacity: 0.35 }}><td className="rank-num">{sl.slot}</td><td colSpan={9} className="roid-count">— vazio —</td></tr>
+                <tr key={sl.slot} style={{ opacity: 0.35 }}><td className="rank-num">{sl.slot}</td><td colSpan={10} className="roid-count">— vazio —</td></tr>
               );
               return (
                 <tr key={sl.slot} style={isSelf ? { background: "rgba(79,124,255,0.12)" } : undefined}>
@@ -160,6 +171,7 @@ export function Galaxy({ view, onChanged }: { view: PlanetView; onChanged: () =>
                   <td>{fmt(sl.roids ?? 0)}</td>
                   <td>{fmt(sl.score ?? 0)}</td>
                   <td className="roid-count">{sl.rank}º</td>
+                  <td>{(() => { const r = attackRange(sl); return r == null ? <span className="roid-count">—</span> : <span title={r.why}>{r.ok ? "🟢" : "🔴"}</span>; })()}</td>
                   <td>
                     {isSelf ? <span className="roid-count">—</span> : (["P","M","T","D"] as const).map((a) => (
                       <button key={a} disabled={!agentsIHave[a]} title={agentsIHave[a] ? `Espionar com agente ${a}` : `Sem agente ${a}`}
