@@ -125,8 +125,9 @@ export async function startEngagement(fleetId: string, defenderPlanetId: string,
 export async function advanceEngagement(fleetId: string, tick: number) {
   const fleet = await prisma.fleet.findUnique({ where: { id: fleetId } });
   if (!fleet || fleet.status !== "engaged" || !fleet.battleState || fleet.battleStartTick == null) return;
-  const def = await prisma.planet.findUnique({ where: { galaxy_system_slot: { galaxy: fleet.targetGalaxy, system: fleet.targetSystem, slot: fleet.targetSlot } } });
+  const def = await prisma.planet.findUnique({ where: { galaxy_system_slot: { galaxy: fleet.targetGalaxy, system: fleet.targetSystem, slot: fleet.targetSlot } }, include: { user: { select: { race: true } } } });
   if (!def) { await finalize(fleetId, tick); return; }
+  const atkP = await prisma.planet.findUnique({ where: { id: fleet.ownerPlanetId }, include: { user: { select: { race: true } } } });
 
   const st: BattleState = JSON.parse(fleet.battleState);
   const targetDone = Math.min(BATTLE_TICKS, tick - fleet.battleStartTick + 1);
@@ -134,7 +135,23 @@ export async function advanceEngagement(fleetId: string, tick: number) {
   const cap = { metalium: fleet.capMetalium, carbonum: fleet.capCarbonum, plutonium: fleet.capPlutonium };
   let roids = { metalium: def.roidMetalium, carbonum: def.roidCarbonum, plutonium: def.roidPlutonium };
 
+  const initKeys = Array.from(new Set([...Object.keys(st.atkInit), ...Object.keys(st.defInit)]));
+  // Linhas da RODADA: o que entrou (ativas no começo do tick), destruídas e paralisadas NESTE tick.
+  const roundRows = (activeB: UnitMap, lostB: UnitMap, lostA: UnitMap, pemB: UnitMap, pemA: UnitMap) =>
+    initKeys.map((n) => {
+      const before = activeB[n] || 0;
+      const lost = (lostA[n] || 0) - (lostB[n] || 0);
+      const pem = (pemA[n] || 0) - (pemB[n] || 0);
+      return { name: n, before, lost, pem, survivors: Math.max(0, before - lost - pem) };
+    }).filter((r) => r.before > 0 || r.lost > 0 || r.pem > 0);
+
   while (done < targetDone) {
+    // Snapshot antes da rodada (pra calcular o delta deste tick).
+    const aActiveB = { ...st.aActive }, dActiveB = { ...st.dActive };
+    const aLostB = { ...st.aLost }, dLostB = { ...st.dLost };
+    const aPemB = { ...st.aPem }, dPemB = { ...st.dPem };
+    const roundCap = { metalium: 0, carbonum: 0, plutonium: 0 };
+
     oneRound(st);
     // Captura do tick: roiders ativos do atacante, limitada pela capacidade e pelo cap%.
     const capacity = raidCapacity(st.aActive);
@@ -142,9 +159,29 @@ export async function advanceEngagement(fleetId: string, tick: number) {
     for (const r of ["metalium", "carbonum", "plutonium"] as const) {
       if (room <= 0) break;
       const take = Math.min(room, Math.floor(roids[r] * st.rate));
-      if (take > 0) { roids[r] -= take; cap[r] += take; room -= take; }
+      if (take > 0) { roids[r] -= take; cap[r] += take; room -= take; roundCap[r] += take; }
     }
     done++;
+
+    // 1 relatório de combate POR TICK (este tick).
+    if (atkP) {
+      const report = JSON.stringify({
+        attackerRace: raceTable(raceOf(atkP.user.race)), defenderRace: raceTable(raceOf(def.user.race)),
+        attacker: roundRows(aActiveB, aLostB, st.aLost, aPemB, st.aPem),
+        defender: roundRows(dActiveB, dLostB, st.dLost, dPemB, st.dPem),
+        captured: roundCap, round: done, ticks: 1, log: st.log ?? [],
+      });
+      await prisma.battleReport.create({ data: {
+        tick: fleet.battleStartTick + done - 1,
+        attackerPlanetId: atkP.id, defenderPlanetId: def.id,
+        attackerName: atkP.name, defenderName: def.name,
+        attackerCoords: `${atkP.galaxy}:${atkP.system}:${atkP.slot}`,
+        defenderCoords: `${def.galaxy}:${def.system}:${def.slot}`,
+        winner: "engaged",
+        capturedMetalium: roundCap.metalium, capturedCarbonum: roundCap.carbonum, capturedPlutonium: roundCap.plutonium,
+        report,
+      }});
+    }
   }
 
   // Persiste: defensor (sobreviventes = ativos + paralisados), roids, estado, espólio.
@@ -186,26 +223,8 @@ export async function finalize(fleetId: string, tick: number) {
         await prisma.planet.update({ where: { id: def.id }, data: { units: stringifyUnits(addUnits(cur, inc)) } });
       }
     }
-    // Relatório
-    const rowsOf = (init: UnitMap, lost: UnitMap, pem: UnitMap) =>
-      Object.keys(init).map((n) => ({ name: n, before: init[n], lost: lost[n] || 0, pem: pem[n] || 0, survivors: init[n] - (lost[n] || 0) }));
-    const report = JSON.stringify({
-      attackerRace: raceTable(atkRace), defenderRace: raceTable(raceOf(def.user.race)),
-      attacker: rowsOf(st.atkInit, st.aLost, st.aPem),
-      defender: rowsOf(st.defInit, st.dLost, st.dPem),
-      captured: { metalium: fleet.capMetalium, carbonum: fleet.capCarbonum, plutonium: fleet.capPlutonium },
-      ticks: fleet.battleTicksDone,
-      log: st.log ?? [],
-    });
-    await prisma.battleReport.create({ data: {
-      tick, attackerPlanetId: atkP.id, defenderPlanetId: def.id,
-      attackerName: atkP.name, defenderName: def.name,
-      attackerCoords: `${atkP.galaxy}:${atkP.system}:${atkP.slot}`,
-      defenderCoords: `${def.galaxy}:${def.system}:${def.slot}`,
-      winner: "engaged",
-      capturedMetalium: fleet.capMetalium, capturedCarbonum: fleet.capCarbonum, capturedPlutonium: fleet.capPlutonium,
-      report,
-    }});
+    // Os relatórios de combate são gerados POR TICK em advanceEngagement.
+    // Aqui só fechamos: assimilação (acima), resumo nas notícias e retorno da frota.
     const aLost = totalUnits(st.aLost), dLost = totalUnits(st.dLost);
     const cap = fleet.capMetalium + fleet.capCarbonum + fleet.capPlutonium;
     const defCoords = `${def.galaxy}:${def.system}:${def.slot}`;
