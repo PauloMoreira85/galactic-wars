@@ -282,14 +282,15 @@ gameRouter.post("/fleets/:id/rename", async (req: AuthedRequest, res) => {
 const dispatchSchema = z.object({
   galaxy: z.number().int().min(1), system: z.number().int().min(1), slot: z.number().int().min(1),
   mission: z.enum(["attack", "transport"]),
+  ticks: z.number().int().min(1).max(3).optional(),
 });
 gameRouter.post("/fleets/:id/dispatch", async (req: AuthedRequest, res) => {
   const parsed = dispatchSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Pedido invalido" });
-  const { galaxy, system, slot, mission } = parsed.data;
+  const { galaxy, system, slot, mission, ticks } = parsed.data;
   const planet = await prisma.planet.findUnique({ where: { userId: req.userId! } });
   if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
-  try { await dispatchFleet(planet.id, req.params.id, { galaxy, system, slot }, mission); }
+  try { await dispatchFleet(planet.id, req.params.id, { galaxy, system, slot }, mission, ticks ?? 3); }
   catch (e: any) { return res.status(400).json({ error: e.message ?? "Falha ao enviar frota" }); }
   res.json({ ok: true });
 });

@@ -108,7 +108,17 @@ export async function startEngagement(fleetId: string, defenderPlanetId: string,
   if (!fleet || !def) return;
 
   const atkInit = parseUnits(fleet.units);
-  const defInit = parseUnits(def.units);
+  // Defesa = naves na BASE + naves das frotas PARADAS (idle) no planeta.
+  // As frotas paradas são esvaziadas (entram na defesa); sobreviventes voltam pra base.
+  const idleFleets = await prisma.fleet.findMany({ where: { ownerPlanetId: defenderPlanetId, status: "idle" } });
+  let defInit = parseUnits(def.units);
+  for (const f of idleFleets) {
+    const u = parseUnits(f.units);
+    if (totalUnits(u) > 0) {
+      defInit = addUnits(defInit, u);
+      await prisma.fleet.update({ where: { id: f.id }, data: { units: "{}" } });
+    }
+  }
   const ratio = fleetScore(atkInit) / Math.max(1, fleetScore(defInit));
   const rate = Math.max(CAP_MIN, Math.min(CAP_MAX, CAP_MAX - CAP_MIN * (ratio - 1)));
 
@@ -130,7 +140,9 @@ export async function advanceEngagement(fleetId: string, tick: number) {
   const atkP = await prisma.planet.findUnique({ where: { id: fleet.ownerPlanetId }, include: { user: { select: { race: true } } } });
 
   const st: BattleState = JSON.parse(fleet.battleState);
-  const targetDone = Math.min(BATTLE_TICKS, tick - fleet.battleStartTick + 1);
+  // Duração escolhida no envio (1-3 ticks), limitada ao máximo do jogo.
+  const maxT = Math.max(1, Math.min(BATTLE_TICKS, fleet.engageTicks ?? BATTLE_TICKS));
+  const targetDone = Math.min(maxT, tick - fleet.battleStartTick + 1);
   let done = fleet.battleTicksDone;
   const cap = { metalium: fleet.capMetalium, carbonum: fleet.capCarbonum, plutonium: fleet.capPlutonium };
   let roids = { metalium: def.roidMetalium, carbonum: def.roidCarbonum, plutonium: def.roidPlutonium };
@@ -194,7 +206,7 @@ export async function advanceEngagement(fleetId: string, tick: number) {
     where: { id: fleetId },
     data: { battleTicksDone: done, battleState: JSON.stringify(st), capMetalium: cap.metalium, capCarbonum: cap.carbonum, capPlutonium: cap.plutonium },
   });
-  if (done >= BATTLE_TICKS) await finalize(fleetId, tick);
+  if (done >= maxT) await finalize(fleetId, tick);
 }
 
 export async function finalize(fleetId: string, tick: number) {

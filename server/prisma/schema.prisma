@@ -129,6 +129,9 @@ model Fleet {
   departTick Int
   arriveTick Int
 
+  // Quantos ticks a frota fica engajada (ataque): 1, 2 ou 3 (escolhido no envio).
+  engageTicks Int @default(3)
+
   createdAt DateTime @default(now())
 
   @@index([arriveTick])

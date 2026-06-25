@@ -16,6 +16,24 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
   const [edits, setEdits] = useState<Record<string, Record<string, number>>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // Envio direto daqui: coordenadas + ação + ticks + frota.
+  const [dGalaxy, setDGalaxy] = useState(Number(view.planet.coords.split(":")[0]) || 1);
+  const [dSystem, setDSystem] = useState(1);
+  const [dSlot, setDSlot] = useState(1);
+  const [dMission, setDMission] = useState<"attack" | "transport">("attack");
+  const [dTicks, setDTicks] = useState(3);
+  const [dFleet, setDFleet] = useState("");
+
+  async function dispatch() {
+    if (!dFleet) { setError("Escolha uma frota carregada."); return; }
+    setBusy(true); setError("");
+    try {
+      await api.dispatchFleet(dFleet, { galaxy: dGalaxy, system: dSystem, slot: dSlot, mission: dMission, ticks: dMission === "attack" ? dTicks : undefined });
+      setDFleet("");
+      await load(); onChanged();
+    } catch (e: any) { setError(e.message ?? "Falha ao enviar"); }
+    finally { setBusy(false); }
+  }
 
   async function load() {
     try {
@@ -49,7 +67,7 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
       <div className="panel">
         <h2>Frotas sob o seu comando</h2>
         <div className="cost" style={{ marginBottom: 10 }}>
-          {view.planet.fleetSlots}/5 frotas criadas. Mova naves da <b>Base</b> para cada frota (só com a frota na base) e clique <b>transferir</b>. O envio é na aba <b>Galáxia</b> (mire o alvo e escolha a frota).
+          {view.planet.fleetSlots}/5 frotas criadas. Mova naves da <b>Base</b> para cada frota (só com a frota na base) e clique <b>transferir</b>. Depois envie pelo painel <b>Enviar frota</b> abaixo (ou pela aba <b>Galáxia</b>).
         </div>
 
         {fleets.length === 0 ? (
@@ -114,6 +132,42 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
           </div>
         )}
         {error && <div className="error" style={{ marginTop: 10 }}>{error}</div>}
+      </div>
+
+      <div className="panel">
+        <h2>🚀 Enviar frota</h2>
+        <div className="cost" style={{ marginBottom: 10 }}>
+          Digite as coordenadas do alvo, escolha a ação e a frota (carregada e na base).
+          Mesma galáxia = só transporte (defesa); outra galáxia = atacar.
+        </div>
+        {fleets.filter((f) => f.idle && f.totalShips > 0).length === 0 ? (
+          <div className="roid-count">Nenhuma frota carregada na base. Transfira naves pra uma frota acima.</div>
+        ) : (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <span className="roid-count">Coords:</span>
+            <input type="number" min={1} title="Galáxia" value={dGalaxy} onChange={(e) => setDGalaxy(Math.max(1, Number(e.target.value)))} style={{ width: 60, margin: 0, padding: "6px 6px", textAlign: "center" }} />
+            <span>:</span>
+            <input type="number" min={1} title="Sistema" value={dSystem} onChange={(e) => setDSystem(Math.max(1, Number(e.target.value)))} style={{ width: 60, margin: 0, padding: "6px 6px", textAlign: "center" }} />
+            <span>:</span>
+            <input type="number" min={1} title="Slot" value={dSlot} onChange={(e) => setDSlot(Math.max(1, Number(e.target.value)))} style={{ width: 60, margin: 0, padding: "6px 6px", textAlign: "center" }} />
+            <select value={dMission} onChange={(e) => setDMission(e.target.value as any)} style={{ background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
+              <option value="attack">Atacar</option>
+              <option value="transport">Transportar (defesa)</option>
+            </select>
+            {dMission === "attack" && (
+              <select value={dTicks} onChange={(e) => setDTicks(Number(e.target.value))} title="Ticks de combate" style={{ background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
+                <option value={1}>1 tick</option>
+                <option value={2}>2 ticks</option>
+                <option value={3}>3 ticks</option>
+              </select>
+            )}
+            <select value={dFleet} onChange={(e) => setDFleet(e.target.value)} style={{ background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
+              <option value="">escolha a frota...</option>
+              {fleets.filter((f) => f.idle && f.totalShips > 0).map((f) => <option key={f.id} value={f.id}>{f.name} ({fmt(f.totalShips)} naves)</option>)}
+            </select>
+            <button disabled={busy || !dFleet} onClick={dispatch}>{busy ? "..." : "🚀 enviar"}</button>
+          </div>
+        )}
       </div>
 
       <div className="panel">
