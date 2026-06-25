@@ -82,15 +82,6 @@ export function Galaxy({ view, onChanged }: { view: PlanetView; onChanged: () =>
   }
 
 
-  async function recall(id: string) {
-    try {
-      await api.recallFleet(id);
-      await loadFleets();
-    } catch (e: any) {
-      setError(e.message ?? "Falha ao recuar");
-    }
-  }
-
   async function doSpy(slot: number, agent: "P" | "M" | "T" | "D") {
     setError(""); setSpy(null);
     try {
@@ -101,9 +92,6 @@ export function Galaxy({ view, onChanged }: { view: PlanetView; onChanged: () =>
   }
 
   const myCoords = view.planet.coords;
-  const statusLabel: Record<string, string> = {
-    outbound: "→ indo", engaged: "⚔️ em combate", returning: "↩ voltando",
-  };
   function idle(ms?: number) {
     if (ms == null) return "";
     const m = Math.floor(ms / 60000);
@@ -119,7 +107,6 @@ export function Galaxy({ view, onChanged }: { view: PlanetView; onChanged: () =>
         {/* Cabeçalho da galáxia */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 10 }}>
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            {data?.flag && <img src={data.flag} alt="bandeira" style={{ height: 40, borderRadius: 4, border: "1px solid var(--border)" }} />}
             <div>
             <h2 style={{ marginBottom: 2 }}>{data?.name ? data.name : `Galáxia ${galaxy}`}</h2>
             <div className="roid-count">
@@ -186,6 +173,13 @@ export function Galaxy({ view, onChanged }: { view: PlanetView; onChanged: () =>
           </tbody>
         </table>
       </div>
+
+      {data?.flag && (
+        <div className="panel" style={{ textAlign: "center" }}>
+          <h2>Bandeira da Galáxia</h2>
+          <img src={data.flag} alt="Bandeira da Galáxia" style={{ maxWidth: "100%", maxHeight: 260, borderRadius: 8, border: "1px solid var(--border)", marginTop: 8 }} />
+        </div>
+      )}
 
       {spy && (
         <div className="panel">
@@ -263,43 +257,6 @@ export function Galaxy({ view, onChanged }: { view: PlanetView; onChanged: () =>
         </div>
       )}
 
-      {sameGalaxy && (
-      <div className="panel">
-        <h2>Tráfego atual — suas frotas</h2>
-        {fleets.length === 0 ? (
-          <div className="roid-count">Nenhuma frota em trânsito.</div>
-        ) : (
-          <table>
-            <thead>
-              <tr><th>Missão</th><th>Estado</th><th>Destino</th><th>Naves</th><th>Espólio (M/C/P)</th><th>Tempo</th><th></th></tr>
-            </thead>
-            <tbody>
-              {fleets.map((f) => (
-                <tr key={f.id}>
-                  <td>{f.mission === "attack" ? "⚔️ Atacar" : "📦 Transportar"}</td>
-                  <td>{statusLabel[f.status] ?? f.status}</td>
-                  <td>{f.target}</td>
-                  <td>{fmt(f.totalShips)}</td>
-                  <td className="roid-count">
-                    {fmt(f.captured.metalium)}/{fmt(f.captured.carbonum)}/{fmt(f.captured.plutonium)}
-                  </td>
-                  <td>
-                    {f.status === "engaged"
-                      ? `${f.ticksRemaining} tick(s) de batalha`
-                      : `${f.ticksRemaining} tick(s)`}
-                  </td>
-                  <td>
-                    {f.canRecall && (
-                      <button onClick={() => recall(f.id)} title="Recuar a frota agora">↩ recuar</button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-      )}
     </>
   );
 }
