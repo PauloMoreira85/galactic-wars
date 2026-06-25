@@ -108,12 +108,12 @@ export function Combats() {
                 {d.log!.filter((e) => e.ini === ini).map((e, i) => {
                   const who = e.side === "a" ? "Atacante" : "Defensor";
                   const verbo = e.action === "pem" ? "paralisando" : e.action === "assim" ? "assimilando" : "destruindo";
-                  const arma = e.action === "pem" ? "neutralizadores" : "armas";
                   const chanceLabel = e.action === "pem" ? "Chance de vencer a resistência ao PEM" : "Chance média de atingir";
+                  const tirosPorNave = e.count > 0 ? Math.round(e.shots / e.count) : 0;
                   return (
                     <div key={i} className="combat-line">
                       <span style={{ color: e.side === "a" ? "var(--danger)" : "var(--carbonum)" }}>{who}:</span>{" "}
-                      {fmt(e.count)} {e.ship}, atirando em {e.target} com {fmt(e.shots)} {arma}, {verbo} {fmt(e.amount)} naves
+                      {fmt(e.count)} {e.ship} atirando {fmt(e.shots)} vez(es) ({fmt(e.count)} naves × {tirosPorNave} tiros) em {e.target}, {verbo} {fmt(e.amount)} naves
                       <span className="roid-count"> ({chanceLabel} — {e.chance}%)</span>
                     </div>
                   );
