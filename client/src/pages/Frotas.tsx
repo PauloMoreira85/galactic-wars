@@ -67,7 +67,7 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
       <div className="panel">
         <h2>Frotas sob o seu comando</h2>
         <div className="cost" style={{ marginBottom: 10 }}>
-          {view.planet.fleetSlots}/5 frotas criadas. Mova naves da <b>Base</b> para cada frota (só com a frota na base) e clique <b>transferir</b>. Depois envie pelo painel <b>Enviar frota</b> abaixo (ou pela aba <b>Galáxia</b>).
+          {view.planet.fleetSlots}/5 frotas criadas. Ajuste a quantidade (ou use <b>«</b> = tudo pra Base / <b>»</b> = tudo pra frota) e clique <b>transferir</b>. Depois envie pelo painel <b>Enviar frota</b> abaixo (ou pela aba <b>Galáxia</b>).
         </div>
 
         {fleets.length === 0 ? (
@@ -90,11 +90,17 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
                     {fleets.map((f) => (
                       <td key={f.id} className={!f.idle && !(f.units[name]) ? "fg-zero" : ""}>
                         {f.idle ? (
-                          <input
-                            type="number" min={0} value={edits[f.id]?.[name] ?? 0}
-                            onChange={(e) => setEdits({ ...edits, [f.id]: { ...edits[f.id], [name]: Math.max(0, Number(e.target.value)) } })}
-                            style={{ width: 70, margin: 0, padding: "3px 5px", textAlign: "center" }}
-                          />
+                          <div style={{ display: "flex", gap: 3, alignItems: "center", justifyContent: "center" }}>
+                            <button title="tudo desta nave → Base" disabled={busy} onClick={() => setEdits({ ...edits, [f.id]: { ...edits[f.id], [name]: 0 } })}
+                              style={{ padding: "2px 5px", margin: 0, fontSize: 12, lineHeight: 1 }}>«</button>
+                            <input
+                              type="number" min={0} value={edits[f.id]?.[name] ?? 0}
+                              onChange={(e) => setEdits({ ...edits, [f.id]: { ...edits[f.id], [name]: Math.max(0, Number(e.target.value)) } })}
+                              style={{ width: 54, margin: 0, padding: "3px 4px", textAlign: "center" }}
+                            />
+                            <button title="tudo desta nave (Base + frota) → esta frota" disabled={busy} onClick={() => setEdits({ ...edits, [f.id]: { ...edits[f.id], [name]: baseOf(name) + (f.units[name] ?? 0) } })}
+                              style={{ padding: "2px 5px", margin: 0, fontSize: 12, lineHeight: 1 }}>»</button>
+                          </div>
                         ) : (f.units[name] ? fmt(f.units[name]) : "·")}
                       </td>
                     ))}
