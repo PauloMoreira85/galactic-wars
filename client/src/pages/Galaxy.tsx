@@ -220,20 +220,21 @@ export function Galaxy({ view, onChanged }: { view: PlanetView; onChanged: () =>
       {target && (
         <div className="panel">
           <h2>Enviar frota → {galaxy}:{system}:{target.slot} ({target.name})</h2>
-          <div className="cost">
-            Distância: <span>+{penalty ?? "?"} tick(s)</span> · missão:{" "}
+          <div className="cost" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span>Distância: <b>+{penalty ?? "?"}</b> tick(s)</span>
+            <span>· missão:</span>
             <select
               value={mission}
               onChange={(e) => setMission(e.target.value as any)}
               disabled={sameGalaxy}
-              style={{ background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "2px 6px" }}
+              style={{ width: "auto", margin: 0, background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px" }}
             >
               {!sameGalaxy && <option value="attack">Atacar</option>}
               <option value="transport">Transportar (defesa)</option>
             </select>
-            {" "}· {mission === "attack" ? "atacar" : "reforçar"} por{" "}
+            <span>· {mission === "attack" ? "atacar" : "reforçar"} por:</span>
             <select value={atkTicks} onChange={(e) => setAtkTicks(Number(e.target.value))}
-              style={{ background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "2px 6px" }}>
+              style={{ width: "auto", margin: 0, background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px" }}>
               <option value={1}>1 tick</option>
               <option value={2}>2 ticks</option>
               <option value={3}>3 ticks</option>

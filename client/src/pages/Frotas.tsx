@@ -150,16 +150,16 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
             <input type="number" min={1} title="Sistema" value={dSystem} onChange={(e) => setDSystem(Math.max(1, Number(e.target.value)))} style={{ width: 60, margin: 0, padding: "6px 6px", textAlign: "center" }} />
             <span>:</span>
             <input type="number" min={1} title="Slot" value={dSlot} onChange={(e) => setDSlot(Math.max(1, Number(e.target.value)))} style={{ width: 60, margin: 0, padding: "6px 6px", textAlign: "center" }} />
-            <select value={dMission} onChange={(e) => setDMission(e.target.value as any)} style={{ background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
+            <select value={dMission} onChange={(e) => setDMission(e.target.value as any)} style={{ width: "auto", margin: 0, background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
               <option value="attack">Atacar</option>
               <option value="transport">Transportar (defesa)</option>
             </select>
-            <select value={dTicks} onChange={(e) => setDTicks(Number(e.target.value))} title={dMission === "attack" ? "ticks de combate" : "ticks de reforço"} style={{ background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
+            <select value={dTicks} onChange={(e) => setDTicks(Number(e.target.value))} title={dMission === "attack" ? "ticks de combate" : "ticks de reforço"} style={{ width: "auto", margin: 0, background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
               <option value={1}>{dMission === "attack" ? "atacar" : "reforçar"} 1 tick</option>
               <option value={2}>{dMission === "attack" ? "atacar" : "reforçar"} 2 ticks</option>
               <option value={3}>{dMission === "attack" ? "atacar" : "reforçar"} 3 ticks</option>
             </select>
-            <select value={dFleet} onChange={(e) => setDFleet(e.target.value)} style={{ background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
+            <select value={dFleet} onChange={(e) => setDFleet(e.target.value)} style={{ width: "auto", margin: 0, background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
               <option value="">escolha a frota...</option>
               {fleets.filter((f) => f.idle && f.totalShips > 0).map((f) => <option key={f.id} value={f.id}>{f.name} ({fmt(f.totalShips)} naves)</option>)}
             </select>
