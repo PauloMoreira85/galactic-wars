@@ -2,7 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma, TX_OPTS } from "../db.js";
 import { requireAuth, type AuthedRequest } from "../auth.js";
-import { RESOURCES, ROID_PRODUCTION_PER_TICK, nextRoidCost, nextFleetSlotCost, MARKET_FEE } from "../game/constants.js";
+import { RESOURCES, ROID_PRODUCTION_PER_TICK, nextRoidCost, nextFleetSlotCost, MARKET_FEE, RESOURCE_CAP } from "../game/constants.js";
 import { buildRoid, totalRoids } from "../game/roids.js";
 import { RACES, isRaceKey } from "../game/races.js";
 import { startUpgrade, buildUnit, parseTech, cancelOrder } from "../game/fleet.js";
@@ -709,7 +709,7 @@ gameRouter.post("/market/trade", async (req: AuthedRequest, res) => {
       const received = Math.floor(amount * (1 - MARKET_FEE));
       const data: any = {};
       data[from] = { decrement: amount };
-      data[to] = { increment: received };
+      data[to] = Math.min(RESOURCE_CAP, (planet as any)[to] + received); // respeita o teto
       await tx.planet.update({ where: { id: planet.id }, data });
     }, TX_OPTS);
   } catch (e: any) { return res.status(400).json({ error: e.message ?? "Falha na troca" }); }

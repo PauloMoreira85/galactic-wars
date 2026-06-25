@@ -502,7 +502,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
           <div className="panel">
             <h2>Asteroides (roids) — {planet.roids.total} no total</h2>
             <div className="cost">
-              Inicie a mineração de um roid pagando <b>só o recurso dele</b>. O custo sobe +250 a cada roid daquele recurso. Cada roid produz <b>{fmt(450)}</b>/tick.
+              Inicie a mineração de um roid pagando <b>só o recurso dele</b>. O custo sobe +250 a cada roid daquele recurso. Cada roid produz <b>{fmt(450)}</b>/tick. Teto: <b>{fmt(30000000)}</b> por recurso (o que passar é perdido).
             </div>
             {RES_META.map(({ key, label }) => (
               <div className="roid-row" key={key}>

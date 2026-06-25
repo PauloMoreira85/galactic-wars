@@ -20,6 +20,9 @@ export const ROID_COST_STEP = 250;
 // Mercado Negro: troca um recurso por outro com taxa (você recebe 1 - taxa).
 export const MARKET_FEE = 0.20; // 20%
 
+// Limite de estoque por recurso: 30 milhões. O que passar disso é perdido.
+export const RESOURCE_CAP = 30_000_000;
+
 // Recursos iniciais de um planeta novo.
 export const STARTING = {
   metalium: 20000,

@@ -1,6 +1,6 @@
 import { prisma } from "../db.js";
 import { config } from "../config.js";
-import { ROID_PRODUCTION_PER_TICK } from "./constants.js";
+import { ROID_PRODUCTION_PER_TICK, RESOURCE_CAP } from "./constants.js";
 import { processBuildOrders, parseTech } from "./fleet.js";
 import { miningBonus } from "./tech.js";
 import { processFleets } from "./galaxy.js";
@@ -26,12 +26,13 @@ async function processTicks(n: number) {
   const planets = await prisma.planet.findMany();
   for (const p of planets) {
     const b = miningBonus(parseTech(p.tech));
+    // Produção clampada ao teto (o que passar de RESOURCE_CAP é perdido).
     await prisma.planet.update({
       where: { id: p.id },
       data: {
-        metalium: { increment: (p.roidMetalium * ROID_PRODUCTION_PER_TICK + b.metalium) * n },
-        carbonum: { increment: (p.roidCarbonum * ROID_PRODUCTION_PER_TICK + b.carbonum) * n },
-        plutonium: { increment: (p.roidPlutonium * ROID_PRODUCTION_PER_TICK + b.plutonium) * n },
+        metalium: Math.min(RESOURCE_CAP, p.metalium + (p.roidMetalium * ROID_PRODUCTION_PER_TICK + b.metalium) * n),
+        carbonum: Math.min(RESOURCE_CAP, p.carbonum + (p.roidCarbonum * ROID_PRODUCTION_PER_TICK + b.carbonum) * n),
+        plutonium: Math.min(RESOURCE_CAP, p.plutonium + (p.roidPlutonium * ROID_PRODUCTION_PER_TICK + b.plutonium) * n),
       },
     });
   }
