@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { z } from "zod";
-import { prisma } from "../db.js";
+import { prisma, TX_OPTS } from "../db.js";
 import { requireAuth, type AuthedRequest } from "../auth.js";
-import { RESOURCES, ROID_PRODUCTION_PER_TICK, nextRoidCost, nextFleetSlotCost } from "../game/constants.js";
+import { RESOURCES, ROID_PRODUCTION_PER_TICK, nextRoidCost, nextFleetSlotCost, MARKET_FEE } from "../game/constants.js";
 import { buildRoid, totalRoids } from "../game/roids.js";
 import { RACES, isRaceKey } from "../game/races.js";
 import { startUpgrade, buildUnit, parseTech } from "../game/fleet.js";
@@ -665,6 +665,32 @@ gameRouter.get("/ranking", async (_req, res) => {
     }))
     .sort((a, b) => b.roids - a.roids).slice(0, 50);
   res.json({ ranking: ranked });
+});
+
+// Mercado Negro: troca um recurso por outro com taxa de MARKET_FEE (recebe 1 - taxa).
+const marketSchema = z.object({
+  from: z.enum(["metalium", "carbonum", "plutonium"]),
+  to: z.enum(["metalium", "carbonum", "plutonium"]),
+  amount: z.number().int().min(1),
+});
+gameRouter.post("/market/trade", async (req: AuthedRequest, res) => {
+  const parsed = marketSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "Pedido invalido" });
+  const { from, to, amount } = parsed.data;
+  if (from === to) return res.status(400).json({ error: "Escolha recursos diferentes" });
+  try {
+    await prisma.$transaction(async (tx) => {
+      const planet = await tx.planet.findUnique({ where: { userId: req.userId! } });
+      if (!planet) throw new Error("Planeta nao encontrado");
+      if ((planet as any)[from] < amount) throw new Error("Recurso insuficiente para a troca");
+      const received = Math.floor(amount * (1 - MARKET_FEE));
+      const data: any = {};
+      data[from] = { decrement: amount };
+      data[to] = { increment: received };
+      await tx.planet.update({ where: { id: planet.id }, data });
+    }, TX_OPTS);
+  } catch (e: any) { return res.status(400).json({ error: e.message ?? "Falha na troca" }); }
+  res.json(await planetView(req.userId!));
 });
 
 // Alterar a própria senha (precisa da senha atual).

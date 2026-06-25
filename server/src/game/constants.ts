@@ -19,6 +19,9 @@ export const ROID_COST = {
   growth: 1.12,
 };
 
+// Mercado Negro: troca um recurso por outro com taxa (você recebe 1 - taxa).
+export const MARKET_FEE = 0.20; // 20%
+
 // Recursos iniciais de um planeta novo.
 export const STARTING = {
   metalium: 20000,

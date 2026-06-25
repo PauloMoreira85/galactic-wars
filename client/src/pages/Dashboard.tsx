@@ -150,6 +150,11 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [shipBusy, setShipBusy] = useState<string | null>(null);
   const [section, setSection] = useState<Section>("planeta");
   const [showIntro, setShowIntro] = useState(() => localStorage.getItem("gw_intro_hidden") !== "1");
+  const [mktFrom, setMktFrom] = useState<Resource>("metalium");
+  const [mktTo, setMktTo] = useState<Resource>("carbonum");
+  const [mktAmt, setMktAmt] = useState(0);
+  const [mktErr, setMktErr] = useState("");
+  const [mktBusy, setMktBusy] = useState(false);
   const [zoom, setZoom] = useState<{ src: string; alt: string } | null>(null);
   const [alerts, setAlerts] = useState({ underAttack: false, incomingDefense: false, galaxyUnderAttack: false });
   const countdown = useCountdown(view);
@@ -197,6 +202,18 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     } finally {
       setBusy(null);
     }
+  }
+
+  async function doTrade() {
+    setMktErr("");
+    if (mktFrom === mktTo) { setMktErr("Escolha recursos diferentes."); return; }
+    if (mktAmt <= 0) { setMktErr("Informe uma quantidade."); return; }
+    setMktBusy(true);
+    try {
+      setView(await api.marketTrade(mktFrom, mktTo, mktAmt));
+      setMktAmt(0);
+    } catch (e: any) { setMktErr(e.message ?? "Falha na troca"); }
+    finally { setMktBusy(false); }
   }
 
   async function doUpgrade(key: string) {
@@ -466,6 +483,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         )}
 
         {section === "recursos" && (
+          <>
           <div className="panel">
             <h2>Asteroides (roids) — {planet.roids.total} no total</h2>
             <div className="cost">
@@ -491,6 +509,41 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             {!canAfford && <div className="error" style={{ marginTop: 12 }}>Recursos insuficientes para o próximo roid.</div>}
             {error && <div className="error" style={{ marginTop: 12 }}>{error}</div>}
           </div>
+
+          <div className="panel">
+            <h2>🕳️ Mercado Negro</h2>
+            <div className="cost" style={{ marginBottom: 10 }}>
+              Troque um recurso por outro. Taxa de <b>20%</b> — você recebe 80% do valor trocado.
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+              <select
+                value={mktFrom}
+                onChange={(e) => { const v = e.target.value as Resource; setMktFrom(v); if (mktTo === v) setMktTo(RES_META.find((r) => r.key !== v)!.key); }}
+                style={{ background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}
+              >
+                {RES_META.map((r) => <option key={r.key} value={r.key}>{r.label} (tem {fmt(planet.resources[r.key])})</option>)}
+              </select>
+              <span>→</span>
+              <select
+                value={mktTo}
+                onChange={(e) => setMktTo(e.target.value as Resource)}
+                style={{ background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}
+              >
+                {RES_META.filter((r) => r.key !== mktFrom).map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
+              </select>
+              <input
+                type="number" min={1} value={mktAmt || ""} placeholder="quantidade"
+                onChange={(e) => setMktAmt(Math.max(0, Math.floor(Number(e.target.value))))}
+                style={{ width: 140, margin: 0, padding: "6px 10px" }}
+              />
+              <button disabled={mktBusy || mktAmt <= 0 || mktFrom === mktTo} onClick={doTrade}>{mktBusy ? "..." : "trocar"}</button>
+            </div>
+            <div className="roid-count" style={{ marginTop: 8 }}>
+              Você recebe: <b style={{ color: "var(--text)" }}>{fmt(Math.floor(mktAmt * (1 - 0.20)))}</b> de {RES_META.find((r) => r.key === mktTo)?.label}
+            </div>
+            {mktErr && <div className="error" style={{ marginTop: 10 }}>{mktErr}</div>}
+          </div>
+          </>
         )}
 
         {(section === "pesquisa" || section === "construcao") && view.queue.length > 0 && (
