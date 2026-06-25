@@ -1,7 +1,7 @@
 import { prisma } from "../db.js";
 import { ROID_PRODUCTION_PER_TICK } from "./constants.js";
 import { parseTech } from "./fleet.js";
-import { levelOf, TECH_BY_KEY, productionMultiplier, travelMultiplier } from "./tech.js";
+import { levelOf, TECH_BY_KEY, miningBonus } from "./tech.js";
 import { isRaceKey } from "./races.js";
 import { parseUnits } from "./unitmap.js";
 import { scoreOfUnits } from "./score.js";
@@ -96,10 +96,10 @@ export async function executeSabotage(saboteurPlanetId: string, target: { galaxy
       if (owned.length === 0) { detail = "alvo não tinha tecnologia para roubar"; break; }
       const stolen = owned[Math.floor(Math.random() * owned.length)];
       tl[stolen] -= 1;
-      await prisma.planet.update({ where: { id: tgt.id }, data: { tech: JSON.stringify(tl), prodMul: productionMultiplier(tl), travelMul: travelMultiplier(tl) } });
+      await prisma.planet.update({ where: { id: tgt.id }, data: { tech: JSON.stringify(tl) } });
       const myTl = parseTech(me.tech);
       myTl[stolen] = Math.min(TECH_BY_KEY[stolen].max, (myTl[stolen] ?? 0) + 1);
-      await prisma.planet.update({ where: { id: me.id }, data: { tech: JSON.stringify(myTl), prodMul: productionMultiplier(myTl), travelMul: travelMultiplier(myTl) } });
+      await prisma.planet.update({ where: { id: me.id }, data: { tech: JSON.stringify(myTl) } });
       detail = `roubou a tecnologia: ${TECH_BY_KEY[stolen].name}`; break;
     }
   }
@@ -113,14 +113,16 @@ export async function processEffects(n: number, newTick: number) {
   for (const e of active) {
     const p = await prisma.planet.findUnique({ where: { id: e.planetId } });
     if (!p) continue;
-    const base = ROID_PRODUCTION_PER_TICK * n;
-    const cut = (roid: number, stock: number) => Math.min(stock, Math.floor((roid * base * p.prodMul / 100) * e.pct / 100));
+    const bonus = miningBonus(parseTech(p.tech));
+    // Produção do recurso por n ticks × pct do debuff (limitado ao estoque).
+    const cut = (roid: number, b: number, stock: number) =>
+      Math.min(stock, Math.floor((roid * ROID_PRODUCTION_PER_TICK + b) * n * e.pct / 100));
     await prisma.planet.update({
       where: { id: p.id },
       data: {
-        metalium: { decrement: cut(p.roidMetalium, p.metalium) },
-        carbonum: { decrement: cut(p.roidCarbonum, p.carbonum) },
-        plutonium: { decrement: cut(p.roidPlutonium, p.plutonium) },
+        metalium: { decrement: cut(p.roidMetalium, bonus.metalium, p.metalium) },
+        carbonum: { decrement: cut(p.roidCarbonum, bonus.carbonum, p.carbonum) },
+        plutonium: { decrement: cut(p.roidPlutonium, bonus.plutonium, p.plutonium) },
       },
     });
   }

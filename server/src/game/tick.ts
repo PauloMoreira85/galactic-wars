@@ -1,7 +1,8 @@
 import { prisma } from "../db.js";
 import { config } from "../config.js";
 import { ROID_PRODUCTION_PER_TICK } from "./constants.js";
-import { processBuildOrders } from "./fleet.js";
+import { processBuildOrders, parseTech } from "./fleet.js";
+import { miningBonus } from "./tech.js";
 import { processFleets } from "./galaxy.js";
 import { processTax } from "./governance.js";
 import { processEffects } from "./sabotage.js";
@@ -18,18 +19,22 @@ async function ensureGameState() {
   return prisma.gameState.findUnique({ where: { id: 1 } });
 }
 
-// Processa `n` ticks de uma vez (produca de recursos pelos roids).
-// Producao e linear, entao multiplicamos por n em um unico UPDATE.
+// Processa `n` ticks de uma vez. Produção por recurso = roids×450 + bônus FLAT
+// das construções de mineração. Produção é linear, então multiplicamos por n.
 async function processTicks(n: number) {
   if (n <= 0) return;
-  const base = ROID_PRODUCTION_PER_TICK * n;
-  // Producao = roids * base * prodMul/100 (prodMul vem do Complexo de Mineracao).
-  await prisma.$executeRawUnsafe(
-    `UPDATE Planet SET
-       metalium  = metalium  + roidMetalium  * ${base} * prodMul / 100,
-       carbonum  = carbonum  + roidCarbonum  * ${base} * prodMul / 100,
-       plutonium = plutonium + roidPlutonium * ${base} * prodMul / 100`
-  );
+  const planets = await prisma.planet.findMany();
+  for (const p of planets) {
+    const b = miningBonus(parseTech(p.tech));
+    await prisma.planet.update({
+      where: { id: p.id },
+      data: {
+        metalium: { increment: (p.roidMetalium * ROID_PRODUCTION_PER_TICK + b.metalium) * n },
+        carbonum: { increment: (p.roidCarbonum * ROID_PRODUCTION_PER_TICK + b.carbonum) * n },
+        plutonium: { increment: (p.roidPlutonium * ROID_PRODUCTION_PER_TICK + b.plutonium) * n },
+      },
+    });
+  }
 }
 
 // Avanca o relogio: processa quantos ticks couberam desde lastTickAt.

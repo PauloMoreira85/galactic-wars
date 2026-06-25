@@ -3,7 +3,7 @@ import { startEngagement, advanceEngagement } from "./combat.js";
 import { parseUnits, stringifyUnits, totalUnits, addUnits, type UnitMap } from "./unitmap.js";
 import { type Coords } from "./geo.js";
 import { travelTime } from "./travel.js";
-import { levelOf } from "./tech.js";
+import { travelReductionTicks } from "./tech.js";
 import { unitByName } from "./catalog.js";
 import { scoreOfUnits } from "./score.js";
 import { allianceTags } from "./alliance.js";
@@ -24,7 +24,7 @@ export type { Coords } from "./geo.js";
 export type ShipCounts = UnitMap;
 
 function propLevelOf(techJson: string): number {
-  try { return levelOf(JSON.parse(techJson), "propulsao"); } catch { return 0; }
+  try { return travelReductionTicks(JSON.parse(techJson)); } catch { return 0; }
 }
 
 async function currentTick(): Promise<number> {

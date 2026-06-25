@@ -22,16 +22,16 @@ export async function buildRoid(planetId: string, resource: ResourceKey) {
     const planet = await tx.planet.findUnique({ where: { id: planetId } });
     if (!planet) throw new Error("Planeta nao encontrado");
 
-    const cost = nextRoidCost(totalRoids(planet));
+    const field = ROID_FIELD[resource];
+    const cost = nextRoidCost(resource, planet[field]);
     if (
       planet.metalium < cost.metalium ||
       planet.carbonum < cost.carbonum ||
       planet.plutonium < cost.plutonium
     ) {
-      throw new Error("Recursos insuficientes para produzir o roid");
+      throw new Error("Recursos insuficientes para iniciar a mineração do roid");
     }
 
-    const field = ROID_FIELD[resource];
     return tx.planet.update({
       where: { id: planetId },
       data: {

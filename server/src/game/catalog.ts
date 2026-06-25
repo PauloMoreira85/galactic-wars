@@ -14,7 +14,8 @@ const RACE_TO_TABLE: Record<RaceKey, RaceTable> = {
 const CLASS_RANK: Record<ClasseCode, number> = { Ca: 1, Co: 2, Fr: 3, De: 4, Cr: 5, Na: 6, Ro: 0 };
 // Classe da nave -> fábrica (tech) que a habilita.
 const CLASS_FACTORY: Record<string, string> = {
-  Ca: "fabCaca", Co: "fabCorveta", Fr: "fabFragata", De: "fabDestroyer", Cr: "fabCruzador", Na: "fabNavemae",
+  Ca: "fundicaoCacas", Co: "producaoCorvetas", Fr: "montagemFragatas",
+  De: "fabricaDestroyers", Cr: "industriaCruzadores", Na: "estaleirosOrbitais",
 };
 export const CLASS_LABEL: Record<ClasseCode, string> = {
   Ca: "Caça", Co: "Corveta", Fr: "Fragata", De: "Destroyer", Cr: "Cruzador", Na: "Nave-mãe", Ro: "Roider",

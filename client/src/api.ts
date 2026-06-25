@@ -99,9 +99,9 @@ export interface PlanetView {
     resources: Record<Resource, number>;
     roids: Record<Resource, number> & { total: number };
     productionPerTick: Record<Resource, number>;
-    nextRoidCost: Record<Resource, number>;
-    prodMul: number;
-    travelMul: number;
+    nextRoidCost: Record<Resource, number>; // custo do próximo roid de cada recurso (pago no próprio)
+    miningBonus: Record<Resource, number>;  // bônus FLAT de produção das minas
+    travelReduction: number;                // ticks reduzidos no tempo de viagem
     score: number;
     rank: number;
     cargo: string | null;
@@ -112,7 +112,7 @@ export interface PlanetView {
   };
   onlineCount: number;
   tech: TechItem[];
-  effects: { prodMul: number; travelMul: number; espionage: number };
+  effects: { espionage: number };
   units: UnitItem[];
   queue: QueueItem[];
   game: {

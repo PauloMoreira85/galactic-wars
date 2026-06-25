@@ -26,6 +26,7 @@ import { SABOTAGES, availableSabotages, executeSabotage, infiltrationChance } fr
 import { parseUnits, totalUnits } from "../game/unitmap.js";
 import {
   TECHS, TECH_BY_KEY, levelOf, upgradeCost, upgradeTicks, reqsMet, espionageLevel,
+  miningBonus, travelReductionTicks,
 } from "../game/tech.js";
 import { config } from "../config.js";
 import bcrypt from "bcryptjs";
@@ -59,7 +60,8 @@ async function planetView(userId: string) {
   const tick = state?.tickNumber ?? 0;
   const levels = parseTech(planet.tech);
   const hangar = parseUnits(planet.units);
-  const propLevel = levelOf(levels, "propulsao");
+  const propLevel = travelReductionTicks(levels); // redução de viagem (ticks)
+  const bonus = miningBonus(levels);               // bônus FLAT de produção por recurso
 
   const orders = await prisma.buildOrder.findMany({ where: { planetId: planet.id }, orderBy: { completeTick: "asc" } });
   const myFleets = await prisma.fleet.findMany({ where: { ownerPlanetId: planet.id } });
@@ -129,12 +131,17 @@ async function planetView(userId: string) {
       resources: { metalium: planet.metalium, carbonum: planet.carbonum, plutonium: planet.plutonium },
       roids,
       productionPerTick: {
-        metalium: Math.floor((roids.metalium * ROID_PRODUCTION_PER_TICK * planet.prodMul) / 100),
-        carbonum: Math.floor((roids.carbonum * ROID_PRODUCTION_PER_TICK * planet.prodMul) / 100),
-        plutonium: Math.floor((roids.plutonium * ROID_PRODUCTION_PER_TICK * planet.prodMul) / 100),
+        metalium: roids.metalium * ROID_PRODUCTION_PER_TICK + bonus.metalium,
+        carbonum: roids.carbonum * ROID_PRODUCTION_PER_TICK + bonus.carbonum,
+        plutonium: roids.plutonium * ROID_PRODUCTION_PER_TICK + bonus.plutonium,
       },
-      nextRoidCost: nextRoidCost(roids.total),
-      prodMul: planet.prodMul, travelMul: planet.travelMul,
+      // Custo do próximo roid de CADA recurso (pago só no próprio recurso).
+      nextRoidCost: {
+        metalium: nextRoidCost("metalium", planet.roidMetalium).metalium,
+        carbonum: nextRoidCost("carbonum", planet.roidCarbonum).carbonum,
+        plutonium: nextRoidCost("plutonium", planet.roidPlutonium).plutonium,
+      },
+      miningBonus: bonus, travelReduction: propLevel,
       score, rank, cargo,
       fleetSlots: planet.fleetSlots, fleetsActive: myFleets.length,
       nextFleetSlotCost: nextFleetSlotCost(planet.fleetSlots),
@@ -144,7 +151,7 @@ async function planetView(userId: string) {
     tech: techCatalog,
     units,
     queue,
-    effects: { prodMul: planet.prodMul, travelMul: planet.travelMul, espionage: espionageLevel(levels) },
+    effects: { espionage: espionageLevel(levels) },
     game: {
       tickNumber: tick, lastTickAt: state?.lastTickAt ?? null, tickIntervalSeconds: config.tickIntervalSeconds,
       roundTicks: config.roundTicks, roundEnded: tick >= config.roundTicks,

@@ -1,8 +1,7 @@
-// ===== Tecnologias e Construcoes =====
-// Sistema unico de "upgrades" com niveis. Cada item e Pesquisa ou Construcao,
-// numa categoria, com pre-requisitos, custo (escala por nivel) e efeito.
-// O ciclo de naves: pesquisa a classe -> constroi a fabrica -> pode produzir;
-// a fabrica libera a pesquisa da proxima classe.
+// ===== Tecnologias e Construcoes (arvore canonica) =====
+// Cada item e Pesquisa ou Construcao, numa categoria, com pre-requisitos.
+// Mineracao/Deslocamento/Naves seguem a arvore oficial (cadeia sequencial:
+// cada item requer o anterior). Inteligencia e Sabotagem mantem suas cadeias.
 
 import type { ShipClass } from "./ships.js";
 
@@ -20,57 +19,34 @@ export interface TechDef {
   desc: string;
   requires: Req[];
   baseCost: { metalium: number; carbonum: number; plutonium: number };
-  costGrowth: number; // multiplicador de custo por nivel
+  costGrowth: number;
   baseTicks: number;
 }
 
-// Mapa classe de nave -> chave da fabrica que a habilita.
+// Mapa classe de nave -> chave da FABRICA (construcao) que a habilita.
 export const SHIP_FACTORY: Record<ShipClass, string> = {
-  caca: "fabCaca", corveta: "fabCorveta", fragata: "fabFragata",
-  destroyer: "fabDestroyer", cruzador: "fabCruzador", navemae: "fabNavemae",
+  caca: "fundicaoCacas", corveta: "producaoCorvetas", fragata: "montagemFragatas",
+  destroyer: "fabricaDestroyers", cruzador: "industriaCruzadores", navemae: "estaleirosOrbitais",
 };
 
-const SHIP_CHAIN: { cls: ShipClass; nome: string }[] = [
-  { cls: "caca", nome: "Caça" }, { cls: "corveta", nome: "Corveta" },
-  { cls: "fragata", nome: "Fragata" }, { cls: "destroyer", nome: "Destroyer" },
-  { cls: "cruzador", nome: "Cruzador" }, { cls: "navemae", nome: "Nave-mãe" },
-];
+interface ChainItem { key: string; name: string; kind: TechKind; desc: string; m: number; c: number; ticks: number; max?: number }
 
-// Monta a cadeia de naves: pesquisa(N) requer fabrica(N-1); fabrica(N) requer pesquisa(N).
-function buildShipChain(): TechDef[] {
-  const out: TechDef[] = [];
-  SHIP_CHAIN.forEach((s, i) => {
-    const prevFab = i > 0 ? `fab${cap(SHIP_CHAIN[i - 1].cls)}` : null;
-    const pesqKey = `pesq${cap(s.cls)}`;
-    const fabKey = `fab${cap(s.cls)}`;
-    const scale = Math.pow(2.2, i); // classes avancadas custam muito mais
-    out.push({
-      key: pesqKey, name: `Pesquisa: ${s.nome}`, category: "naves", kind: "research", max: 1,
-      desc: `Desbloqueia a construcao da Fabrica de ${s.nome}.`,
-      requires: prevFab ? [{ key: prevFab, level: 1 }] : [],
-      baseCost: { metalium: Math.round(3000 * scale), carbonum: Math.round(1800 * scale), plutonium: Math.round(2400 * scale) },
-      costGrowth: 1, baseTicks: 2 + i,
-    });
-    out.push({
-      key: fabKey, name: `Fábrica de ${s.nome}`, category: "naves", kind: "building", max: 1,
-      desc: `Permite produzir ${s.nome}.`,
-      requires: [{ key: pesqKey, level: 1 }],
-      baseCost: { metalium: Math.round(5000 * scale), carbonum: Math.round(3000 * scale), plutonium: Math.round(1200 * scale) },
-      costGrowth: 1, baseTicks: 3 + i,
-    });
-  });
-  return out;
+// Cadeia sequencial: cada item requer o ANTERIOR (level 1). Custo só em M/C
+// (plutônio é exclusivo de combustível). max=1 salvo indicado.
+function chain(category: TechCategory, items: ChainItem[]): TechDef[] {
+  return items.map((it, i) => ({
+    key: it.key, name: it.name, category, kind: it.kind, max: it.max ?? 1, desc: it.desc,
+    requires: i > 0 ? [{ key: items[i - 1].key, level: 1 }] : [],
+    baseCost: { metalium: it.m, carbonum: it.c, plutonium: 0 }, costGrowth: 1, baseTicks: it.ticks,
+  }));
 }
-function cap(s: string) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
-// Cadeia sequencial pesquisa->construcao para uma categoria (Inteligencia, Sabotagem).
-// Cada construcao exige sua pesquisa; cada pesquisa exige a construcao anterior.
-interface ChainItem { key: string; name: string; desc: string }
+// Cadeia Inteligencia/Sabotagem (pesquisa -> construcao alternadas).
 function pesqConstrChain(
   category: TechCategory,
   pesqBase: { metalium: number; carbonum: number; plutonium: number },
   fabBase: { metalium: number; carbonum: number; plutonium: number },
-  items: ChainItem[]
+  items: { key: string; name: string; desc: string }[]
 ): TechDef[] {
   const out: TechDef[] = [];
   items.forEach((it, i) => {
@@ -98,30 +74,52 @@ function pesqConstrChain(
 // Tiers sequenciais de Inteligencia (definem o nível de espionagem).
 export const INTEL_TIERS = ["centralInteligencia", "servicoSecreto", "agentesMilitares", "transmissao", "agentesDuplos"];
 
+// ===== Mineração (cada construção adiciona produção FLAT do recurso) =====
+const MINERACAO = chain("mineracao", [
+  { key: "centroMineracao", name: "Centro de Mineração", kind: "building", desc: "+1500 de produção de Metalium por tick.", m: 1250, c: 1250, ticks: 6 },
+  { key: "extracaoCristal", name: "Extração de Cristal", kind: "research", desc: "Desbloqueia a Mina de Cristal.", m: 2500, c: 2500, ticks: 10 },
+  { key: "minaCristal", name: "Mina de Cristal", kind: "building", desc: "+1500 de produção de Carbonum por tick.", m: 5000, c: 5000, ticks: 13 },
+  { key: "fusaoEonio", name: "Fusão de Eônio", kind: "research", desc: "Desbloqueia o Laboratório de Eônio.", m: 7500, c: 7500, ticks: 19 },
+  { key: "labEonio", name: "Laboratório de Eônio", kind: "building", desc: "+1500 de produção de Plutônio por tick.", m: 15000, c: 15000, ticks: 26 },
+  { key: "recursosProfundidade", name: "Recursos em Profundidade", kind: "research", desc: "Desbloqueia minas mais profundas.", m: 22500, c: 22500, ticks: 26 },
+  { key: "minaProfundaMetal", name: "Mina Profunda de Metal", kind: "building", desc: "+10000 de produção de Metalium por tick.", m: 45000, c: 45000, ticks: 35 },
+  { key: "armasPlasma", name: "Armas Plasma Modificadas", kind: "research", desc: "Desbloqueia a Mina Profunda de Cristal.", m: 67500, c: 67500, ticks: 35 },
+  { key: "minaProfundaCristal", name: "Mina Profunda de Cristal", kind: "building", desc: "+10000 de produção de Carbonum por tick.", m: 135000, c: 135000, ticks: 50 },
+  { key: "materiaisReforcados", name: "Materiais Reforçados", kind: "research", desc: "Desbloqueia o Laboratório Reforçado.", m: 135000, c: 135000, ticks: 50 },
+  { key: "labReforcado", name: "Laboratório Reforçado", kind: "building", desc: "+10000 de produção de Plutônio por tick.", m: 135000, c: 135000, ticks: 50 },
+]);
+
+// ===== Deslocamento (cada construção reduz 1 tick do tempo de viagem) =====
+const DESLOCAMENTO = chain("tec", [
+  { key: "mecanicaQuantica", name: "Mecânica Quântica", kind: "research", desc: "Pesquisa rumo a propulsores mais potentes.", m: 1250, c: 1250, ticks: 6 },
+  { key: "geradorSubvacuo", name: "Gerador de Subvácuo", kind: "building", desc: "−1 tick no tempo de viagem das suas frotas.", m: 2500, c: 2500, ticks: 10 },
+  { key: "geracaoPortais", name: "Geração de Portais", kind: "research", desc: "Pesquisa rumo a propulsores mais potentes.", m: 5000, c: 5000, ticks: 13 },
+  { key: "reguladorPortais", name: "Regulador de Portais", kind: "building", desc: "−1 tick adicional no tempo de viagem (total −2).", m: 10000, c: 10000, ticks: 19 },
+  { key: "dobrasEspaciais", name: "Dobras Espaciais", kind: "research", desc: "Pesquisa rumo a propulsores mais potentes.", m: 15000, c: 15000, ticks: 26 },
+  { key: "estabilizadorVortex", name: "Estabilizador de Vórtex", kind: "building", desc: "−1 tick adicional no tempo de viagem (total −3).", m: 45000, c: 45000, ticks: 35 },
+  { key: "hiperespaco", name: "Hiperespaço", kind: "research", desc: "Pesquisa rumo a propulsores mais potentes.", m: 50000, c: 50000, ticks: 50 },
+  { key: "reatorHiperespaco", name: "Reator de Hiperespaço", kind: "building", desc: "−1 tick adicional no tempo de viagem (total −4).", m: 150000, c: 150000, ticks: 50 },
+]);
+
+// ===== Naves (construir a fábrica habilita a classe; pesquisa libera a próxima) =====
+const NAVES = chain("naves", [
+  { key: "fundicaoCacas", name: "Fundição de Caças", kind: "building", desc: "Permite produzir Caças.", m: 1250, c: 1250, ticks: 6 },
+  { key: "lancadoresTorpedos", name: "Lançadores de Torpedos", kind: "research", desc: "Desbloqueia a Produção de Corvetas.", m: 2500, c: 2500, ticks: 10 },
+  { key: "producaoCorvetas", name: "Produção de Corvetas", kind: "building", desc: "Permite produzir Corvetas.", m: 5000, c: 5000, ticks: 13 },
+  { key: "disparosRapidos", name: "Disparos Rápidos", kind: "research", desc: "Desbloqueia a Montagem de Fragatas.", m: 7500, c: 7500, ticks: 19 },
+  { key: "montagemFragatas", name: "Montagem de Fragatas", kind: "building", desc: "Permite produzir Fragatas.", m: 15000, c: 15000, ticks: 26 },
+  { key: "resistenciaTorpedos", name: "Resistência a Torpedos", kind: "research", desc: "Desbloqueia a Fábrica de Destróiers.", m: 22500, c: 22500, ticks: 26 },
+  { key: "fabricaDestroyers", name: "Fábrica de Destróiers", kind: "building", desc: "Permite produzir Destróiers.", m: 45000, c: 45000, ticks: 35 },
+  { key: "fuselagensAltaResist", name: "Fuselagens de Alta Resistência", kind: "research", desc: "Desbloqueia a Indústria de Cruzadores.", m: 67500, c: 67500, ticks: 35 },
+  { key: "industriaCruzadores", name: "Indústria de Cruzadores", kind: "building", desc: "Permite produzir Cruzadores.", m: 135000, c: 135000, ticks: 50 },
+  { key: "armamentoPesado", name: "Armamento Pesado", kind: "research", desc: "Desbloqueia os Estaleiros Orbitais.", m: 135000, c: 135000, ticks: 50 },
+  { key: "estaleirosOrbitais", name: "Estaleiros Orbitais", kind: "building", desc: "Permite produzir Naves-Mãe.", m: 135000, c: 135000, ticks: 50 },
+]);
+
 export const TECHS: TechDef[] = [
-  // --- Mineracao (pesquisa -> construcao; pesquisa ja vem feita no inicio) ---
-  {
-    key: "pesqMineracao", name: "Pesquisa: Mineração", category: "mineracao", kind: "research", max: 1,
-    desc: "Desbloqueia o Complexo de Mineração.",
-    requires: [], baseCost: { metalium: 3000, carbonum: 1800, plutonium: 0 }, costGrowth: 1, baseTicks: 2,
-  },
-  {
-    key: "mineracao", name: "Complexo de Mineração", category: "mineracao", kind: "building", max: 20,
-    desc: "+5% na produção de TODOS os roids por nível.",
-    requires: [{ key: "pesqMineracao", level: 1 }], baseCost: { metalium: 4000, carbonum: 2400, plutonium: 0 }, costGrowth: 1.5, baseTicks: 2,
-  },
-  // --- TEC (velocidade de frota) ---
-  {
-    key: "pesqPropulsao", name: "Pesquisa: Propulsão", category: "tec", kind: "research", max: 1,
-    desc: "Desbloqueia os Motores de Dobra.",
-    requires: [], baseCost: { metalium: 6000, carbonum: 4000, plutonium: 3000 }, costGrowth: 1, baseTicks: 4,
-  },
-  {
-    key: "propulsao", name: "Motores de Dobra", category: "tec", kind: "building", max: 4,
-    desc: "-1 TEC no tempo de viagem de TODAS as suas naves por nível (até -4).",
-    requires: [{ key: "pesqPropulsao", level: 1 }], baseCost: { metalium: 8000, carbonum: 5000, plutonium: 2000 }, costGrowth: 1.6, baseTicks: 3,
-  },
-  // --- Inteligencia (cadeia de agentes; todos comecam com Informantes: raca da galaxia) ---
+  ...MINERACAO,
+  ...DESLOCAMENTO,
+  // --- Inteligencia ---
   ...pesqConstrChain("espionagem",
     { metalium: 4000, carbonum: 3000, plutonium: 3000 },
     { metalium: 4000, carbonum: 2500, plutonium: 2000 },
@@ -133,7 +131,7 @@ export const TECHS: TechDef[] = [
       { key: "agentesDuplos", name: "Agentes Duplos", desc: "Revelam todas as frotas do alvo (quais/quantas naves, missão, ticks p/ chegar). Enxergam até os Rakshasa." },
     ]
   ),
-  // --- Sabotagem (cada nivel libera sabotagens; executadas na tela de Sabotagem) ---
+  // --- Sabotagem ---
   ...pesqConstrChain("sabotagem",
     { metalium: 5000, carbonum: 3500, plutonium: 4000 },
     { metalium: 7000, carbonum: 5000, plutonium: 5000 },
@@ -146,10 +144,7 @@ export const TECHS: TechDef[] = [
       { key: "sabAssimiladora", name: "Equipe Assimiladora", desc: "Roubo de Tecnologia (rouba uma tecnologia do alvo)." },
     ]
   ),
-  // O roider básico (classe mais baixa) vem desde o início; o roider avançado
-  // libera junto com a FÁBRICA da classe dele (na cadeia de naves abaixo).
-  // --- Naves (cadeia pesquisa -> fabrica) ---
-  ...buildShipChain(),
+  ...NAVES,
 ];
 
 export const TECH_BY_KEY: Record<string, TechDef> = Object.fromEntries(TECHS.map((t) => [t.key, t]));
@@ -166,7 +161,7 @@ export function upgradeCost(def: TechDef, currentLevel: number) {
   return {
     metalium: Math.ceil(def.baseCost.metalium * f),
     carbonum: Math.ceil(def.baseCost.carbonum * f),
-    plutonium: 0, // plutônio é exclusivo para combustível; pesquisas/construções não usam
+    plutonium: 0, // plutônio é exclusivo para combustível
   };
 }
 export function upgradeTicks(def: TechDef, currentLevel: number) {
@@ -179,17 +174,23 @@ export function reqsMet(def: TechDef, levels: TechLevels): boolean {
 }
 
 // ===== Efeitos =====
-export function productionMultiplier(levels: TechLevels): number {
-  return 100 + 5 * levelOf(levels, "mineracao"); // percent
+// Bônus FLAT de produção por recurso (das construções de mineração).
+export function miningBonus(levels: TechLevels): { metalium: number; carbonum: number; plutonium: number } {
+  return {
+    metalium: (levelOf(levels, "centroMineracao") >= 1 ? 1500 : 0) + (levelOf(levels, "minaProfundaMetal") >= 1 ? 10000 : 0),
+    carbonum: (levelOf(levels, "minaCristal") >= 1 ? 1500 : 0) + (levelOf(levels, "minaProfundaCristal") >= 1 ? 10000 : 0),
+    plutonium: (levelOf(levels, "labEonio") >= 1 ? 1500 : 0) + (levelOf(levels, "labReforcado") >= 1 ? 10000 : 0),
+  };
 }
-export function travelMultiplier(levels: TechLevels): number {
-  return Math.max(50, 100 - 4 * levelOf(levels, "propulsao")); // percent
+// Redução do tempo de viagem (em ticks): 1 por construção de deslocamento (até 4).
+export function travelReductionTicks(levels: TechLevels): number {
+  return ["geradorSubvacuo", "reguladorPortais", "estabilizadorVortex", "reatorHiperespaco"]
+    .filter((k) => levelOf(levels, k) >= 1).length;
 }
 export function canBuildShip(levels: TechLevels, cls: ShipClass): boolean {
   return levelOf(levels, SHIP_FACTORY[cls]) >= 1;
 }
 // Nível de espionagem = quantas construções de inteligência (em sequência) você tem.
-// 1=Central (raça) · 2=Serviço Secreto (roids/pontuação) · 3=Militares (naves) · 4=Transmissão · 5=Duplos.
 export function espionageLevel(levels: TechLevels): number {
   let n = 0;
   for (const k of INTEL_TIERS) {

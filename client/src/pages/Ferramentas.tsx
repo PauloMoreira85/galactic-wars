@@ -207,7 +207,7 @@ function Universo() {
   );
 }
 
-const TEC_CAT: Record<string, string> = { mineracao: "Mineração", tec: "TEC — Propulsão", espionagem: "Inteligência", sabotagem: "Sabotagem", naves: "Naves" };
+const TEC_CAT: Record<string, string> = { mineracao: "Mineração", tec: "Deslocamento", espionagem: "Inteligência", sabotagem: "Sabotagem", naves: "Naves" };
 
 function ArvoreTec() {
   const [techs, setTechs] = useState<Awaited<ReturnType<typeof api.toolTechtree>>["techs"]>([]);

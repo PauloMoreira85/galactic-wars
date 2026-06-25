@@ -4,7 +4,7 @@ import { unitByName, raceTable } from "./catalog.js";
 import { type ClasseCode } from "./unitTable.js";
 import { parseUnits, stringifyUnits, totalUnits, addUnits, type UnitMap } from "./unitmap.js";
 import { travelTime } from "./travel.js";
-import { levelOf } from "./tech.js";
+import { travelReductionTicks } from "./tech.js";
 import { addNews } from "./news.js";
 
 // ===== Balanceamento =====
@@ -286,7 +286,7 @@ export async function finalize(fleetId: string, tick: number) {
   }
 
   let propLevel = 0;
-  try { propLevel = atkP ? levelOf(JSON.parse(atkP.tech), "propulsao") : 0; } catch {}
+  try { propLevel = atkP ? travelReductionTicks(JSON.parse(atkP.tech)) : 0; } catch {}
   // Se a frota CHEGOU (combate/defesa concluída no alvo), volta no TEC cheio.
   // Se foi RECUADA no meio do caminho (nunca chegou), volta só o que já viajou.
   const arrived = fleet.status === "engaged" || st != null || tick >= fleet.arriveTick;

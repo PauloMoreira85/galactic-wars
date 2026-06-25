@@ -6,7 +6,6 @@ import { addNews } from "./news.js";
 import {
   TECH_BY_KEY, type TechLevels,
   levelOf, upgradeCost, upgradeTicks, reqsMet,
-  productionMultiplier, travelMultiplier,
 } from "./tech.js";
 
 async function currentTick(): Promise<number> {
@@ -102,7 +101,7 @@ export async function processBuildOrders(uptoTick: number) {
           levels[order.techKey] = order.targetLevel;
           await prisma.planet.update({
             where: { id: order.planetId },
-            data: { tech: JSON.stringify(levels), prodMul: productionMultiplier(levels), travelMul: travelMultiplier(levels) },
+            data: { tech: JSON.stringify(levels) },
           });
           await addNews(order.planetId, uptoTick, `${TECH_BY_KEY[order.techKey]?.name ?? order.techKey} concluída (nível ${order.targetLevel})`);
         }

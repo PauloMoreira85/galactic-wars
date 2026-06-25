@@ -45,7 +45,7 @@ function ArtImg({ src, alt, className, placeholder, onZoom }: { src: string; alt
 }
 
 const CAT_LABELS: Record<string, string> = {
-  mineracao: "Mineração", tec: "TEC — Propulsão", espionagem: "Inteligência", sabotagem: "Sabotagem", naves: "Naves",
+  mineracao: "Mineração", tec: "Deslocamento", espionagem: "Inteligência", sabotagem: "Sabotagem", naves: "Naves",
 };
 const CAT_ORDER = ["mineracao", "tec", "espionagem", "sabotagem", "naves"];
 
@@ -250,11 +250,9 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   if (!view) return <div className="app">Carregando o universo...</div>;
 
   const { planet, game } = view;
-  const cost = planet.nextRoidCost;
-  const canAfford =
-    planet.resources.metalium >= cost.metalium &&
-    planet.resources.carbonum >= cost.carbonum &&
-    planet.resources.plutonium >= cost.plutonium;
+  // Cada roid custa SÓ o próprio recurso (e sobe +250 por roid daquele recurso).
+  const roidCost = (r: Resource) => planet.nextRoidCost[r];
+  const canAffordRoid = (r: Resource) => planet.resources[r] >= roidCost(r);
 
   // Renderiza os itens de tech (Pesquisa ou Construção) agrupados por categoria.
   function renderTech(kind: "research" | "building", verb: string) {
@@ -487,10 +485,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
           <div className="panel">
             <h2>Asteroides (roids) — {planet.roids.total} no total</h2>
             <div className="cost">
-              Custo do próximo roid:{" "}
-              <span>{fmt(cost.metalium)} metalium</span>
-              {cost.carbonum > 0 && <> · <span>{fmt(cost.carbonum)} carbonum</span></>}
-              {cost.plutonium > 0 && <> · <span>{fmt(cost.plutonium)} plutônio</span></>}
+              Inicie a mineração de um roid pagando <b>só o recurso dele</b>. O custo sobe +250 a cada roid daquele recurso. Cada roid produz <b>{fmt(450)}</b>/tick.
             </div>
             {RES_META.map(({ key, label }) => (
               <div className="roid-row" key={key}>
@@ -498,15 +493,17 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                   <span className={`dot ${key}`} />
                   <div>
                     <div>{label}</div>
-                    <div className="roid-count">{planet.roids[key]} roids extraindo</div>
+                    <div className="roid-count">{planet.roids[key]} roids · +{fmt(planet.productionPerTick[key])}/tick</div>
                   </div>
                 </div>
-                <button disabled={!canAfford || busy !== null} onClick={() => build(key)}>
-                  {busy === key ? "..." : `⛏️ minerar ${label}`}
-                </button>
+                <div style={{ textAlign: "right" }}>
+                  <div className="roid-count">custo: {fmt(roidCost(key))} {label}</div>
+                  <button disabled={!canAffordRoid(key) || busy !== null} onClick={() => build(key)}>
+                    {busy === key ? "..." : `⛏️ minerar ${label}`}
+                  </button>
+                </div>
               </div>
             ))}
-            {!canAfford && <div className="error" style={{ marginTop: 12 }}>Recursos insuficientes para o próximo roid.</div>}
             {error && <div className="error" style={{ marginTop: 12 }}>{error}</div>}
           </div>
 
@@ -571,8 +568,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         {section === "construcao" && (
           <>
             <div className="cost" style={{ marginBottom: 12 }}>
-              Produção atual dos roids: <span>{view.planet.prodMul}%</span> · velocidade de frota:{" "}
-              <span>{view.planet.travelMul}%</span> do tempo base.
+              Bônus de mineração: <span>+{fmt(view.planet.miningBonus.metalium)} M</span> · <span>+{fmt(view.planet.miningBonus.carbonum)} C</span> · <span>+{fmt(view.planet.miningBonus.plutonium)} P</span> por tick · viagem: <span>−{view.planet.travelReduction} tick(s)</span>.
             </div>
             {renderTech("building", "Construir")}
             {error && <div className="error">{error}</div>}
