@@ -60,6 +60,7 @@ export interface UnitItem {
 export interface QueueItem {
   id: string;
   kind: "ship" | "tech";
+  techKind: "research" | "building" | null;
   shipClass: string | null;
   key: string | null;
   label: string;

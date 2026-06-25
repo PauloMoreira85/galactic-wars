@@ -49,6 +49,13 @@ const CAT_LABELS: Record<string, string> = {
 };
 const CAT_ORDER = ["mineracao", "tec", "espionagem", "sabotagem", "naves"];
 
+// Ícone + rótulo do item na fila: distingue Pesquisa / Construção / Nave.
+function queueTag(q: { kind: string; techKind: string | null }) {
+  if (q.kind === "ship") return { icon: "🚀", tag: "Nave", color: "var(--accent)" };
+  if (q.techKind === "research") return { icon: "🔬", tag: "Pesquisa", color: "#37e07a" };
+  return { icon: "🛠️", tag: "Construção", color: "var(--carbonum)" };
+}
+
 function useCountdown(view: PlanetView | null) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
@@ -548,12 +555,12 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         {(section === "pesquisa" || section === "construcao") && view.queue.length > 0 && (
           <div className="panel">
             <h2>Fila</h2>
-            {view.queue.map((q) => (
+            {view.queue.map((q) => { const t = queueTag(q); return (
               <div className="roid-row" key={q.id}>
-                <div>{q.kind === "tech" ? "🔬 " : "🛠️ "}{q.label}</div>
+                <div>{t.icon} <span className="roid-count" style={{ color: t.color }}>{t.tag}:</span> {q.label}</div>
                 <div className="roid-count">{q.ticksRemaining} tick(s)</div>
               </div>
-            ))}
+            ); })}
           </div>
         )}
 
@@ -632,12 +639,12 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             {view.queue.length > 0 && (
               <div className="panel">
                 <h2>Fila de produção</h2>
-                {view.queue.map((q) => (
+                {view.queue.map((q) => { const t = queueTag(q); return (
                   <div className="roid-row" key={q.id}>
-                    <div>{q.kind === "tech" ? "🔬 " : "🛠️ "}{q.label}</div>
+                    <div>{t.icon} <span className="roid-count" style={{ color: t.color }}>{t.tag}:</span> {q.label}</div>
                     <div className="roid-count">{q.ticksRemaining} tick(s) restante(s)</div>
                   </div>
-                ))}
+                ); })}
               </div>
             )}
           </>
