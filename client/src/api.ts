@@ -258,6 +258,7 @@ export const api = {
   pmSend: (to: string, subject: string, body: string, anonymous: boolean) =>
     request<any>("/game/pm", { method: "POST", body: JSON.stringify({ to, subject, body, anonymous }) }),
   pmRead: (id: string) => request<{ ok: true }>(`/game/pm/${id}/read`, { method: "POST" }),
+  pmUnread: () => request<{ unread: number }>("/game/pm/unread"),
 
   chat: (room: string) => request<{ label: string; messages: { id: string; author: string; body: string; at: string }[] }>(`/game/chat/${room}`),
   chatSend: (room: string, body: string) => request<{ label: string; messages: { id: string; author: string; body: string; at: string }[] }>(`/game/chat/${room}`, { method: "POST", body: JSON.stringify({ body }) }),

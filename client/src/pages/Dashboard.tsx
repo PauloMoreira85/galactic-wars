@@ -157,6 +157,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [mktBusy, setMktBusy] = useState(false);
   const [zoom, setZoom] = useState<{ src: string; alt: string } | null>(null);
   const [alerts, setAlerts] = useState({ underAttack: false, incomingDefense: false, galaxyUnderAttack: false });
+  const [unreadMsgs, setUnreadMsgs] = useState(0);
   const countdown = useCountdown(view);
 
   useEffect(() => {
@@ -179,6 +180,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
           galaxyUnderAttack: t.incomingAttacks > 0,
         });
       } catch {}
+      try { setUnreadMsgs((await api.pmUnread()).unread); } catch {}
     } catch (e: any) {
       if (String(e.message).includes("autenticado") || String(e.message).includes("Token")) {
         onLogout();
@@ -320,12 +322,12 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
               {group.map((it) => (
                 <button
                   key={it.key}
-                  className={`menu-link ${section === it.key ? "active" : ""} ${it.soon ? "soon" : ""}`}
+                  className={`menu-link ${section === it.key ? "active" : ""} ${it.soon ? "soon" : ""} ${it.key === "mensagens" && unreadMsgs > 0 ? "alert-msg" : ""}`}
                   disabled={it.soon}
                   title={it.soon ? "Em breve" : ""}
                   onClick={() => go(it)}
                 >
-                  {it.label}
+                  {it.label}{it.key === "mensagens" && unreadMsgs > 0 ? ` ✉️ (${unreadMsgs})` : ""}
                 </button>
               ))}
             </div>
@@ -374,8 +376,8 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             ["forumgalaxia", "💬 Fórum"],
             ["noticias", "📰 Notícias"],
           ] as [Section, string][]).map(([key, label]) => (
-            <button key={key} className={`action-tab ${section === key ? "active" : ""}`} onClick={() => setSection(key)}>
-              {label}
+            <button key={key} className={`action-tab ${section === key ? "active" : ""} ${key === "mensagens" && unreadMsgs > 0 ? "alert-msg" : ""}`} onClick={() => setSection(key)}>
+              {label}{key === "mensagens" && unreadMsgs > 0 ? ` (${unreadMsgs})` : ""}
             </button>
           ))}
           {/* Radar: acende quando ALGUÉM da sua galáxia está sob ataque */}

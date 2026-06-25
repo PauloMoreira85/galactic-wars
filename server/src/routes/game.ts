@@ -551,6 +551,10 @@ gameRouter.post("/sabotage", async (req: AuthedRequest, res) => {
 });
 
 // ===== Mensagem privada =====
+// Contagem leve de não-lidas (pra destacar o ícone no menu/abas).
+gameRouter.get("/pm/unread", async (req: AuthedRequest, res) => {
+  res.json({ unread: await unreadCount(req.userId!) });
+});
 gameRouter.get("/pm", async (req: AuthedRequest, res) => {
   res.json({ inbox: await inbox(req.userId!), sent: await sentbox(req.userId!), unread: await unreadCount(req.userId!) });
 });

@@ -117,6 +117,10 @@ body::after {
 .action-tab.alert-atk { color: #fff; border-color: var(--danger); background: rgba(255,70,70,0.22); text-shadow: 0 0 8px rgba(255,70,70,0.7); animation: atk-pulse 1.1s ease-in-out infinite; }
 @keyframes atk-pulse { 0%,100% { box-shadow: 0 0 6px rgba(255,70,70,0.4); } 50% { box-shadow: 0 0 18px rgba(255,70,70,0.85); } }
 .action-tab.alert-def { color: #c9ffe6; border-color: var(--carbonum); background: rgba(111,227,176,0.18); text-shadow: 0 0 8px rgba(111,227,176,0.6); }
+/* Mensagem não lida: amarelo pulsante (aba e item do menu) */
+.action-tab.alert-msg { color: #fff; border-color: #ffd23f; background: rgba(255,210,63,0.20); text-shadow: 0 0 8px rgba(255,210,63,0.7); animation: msg-pulse 1.3s ease-in-out infinite; }
+.menu-link.alert-msg { color: #ffd23f; font-weight: 700; }
+@keyframes msg-pulse { 0%,100% { box-shadow: 0 0 5px rgba(255,210,63,0.4); } 50% { box-shadow: 0 0 16px rgba(255,210,63,0.85); } }
 /* Radar central: cinza apagado quando calmo, vermelho pulsante quando a galáxia está sob ataque */
 .radar { width: 22px; height: 22px; border-radius: 50%; align-self: center; cursor: pointer; flex-shrink: 0;
   background: radial-gradient(circle at 50% 50%, #1a3344, #0a1622); border: 1px solid var(--border); box-shadow: inset 0 0 6px rgba(0,0,0,0.6); }
