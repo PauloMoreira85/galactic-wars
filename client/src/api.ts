@@ -322,6 +322,10 @@ export const api = {
         origin: string; owner: string; target: string; targetName: string | null;
         mission: string; status: string; ships: number; ticks: number; toMe: boolean;
       }[];
+      movements: {
+        planet: string; owner: string; coords: string;
+        fleets: { name: string; mission: string; status: string; target: string; ships: number; ticks: number }[];
+      }[];
     }>("/game/traffic"),
 
   combats: () =>

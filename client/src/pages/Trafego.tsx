@@ -5,6 +5,8 @@ function fmt(n: number) {
   return n.toLocaleString("pt-BR");
 }
 
+const STATUS: Record<string, string> = { outbound: "indo", engaged: "em combate", returning: "voltando", garrison: "defendendo" };
+
 // Tráfego: frotas chegando na sua galáxia. Ataque = vermelho, defesa/transporte = verde.
 export function Trafego() {
   const [data, setData] = useState<Awaited<ReturnType<typeof api.traffic>> | null>(null);
@@ -27,6 +29,7 @@ export function Trafego() {
   if (!data) return <div className="panel"><div className="roid-count">Carregando tráfego...</div></div>;
 
   return (
+    <>
     <div className="panel">
       <h2>Tráfego — frotas chegando na galáxia {data.galaxy}</h2>
       <div className="cost" style={{ marginBottom: 10 }}>
@@ -61,5 +64,35 @@ export function Trafego() {
         </table>
       )}
     </div>
+
+    <div className="panel">
+      <h2>Movimentação da galáxia {data.galaxy}</h2>
+      <div className="cost" style={{ marginBottom: 10 }}>Todas as frotas em movimento dos planetas da sua galáxia (ataque ou defesa).</div>
+      {data.movements.length === 0 ? (
+        <div className="roid-count">Nenhuma frota em movimento na galáxia.</div>
+      ) : data.movements.map((m, i) => (
+        <div key={i} style={{ marginBottom: 14 }}>
+          <div className="combat-ini"><b>{m.planet}</b> <span className="roid-count">({m.coords}) · {m.owner}</span></div>
+          <table>
+            <thead><tr><th>Frota</th><th>Tipo</th><th>Destino</th><th>Naves</th><th>Estado</th></tr></thead>
+            <tbody>
+              {m.fleets.map((f, j) => {
+                const atk = f.mission === "attack";
+                return (
+                  <tr key={j}>
+                    <td>{f.name}</td>
+                    <td style={{ color: atk ? "var(--danger)" : "var(--carbonum)" }}>{atk ? "🔴 ataque" : "🟢 defesa"}</td>
+                    <td className="roid-count">{f.target}</td>
+                    <td>{fmt(f.ships)}</td>
+                    <td>{STATUS[f.status] ?? f.status}{f.status !== "engaged" && f.ticks > 0 ? ` · ${f.ticks}t` : ""}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ))}
+    </div>
+    </>
   );
 }

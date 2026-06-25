@@ -327,10 +327,32 @@ export async function galaxyTraffic(planetId: string) {
     };
   }).sort((a, b) => a.ticks - b.ticks);
 
+  // Movimentação da galáxia: TODAS as frotas em movimento dos planetas da MINHA
+  // galáxia (ataque/defesa), agrupadas por planeta dono.
+  const galaxyPlanets = await prisma.planet.findMany({ where: { galaxy: me.galaxy }, include: { user: { select: { username: true } } } });
+  const pById = new Map(galaxyPlanets.map((p) => [p.id, p]));
+  const moving = await prisma.fleet.findMany({
+    where: { ownerPlanetId: { in: galaxyPlanets.map((p) => p.id) }, status: { in: ["outbound", "engaged", "returning", "garrison"] } },
+  });
+  const byOwner = new Map<string, { planet: string; owner: string; coords: string; fleets: any[] }>();
+  for (const f of moving) {
+    const o = pById.get(f.ownerPlanetId);
+    if (!o) continue;
+    if (!byOwner.has(o.id)) byOwner.set(o.id, { planet: o.name, owner: o.user.username, coords: `${o.galaxy}:${o.system}:${o.slot}`, fleets: [] });
+    byOwner.get(o.id)!.fleets.push({
+      name: f.name, mission: f.mission, status: f.status,
+      target: `${f.targetGalaxy}:${f.targetSystem}:${f.targetSlot}`,
+      ships: totalUnits(parseUnits(f.units)),
+      ticks: Math.max(0, f.arriveTick - nowTick),
+    });
+  }
+  const movements = [...byOwner.values()].sort((a, b) => a.coords.localeCompare(b.coords));
+
   return {
     galaxy: me.galaxy,
     incomingAttacks: list.filter((x) => x.mission === "attack").length,
     incomingToMe: list.filter((x) => x.toMe && x.mission === "attack").length,
     fleets: list,
+    movements,
   };
 }
