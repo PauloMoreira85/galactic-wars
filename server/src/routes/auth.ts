@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "../db.js";
 import { signToken } from "../auth.js";
-import { STARTING, SLOTS_PER_SYSTEM } from "../game/constants.js";
+import { STARTING, SLOTS_PER_SYSTEM, GALAXIES } from "../game/constants.js";
 import { RACE_KEYS, publicRaces, type RaceKey } from "../game/races.js";
 import { unitsOfRace, CLASS_LABEL } from "../game/catalog.js";
 
@@ -30,8 +30,7 @@ const registerSchema = z.object({
 
 // Acha um slot livre no mapa. Distribui os jogadores entre galaxias (round-robin)
 // para que jogadores proximos fiquem em galaxias DIFERENTES (e portanto possam
-// guerrear entre si — mesma galaxia = aliados).
-const GALAXIES = 9;
+// guerrear entre si — mesma galaxia = aliados). GALAXIES vem de constants (=6).
 async function allocateSlot() {
   // Coordenadas ja ocupadas (evita colisao com a constraint unica).
   const planets = await prisma.planet.findMany({ select: { galaxy: true, system: true, slot: true } });

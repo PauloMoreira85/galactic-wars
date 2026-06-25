@@ -36,7 +36,7 @@ export const STARTING = {
 export const SLOTS_PER_SYSTEM = 5;
 
 // Número de galáxias no universo.
-export const GALAXIES = 9;
+export const GALAXIES = 6;
 
 // Auto-exílios por planeta.
 export const MAX_AUTO_EXILES = 3;
