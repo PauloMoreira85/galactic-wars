@@ -407,7 +407,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                   <button className="link" onClick={() => { localStorage.setItem("gw_intro_hidden", "1"); setShowIntro(false); }}>ocultar</button>
                 </div>
                 <ol className="intro-steps">
-                  <li><b>Compre roids</b> aqui na Página Principal (botão "+ roid de …"). Mais roids = mais recursos por tick.</li>
+                  <li><b>Inicie a mineração de roids</b> na Página Principal (botão "⛏️ minerar …") — você paga pra começar a minerar. Mais roids = mais recursos por tick.</li>
                   <li><b>Pesquise</b> (🔬) pra desbloquear construções; depois <b>construa</b> (🛠️).</li>
                   <li>Em <b>Naves, Inteligência e Sabotagem</b> a cadeia é: pesquisa → fábrica → libera a próxima.</li>
                   <li>Construa naves nas fábricas (<b>Naves</b>) e monte uma frota em <b>Frotas</b>.</li>
@@ -484,7 +484,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                   </div>
                 </div>
                 <button disabled={!canAfford || busy !== null} onClick={() => build(key)}>
-                  {busy === key ? "..." : `+ roid de ${label}`}
+                  {busy === key ? "..." : `⛏️ minerar ${label}`}
                 </button>
               </div>
             ))}
