@@ -13,6 +13,16 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
   const [race, setRace] = useState<string>("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [forgot, setForgot] = useState(false);
+  const [forgotMsg, setForgotMsg] = useState("");
+
+  async function doForgot() {
+    setForgotMsg(""); setError("");
+    try {
+      await api.forgotPassword(login);
+      setForgotMsg("Se a conta existir, enviamos um link de recuperação pro e-mail cadastrado.");
+    } catch (e: any) { setError(e.message ?? "Falha"); }
+  }
 
   useEffect(() => {
     api.races().then((r) => {
@@ -114,8 +124,19 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
             {busy ? "..." : mode === "login" ? "Entrar no comando" : "Fundar planeta"}
           </button>
           {mode === "login" && (
-            <div className="roid-count" style={{ marginTop: 8, textAlign: "center" }}>
-              Esqueceu a senha? Fale com o administrador para redefini-la.
+            <div style={{ marginTop: 8, textAlign: "center" }}>
+              {!forgot ? (
+                <button type="button" className="link" onClick={() => { setForgot(true); setForgotMsg(""); }}>Esqueci a senha</button>
+              ) : (
+                <div className="roid-count">
+                  Digite seu <b>e-mail ou usuário</b> no campo "Usuário" acima e clique:
+                  <div style={{ marginTop: 6 }}>
+                    <button type="button" disabled={!login.trim()} onClick={doForgot}>enviar link de recuperação</button>{" "}
+                    <button type="button" className="link" onClick={() => setForgot(false)}>cancelar</button>
+                  </div>
+                  {forgotMsg && <div style={{ marginTop: 6, color: "var(--carbonum)" }}>{forgotMsg}</div>}
+                </div>
+              )}
             </div>
           )}
         </form>

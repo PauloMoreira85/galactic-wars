@@ -176,6 +176,11 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
+  forgotPassword: (login: string) =>
+    request<{ ok: true }>("/auth/forgot", { method: "POST", body: JSON.stringify({ login }) }),
+  resetPassword: (token: string, password: string) =>
+    request<{ ok: true }>("/auth/reset", { method: "POST", body: JSON.stringify({ token, password }) }),
+
   me: () => request<PlanetView>("/game/me"),
 
   buildRoid: (resource: Resource) =>

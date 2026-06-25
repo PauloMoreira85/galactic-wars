@@ -1,8 +1,10 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { randomBytes } from "node:crypto";
 import { prisma } from "../db.js";
 import { signToken } from "../auth.js";
+import { sendMail } from "../email.js";
 import { STARTING, SLOTS_PER_SYSTEM, GALAXIES } from "../game/constants.js";
 import { RACE_KEYS, publicRaces, type RaceKey } from "../game/races.js";
 import { unitsOfRace, CLASS_LABEL } from "../game/catalog.js";
@@ -117,4 +119,43 @@ authRouter.post("/login", async (req, res) => {
   }
 
   return res.json({ token: signToken(user.id), username: user.username });
+});
+
+// ===== Recuperação de senha por e-mail =====
+const APP_URL = process.env.APP_URL ?? "https://galacticwar.com.br";
+
+// Pede o link de recuperação. Sempre responde ok (não revela se o e-mail existe).
+authRouter.post("/forgot", async (req, res) => {
+  const parsed = z.object({ login: z.string().min(1) }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "Informe e-mail ou usuário" });
+  const { login } = parsed.data;
+  const user = await prisma.user.findFirst({ where: { OR: [{ email: login }, { username: login }] } });
+  if (user) {
+    const token = randomBytes(24).toString("hex");
+    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1h
+    await prisma.user.update({ where: { id: user.id }, data: { resetToken: token, resetExpires: expires } });
+    const link = `${APP_URL}/reset?token=${token}`;
+    const html = `<p>Olá, Comandante <b>${user.username}</b>.</p>
+      <p>Para redefinir sua senha no Galactic Wars, clique no link abaixo (válido por 1 hora):</p>
+      <p><a href="${link}">${link}</a></p>
+      <p>Se não foi você, ignore este e-mail.</p>`;
+    const sent = await sendMail(user.email, "Galactic Wars — recuperação de senha", html);
+    if (!sent) console.log(`[forgot] SMTP off — link de reset de ${user.username}: ${link}`);
+  }
+  res.json({ ok: true });
+});
+
+// Redefine a senha usando o token do e-mail.
+authRouter.post("/reset", async (req, res) => {
+  const parsed = z.object({ token: z.string().min(10), password: z.string().min(6).max(100) }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "Token ou senha inválidos (mín. 6 caracteres)" });
+  const user = await prisma.user.findFirst({ where: { resetToken: parsed.data.token } });
+  if (!user || !user.resetExpires || user.resetExpires.getTime() < Date.now()) {
+    return res.status(400).json({ error: "Link inválido ou expirado. Peça outro." });
+  }
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { password: await bcrypt.hash(parsed.data.password, 10), resetToken: null, resetExpires: null },
+  });
+  res.json({ ok: true });
 });

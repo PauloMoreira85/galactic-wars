@@ -11,6 +11,13 @@ services:
       DATABASE_URL: "file:/data/prod.db"
       TICK_INTERVAL_SECONDS: "60"    # TURBO p/ testes (1 min). Produção real: 3600 (1h)
       JWT_SECRET: ${JWT_SECRET}   # vem do arquivo .env ao lado deste
+      # E-mail (recuperação de senha). Preencha no .env depois de criar a caixa.
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:-contato@galacticwar.com.br}
+      APP_URL: ${APP_URL:-https://galacticwar.com.br}
     volumes:
       - gw-data:/data             # SQLite persiste aqui (sobrevive a deploys)
     expose:

@@ -20,6 +20,9 @@ model User {
   nameChanges Int    @default(0)     // trocas de nome usadas (máx 3 p/ associado)
   createdAt DateTime @default(now())
   lastSeen  DateTime @default(now())
+  // Recuperação de senha por e-mail (token temporário).
+  resetToken   String?
+  resetExpires DateTime?
   planet    Planet?
 }
 
