@@ -191,7 +191,13 @@ export async function advanceEngagement(fleetId: string, tick: number) {
     }).filter((r) => r.before > 0 || r.lost > 0 || r.pem > 0);
 
   while (done < targetDone) {
-    // Snapshot antes da rodada (pra calcular o delta deste tick).
+    // PEM dura 1 TICK: os paralisados do tick anterior VOLTAM a ativos (precisam
+    // ser paralisados de novo). Antes a paralisia ficava permanente (bug).
+    for (const n of Object.keys(st.aPem)) if (st.aPem[n] > 0) st.aActive[n] = (st.aActive[n] || 0) + st.aPem[n];
+    for (const n of Object.keys(st.dPem)) if (st.dPem[n] > 0) st.dActive[n] = (st.dActive[n] || 0) + st.dPem[n];
+    st.aPem = {}; st.dPem = {};
+
+    // Snapshot antes da rodada (pra calcular o delta deste tick; PEM já zerado acima).
     const aActiveB = { ...st.aActive }, dActiveB = { ...st.dActive };
     const aLostB = { ...st.aLost }, dLostB = { ...st.dLost };
     const aPemB = { ...st.aPem }, dPemB = { ...st.dPem };
