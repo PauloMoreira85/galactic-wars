@@ -104,12 +104,13 @@ function fireAt(typeName: string, count: number, enemyActive: UnitMap, enemyLost
 }
 
 // Uma rodada (1 tick): todos atiram em ordem de INICIATIVA (menor primeiro).
+// Empate de iniciativa: a DEFESA atira primeiro (vantagem sempre da defesa).
 function oneRound(st: BattleState) {
   st.log = []; // registra só a última rodada
   const firers: { side: "a" | "d"; type: string; ini: number }[] = [];
   for (const t of Object.keys(st.aActive)) if (st.aActive[t] > 0) firers.push({ side: "a", type: t, ini: unitByName(t)?.ini ?? 999 });
   for (const t of Object.keys(st.dActive)) if (st.dActive[t] > 0) firers.push({ side: "d", type: t, ini: unitByName(t)?.ini ?? 999 });
-  firers.sort((x, y) => x.ini - y.ini);
+  firers.sort((x, y) => (x.ini - y.ini) || (x.side === y.side ? 0 : x.side === "d" ? -1 : 1));
   for (const f of firers) {
     const me = f.side === "a" ? st.aActive : st.dActive;
     if ((me[f.type] || 0) <= 0) continue; // pode ter sido destruída/paralisada antes de atirar
