@@ -77,14 +77,14 @@ export const INTEL_TIERS = ["centralInteligencia", "servicoSecreto", "agentesMil
 // ===== Mineração (cada construção adiciona produção FLAT do recurso) =====
 const MINERACAO = chain("mineracao", [
   { key: "centroMineracao", name: "Centro de Mineração", kind: "building", desc: "+1500 de produção de Metalium por tick.", m: 1250, c: 1250, ticks: 6 },
-  { key: "extracaoCristal", name: "Extração de Cristal", kind: "research", desc: "Desbloqueia a Mina de Cristal.", m: 2500, c: 2500, ticks: 10 },
-  { key: "minaCristal", name: "Mina de Cristal", kind: "building", desc: "+1500 de produção de Carbonum por tick.", m: 5000, c: 5000, ticks: 13 },
-  { key: "fusaoEonio", name: "Fusão de Eônio", kind: "research", desc: "Desbloqueia o Laboratório de Eônio.", m: 7500, c: 7500, ticks: 19 },
-  { key: "labEonio", name: "Laboratório de Eônio", kind: "building", desc: "+1500 de produção de Plutônio por tick.", m: 15000, c: 15000, ticks: 26 },
+  { key: "extracaoCristal", name: "Extração de Carbonum", kind: "research", desc: "Desbloqueia a Mina de Carbonum.", m: 2500, c: 2500, ticks: 10 },
+  { key: "minaCristal", name: "Mina de Carbonum", kind: "building", desc: "+1500 de produção de Carbonum por tick.", m: 5000, c: 5000, ticks: 13 },
+  { key: "fusaoEonio", name: "Fusão de Plutônio", kind: "research", desc: "Desbloqueia o Laboratório de Plutônio.", m: 7500, c: 7500, ticks: 19 },
+  { key: "labEonio", name: "Laboratório de Plutônio", kind: "building", desc: "+1500 de produção de Plutônio por tick.", m: 15000, c: 15000, ticks: 26 },
   { key: "recursosProfundidade", name: "Recursos em Profundidade", kind: "research", desc: "Desbloqueia minas mais profundas.", m: 22500, c: 22500, ticks: 26 },
-  { key: "minaProfundaMetal", name: "Mina Profunda de Metal", kind: "building", desc: "+10000 de produção de Metalium por tick.", m: 45000, c: 45000, ticks: 35 },
-  { key: "armasPlasma", name: "Armas Plasma Modificadas", kind: "research", desc: "Desbloqueia a Mina Profunda de Cristal.", m: 67500, c: 67500, ticks: 35 },
-  { key: "minaProfundaCristal", name: "Mina Profunda de Cristal", kind: "building", desc: "+10000 de produção de Carbonum por tick.", m: 135000, c: 135000, ticks: 50 },
+  { key: "minaProfundaMetal", name: "Mina Profunda de Metalium", kind: "building", desc: "+10000 de produção de Metalium por tick.", m: 45000, c: 45000, ticks: 35 },
+  { key: "armasPlasma", name: "Sondas de Carbonum Profundo", kind: "research", desc: "Desbloqueia a Mina Profunda de Carbonum.", m: 67500, c: 67500, ticks: 35 },
+  { key: "minaProfundaCristal", name: "Mina Profunda de Carbonum", kind: "building", desc: "+10000 de produção de Carbonum por tick.", m: 135000, c: 135000, ticks: 50 },
   { key: "materiaisReforcados", name: "Materiais Reforçados", kind: "research", desc: "Desbloqueia o Laboratório Reforçado.", m: 135000, c: 135000, ticks: 50 },
   { key: "labReforcado", name: "Laboratório Reforçado", kind: "building", desc: "+10000 de produção de Plutônio por tick.", m: 135000, c: 135000, ticks: 50 },
 ]);
