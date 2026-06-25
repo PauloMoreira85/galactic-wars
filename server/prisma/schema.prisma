@@ -23,6 +23,10 @@ model User {
   // Recuperação de senha por e-mail (token temporário).
   resetToken   String?
   resetExpires DateTime?
+  // Dados de perfil (editáveis na "Minha Conta").
+  whatsapp  String?  // contato (premiação) — privado
+  pixKey    String?  // chave PIX (premiação) — privado
+  avatar    String?  // foto do comandante (data URL base64, limitada)
   planet    Planet?
 }
 

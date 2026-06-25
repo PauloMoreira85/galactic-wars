@@ -29,6 +29,7 @@ const registerSchema = z.object({
   planetName: z.string().min(1).max(30).optional(),
   preposition: z.enum(["de", "da", "do"]).optional(),
   race: z.enum(RACE_KEYS as [string, ...string[]]),
+  whatsapp: z.string().max(30).optional(),
 });
 
 // Acha um slot livre no mapa. Distribui os jogadores entre galaxias (round-robin)
@@ -53,7 +54,7 @@ authRouter.post("/register", async (req, res) => {
   if (!parsed.success) {
     return res.status(400).json({ error: "Dados invalidos", details: parsed.error.flatten() });
   }
-  const { email, username, password, planetName, preposition, race } = parsed.data;
+  const { email, username, password, planetName, preposition, race, whatsapp } = parsed.data;
 
   const exists = await prisma.user.findFirst({
     where: { OR: [{ email }, { username }] },
@@ -73,6 +74,7 @@ authRouter.post("/register", async (req, res) => {
         username,
         password: hash,
         race,
+        whatsapp: whatsapp?.trim() || null,
         planet: {
           create: {
             name: planetName?.trim() || `Planeta de ${username}`,

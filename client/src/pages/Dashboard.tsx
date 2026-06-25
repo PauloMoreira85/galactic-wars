@@ -366,7 +366,9 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         {/* Cabeçalho de status no topo, como no print da época */}
         <div className="status-header">
           <div className="sh-commander">
-            <span className="sh-planet-icon">🪐</span>
+            {view.commanderAvatar
+              ? <img className="sh-avatar" src={view.commanderAvatar} alt="" style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", border: "1px solid var(--border)" }} />
+              : <span className="sh-planet-icon">🪐</span>}
             <div>
               <div className="sh-name">{view.commanderTitle}</div>
               <div className="sh-cargo">{planet.cargo ?? "Comandante"}</div>

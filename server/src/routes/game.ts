@@ -51,7 +51,7 @@ gameRouter.use(async (req, res, next) => {
 async function planetView(userId: string) {
   const planet = await prisma.planet.findUnique({
     where: { userId },
-    include: { user: { select: { username: true, race: true } } },
+    include: { user: { select: { username: true, race: true, avatar: true } } },
   });
   if (!planet) return null;
   const state = await prisma.gameState.findUnique({ where: { id: 1 } });
@@ -127,6 +127,7 @@ async function planetView(userId: string) {
 
   return {
     commander: planet.user.username,
+    commanderAvatar: planet.user.avatar ?? null,
     commanderTitle: `${planet.user.username} ${planet.preposition} ${planet.name}`,
     race: { key: race.key, name: race.name, tagline: race.tagline, lore: race.lore, traits: race.traits, img: `/art/races/${race.key}.png` },
     planet: {
@@ -732,6 +733,56 @@ gameRouter.post("/market/trade", async (req: AuthedRequest, res) => {
     }, TX_OPTS);
   } catch (e: any) { return res.status(400).json({ error: e.message ?? "Falha na troca" }); }
   res.json(await planetView(req.userId!));
+});
+
+// ===== Minha Conta (perfil editável) =====
+const MAX_AVATAR_BYTES = 80000; // ~80KB (data URL base64)
+
+gameRouter.get("/account", async (req: AuthedRequest, res) => {
+  const u = await prisma.user.findUnique({
+    where: { id: req.userId! },
+    select: { email: true, username: true, whatsapp: true, pixKey: true, avatar: true },
+  });
+  if (!u) return res.status(404).json({ error: "Usuario nao encontrado" });
+  res.json(u);
+});
+
+// Atualiza contato/premiação/avatar. Campos ausentes não são alterados;
+// string vazia limpa o campo.
+const profileSchema = z.object({
+  whatsapp: z.string().max(30).optional(),
+  pixKey: z.string().max(80).optional(),
+  avatar: z.string().max(MAX_AVATAR_BYTES).optional(),
+});
+gameRouter.post("/account/profile", async (req: AuthedRequest, res) => {
+  const parsed = profileSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "Dados inválidos (avatar muito grande?)" });
+  const { whatsapp, pixKey, avatar } = parsed.data;
+  const data: any = {};
+  if (whatsapp !== undefined) data.whatsapp = whatsapp.trim() || null;
+  if (pixKey !== undefined) data.pixKey = pixKey.trim() || null;
+  if (avatar !== undefined) {
+    const v = avatar.trim();
+    if (v && !/^data:image\/(png|jpeg|jpg|gif|webp);base64,/.test(v)) return res.status(400).json({ error: "Imagem inválida" });
+    data.avatar = v || null;
+  }
+  await prisma.user.update({ where: { id: req.userId! }, data });
+  const u = await prisma.user.findUnique({ where: { id: req.userId! }, select: { email: true, username: true, whatsapp: true, pixKey: true, avatar: true } });
+  res.json(u);
+});
+
+// Trocar o e-mail (confirma a senha + checa unicidade).
+gameRouter.post("/account/email", async (req: AuthedRequest, res) => {
+  const parsed = z.object({ password: z.string(), email: z.string().email() }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "E-mail inválido" });
+  const user = await prisma.user.findUnique({ where: { id: req.userId! } });
+  if (!user) return res.status(404).json({ error: "Usuario nao encontrado" });
+  if (!(await bcrypt.compare(parsed.data.password, user.password))) return res.status(400).json({ error: "Senha incorreta" });
+  const email = parsed.data.email.toLowerCase().trim();
+  const taken = await prisma.user.findFirst({ where: { email, id: { not: user.id } } });
+  if (taken) return res.status(409).json({ error: "Esse e-mail já está em uso" });
+  await prisma.user.update({ where: { id: user.id }, data: { email } });
+  res.json({ ok: true, email });
 });
 
 // Alterar a própria senha (precisa da senha atual).

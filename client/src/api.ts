@@ -89,6 +89,7 @@ export interface TechItem {
 
 export interface PlanetView {
   commander: string;
+  commanderAvatar: string | null;
   commanderTitle: string;
   race: RaceInfo & {
     traits: Record<string, unknown>;
@@ -165,6 +166,7 @@ export const api = {
     planetName?: string;
     preposition?: string;
     race: string;
+    whatsapp?: string;
   }) => request<{ token: string; username: string }>("/auth/register", {
     method: "POST",
     body: JSON.stringify(body),
@@ -317,6 +319,12 @@ export const api = {
     request<PlanetView>("/game/auto-exile", { method: "POST" }),
   changePassword: (current: string, next: string) =>
     request<{ ok: true }>("/game/change-password", { method: "POST", body: JSON.stringify({ current, next }) }),
+  account: () =>
+    request<{ email: string; username: string; whatsapp: string | null; pixKey: string | null; avatar: string | null }>("/game/account"),
+  updateProfile: (body: { whatsapp?: string; pixKey?: string; avatar?: string }) =>
+    request<{ email: string; username: string; whatsapp: string | null; pixKey: string | null; avatar: string | null }>("/game/account/profile", { method: "POST", body: JSON.stringify(body) }),
+  changeEmail: (password: string, email: string) =>
+    request<{ ok: true; email: string }>("/game/account/email", { method: "POST", body: JSON.stringify({ password, email }) }),
   cancelOrder: (id: string) =>
     request<PlanetView>(`/game/queue/${id}/cancel`, { method: "POST" }),
   marketTrade: (from: Resource, to: Resource, amount: number) =>

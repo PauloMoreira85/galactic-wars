@@ -7,6 +7,7 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [planetName, setPlanetName] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [preposition, setPreposition] = useState("de");
   const [password, setPassword] = useState("");
   const [races, setRaces] = useState<RaceInfo[]>([]);
@@ -39,7 +40,7 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
       const res =
         mode === "login"
           ? await api.login({ login, password })
-          : await api.register({ email, username, password, planetName, preposition, race });
+          : await api.register({ email, username, password, planetName, preposition, race, whatsapp });
       setToken(res.token);
       onAuthed();
     } catch (err: any) {
@@ -82,6 +83,7 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
           ) : (
             <>
               <input placeholder="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus />
+              <input placeholder="WhatsApp (opcional — p/ premiação)" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                 <input placeholder="Nome do líder" value={username} onChange={(e) => setUsername(e.target.value)} style={{ flex: 1, minWidth: 140, margin: 0 }} />
                 <select value={preposition} onChange={(e) => setPreposition(e.target.value)}
