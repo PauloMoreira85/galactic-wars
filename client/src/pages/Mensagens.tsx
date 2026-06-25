@@ -26,12 +26,14 @@ export function Mensagens() {
     try { setData(await api.pmSend(to, subject, body, anon)); setTo(""); setSubject(""); setBody(""); setAnon(false); setTab("enviadas"); }
     catch (e: any) { setError(e.message ?? "Falha"); }
   }
-  // Responder: pré-preenche a aba Nova com o remetente e "Re: assunto".
-  function reply(m: { from: string; subject: string }) {
+  // Responder: pré-preenche a aba Nova com o remetente, "Re: assunto" e a mensagem
+  // original CITADA (com "> "), pra você escrever embaixo e manter o fio da conversa.
+  function reply(m: { from: string; subject: string; body: string }) {
     setError("");
     setTo(m.from);
     setSubject(m.subject.toLowerCase().startsWith("re:") ? m.subject : `Re: ${m.subject}`);
-    setBody("");
+    const quoted = m.body.split("\n").map((l) => "> " + l).join("\n");
+    setBody(`> ${m.from} escreveu:\n${quoted}\n\n`);
     setAnon(false);
     setTab("nova");
   }
@@ -96,7 +98,7 @@ export function Mensagens() {
           <h2>Nova mensagem</h2>
           <input placeholder="Para (nome do jogador)" value={to} onChange={(e) => setTo(e.target.value)} />
           <input placeholder="Assunto" value={subject} onChange={(e) => setSubject(e.target.value)} />
-          <textarea placeholder="Mensagem" value={body} onChange={(e) => setBody(e.target.value)} rows={5}
+          <textarea placeholder="Mensagem" value={body} onChange={(e) => setBody(e.target.value)} rows={8}
             style={{ width: "100%", background: "rgba(2,8,18,0.7)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "9px 11px", fontFamily: "var(--mono)" }} />
           <label style={{ display: "flex", alignItems: "center", gap: 8, margin: "8px 0", fontSize: 13, color: "var(--muted)" }}>
             <input type="checkbox" checked={anon} onChange={(e) => setAnon(e.target.checked)} style={{ width: "auto", margin: 0 }} /> enviar como anônimo
