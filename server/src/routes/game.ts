@@ -5,7 +5,7 @@ import { requireAuth, type AuthedRequest } from "../auth.js";
 import { RESOURCES, ROID_PRODUCTION_PER_TICK, nextRoidCost, nextFleetSlotCost, MARKET_FEE } from "../game/constants.js";
 import { buildRoid, totalRoids } from "../game/roids.js";
 import { RACES, isRaceKey } from "../game/races.js";
-import { startUpgrade, buildUnit, parseTech } from "../game/fleet.js";
+import { startUpgrade, buildUnit, parseTech, cancelOrder } from "../game/fleet.js";
 import { createFleet, setFleetComposition, renameFleet, dispatchFleet, fuelCost, viewSystem, galaxyTraffic, type ShipCounts } from "../game/galaxy.js";
 import { recallFleet, BATTLE_TICKS } from "../game/combat.js";
 import { unitsOfRace, isUnitUnlocked, CLASS_LABEL, unitByName, shipImage } from "../game/catalog.js";
@@ -187,6 +187,15 @@ gameRouter.post("/upgrade", async (req: AuthedRequest, res) => {
   if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
   try { await startUpgrade(planet.id, parsed.data.key); }
   catch (e: any) { return res.status(400).json({ error: e.message ?? "Falha no upgrade" }); }
+  res.json(await planetView(req.userId!));
+});
+
+// Cancela um item da fila (reembolso proporcional ao tempo restante).
+gameRouter.post("/queue/:id/cancel", async (req: AuthedRequest, res) => {
+  const planet = await prisma.planet.findUnique({ where: { userId: req.userId! } });
+  if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
+  try { await cancelOrder(planet.id, req.params.id); }
+  catch (e: any) { return res.status(400).json({ error: e.message ?? "Falha ao cancelar" }); }
   res.json(await planetView(req.userId!));
 });
 

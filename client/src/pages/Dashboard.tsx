@@ -225,6 +225,11 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     finally { setMktBusy(false); }
   }
 
+  async function doCancel(id: string) {
+    setError("");
+    try { setView(await api.cancelOrder(id)); } catch (e: any) { setError(e.message ?? "Falha ao cancelar"); }
+  }
+
   async function doUpgrade(key: string) {
     setError("");
     setShipBusy(key);
@@ -300,9 +305,12 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                 <span className="roid-count">máx</span>
               ) : (() => {
                 const inQueue = view!.queue.some((q) => q.kind === "tech" && q.key === t.key);
+                const kindPending = view!.queue.some((q) => q.techKind === kind); // 1 por vez (pesquisa/construção)
                 const progress = kind === "research" ? "Pesquisando…" : "Construindo…";
                 return (
-                  <button disabled={!t.canStart || shipBusy !== null || inQueue} onClick={() => doUpgrade(t.key)}>
+                  <button disabled={!t.canStart || shipBusy !== null || inQueue || kindPending}
+                    title={kindPending && !inQueue ? `Já há ${kind === "research" ? "uma pesquisa" : "uma construção"} em andamento — cancele na fila pra trocar` : undefined}
+                    onClick={() => doUpgrade(t.key)}>
                     {shipBusy === t.key ? "..." : inQueue ? progress : verb}
                   </button>
                 );
@@ -558,7 +566,10 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             {view.queue.map((q) => { const t = queueTag(q); return (
               <div className="roid-row" key={q.id}>
                 <div>{t.icon} <span className="roid-count" style={{ color: t.color }}>{t.tag}:</span> {q.label}</div>
-                <div className="roid-count">{q.ticksRemaining} tick(s)</div>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <span className="roid-count">{q.ticksRemaining} tick(s)</span>
+                  <button onClick={() => doCancel(q.id)} title="Cancelar — reembolso proporcional ao tempo que falta" style={{ padding: "2px 8px", fontSize: 11 }}>cancelar</button>
+                </div>
               </div>
             ); })}
           </div>
@@ -642,7 +653,10 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                 {view.queue.map((q) => { const t = queueTag(q); return (
                   <div className="roid-row" key={q.id}>
                     <div>{t.icon} <span className="roid-count" style={{ color: t.color }}>{t.tag}:</span> {q.label}</div>
-                    <div className="roid-count">{q.ticksRemaining} tick(s) restante(s)</div>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <span className="roid-count">{q.ticksRemaining} tick(s) restante(s)</span>
+                      <button onClick={() => doCancel(q.id)} title="Cancelar — reembolso proporcional ao tempo que falta" style={{ padding: "2px 8px", fontSize: 11 }}>cancelar</button>
+                    </div>
                   </div>
                 ); })}
               </div>

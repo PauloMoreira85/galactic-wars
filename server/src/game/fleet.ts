@@ -80,6 +80,38 @@ export async function buildUnit(planetId: string, unitName: string, quantity: nu
   }, TX_OPTS);
 }
 
+// Cancela uma ordem da fila (pesquisa/construção/nave) e reembolsa proporcional
+// ao tempo que FALTAVA (você perde a parte já feita).
+export async function cancelOrder(planetId: string, orderId: string) {
+  return prisma.$transaction(async (tx) => {
+    const order = await tx.buildOrder.findUnique({ where: { id: orderId } });
+    if (!order || order.planetId !== planetId) throw new Error("Ordem nao encontrada");
+    const tick = await currentTick();
+    const total = Math.max(1, order.completeTick - order.startTick);
+    const elapsed = Math.max(0, Math.min(total, tick - order.startTick));
+    const remainingFrac = (total - elapsed) / total;
+
+    let cost = { metalium: 0, carbonum: 0, plutonium: 0 };
+    if (order.kind === "tech" && order.techKey) {
+      const def = TECH_BY_KEY[order.techKey];
+      if (def) cost = upgradeCost(def, (order.targetLevel ?? 1) - 1);
+    } else if (order.kind === "ship" && order.shipClass) {
+      const u = unitByName(order.shipClass);
+      if (u) cost = { metalium: u.m * order.quantity, carbonum: u.c * order.quantity, plutonium: u.p * order.quantity };
+    }
+    const refund = {
+      metalium: Math.floor(cost.metalium * remainingFrac),
+      carbonum: Math.floor(cost.carbonum * remainingFrac),
+      plutonium: Math.floor(cost.plutonium * remainingFrac),
+    };
+    await tx.planet.update({ where: { id: planetId }, data: {
+      metalium: { increment: refund.metalium }, carbonum: { increment: refund.carbonum }, plutonium: { increment: refund.plutonium },
+    } });
+    await tx.buildOrder.delete({ where: { id: orderId } });
+    return refund;
+  }, TX_OPTS);
+}
+
 // Resolve ordens cujo completeTick <= uptoTick.
 export async function processBuildOrders(uptoTick: number) {
   const due = await prisma.buildOrder.findMany({ where: { completeTick: { lte: uptoTick } } });

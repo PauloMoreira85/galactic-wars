@@ -312,6 +312,8 @@ export const api = {
     request<PlanetView>("/game/auto-exile", { method: "POST" }),
   changePassword: (current: string, next: string) =>
     request<{ ok: true }>("/game/change-password", { method: "POST", body: JSON.stringify({ current, next }) }),
+  cancelOrder: (id: string) =>
+    request<PlanetView>(`/game/queue/${id}/cancel`, { method: "POST" }),
   marketTrade: (from: Resource, to: Resource, amount: number) =>
     request<PlanetView>("/game/market/trade", { method: "POST", body: JSON.stringify({ from, to, amount }) }),
 
