@@ -123,7 +123,8 @@ function fireAt(typeName: string, count: number, enemyActive: UnitMap, enemyLost
           const spent = g * tCost;
           valueBudget -= spent;
           if (selfActive && selfLost) {
-            assimCost = Math.min(selfActive[typeName] ?? 0, Math.round(spent / aCost));
+            // Arredonda pra CIMA: toda assimilação custa no mínimo 1 nave.
+            assimCost = Math.min(selfActive[typeName] ?? 0, Math.max(1, Math.ceil(spent / aCost)));
             selfActive[typeName] = (selfActive[typeName] ?? 0) - assimCost;
             selfLost[typeName] = (selfLost[typeName] ?? 0) + assimCost;
           }
