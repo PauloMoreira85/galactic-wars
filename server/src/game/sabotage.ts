@@ -7,6 +7,7 @@ import { parseUnits } from "./unitmap.js";
 import { scoreOfUnits } from "./score.js";
 import { addNews } from "./news.js";
 import { finalize } from "./combat.js";
+import { parseAgents, isShielded, ceNeeded } from "./agents.js";
 
 const SAB_COOLDOWN = 5; // ticks entre sabotagens do mesmo sabotador
 
@@ -55,12 +56,13 @@ export async function executeSabotage(saboteurPlanetId: string, target: { galaxy
   if (cd && tick - cd.lastTick < SAB_COOLDOWN) throw new Error(`Aguarde ${SAB_COOLDOWN - (tick - cd.lastTick)} tick(s) para sabotar de novo`);
   await prisma.sabotageCooldown.upsert({ where: { planetId: saboteurPlanetId }, update: { lastTick: tick }, create: { planetId: saboteurPlanetId, lastTick: tick } });
 
-  const myRoids = me.roidMetalium + me.roidCarbonum + me.roidPlutonium;
+  // Contra-espionagem DETERMINÍSTICA (mesmo modelo da espionagem): o alvo bloqueia
+  // a sabotagem se tiver CE suficiente (CE × 2 ≥ roids; Rakshasa: CE +30%).
+  const tgtCE = parseAgents(tgt.agents)["CE"] ?? 0;
   const tgtRoids = tgt.roidMetalium + tgt.roidCarbonum + tgt.roidPlutonium;
-  const success = Math.random() < infiltrationChance(myRoids, tgtRoids, tgt.user.race);
-  if (!success) {
-    await addNews(tgt.id, tick, `🛡️ Você repeliu uma tentativa de sabotagem (${def.name})`);
-    return { success: false, message: "Sabotagem falhou (contra-espionagem do alvo)" };
+  if (isShielded(tgtCE, tgtRoids, tgt.user.race)) {
+    await addNews(tgt.id, tick, `🛡️ Sua contra-espionagem bloqueou uma sabotagem (${def.name})`);
+    return { success: false, message: `Sabotagem bloqueada — o alvo tem contra-espionagem suficiente (precisa de ${ceNeeded(tgtRoids, tgt.user.race)}+ CE pra blindar)` };
   }
 
   let detail = "";
