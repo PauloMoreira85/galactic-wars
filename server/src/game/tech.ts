@@ -121,8 +121,8 @@ export const TECHS: TechDef[] = [
   ...DESLOCAMENTO,
   // --- Inteligencia ---
   ...pesqConstrChain("espionagem",
-    { metalium: 4000, carbonum: 3000, plutonium: 3000 },
-    { metalium: 4000, carbonum: 2500, plutonium: 2000 },
+    { metalium: 1500, carbonum: 1200, plutonium: 800 },
+    { metalium: 1500, carbonum: 1000, plutonium: 600 },
     [
       { key: "centralInteligencia", name: "Central de Inteligência", desc: "Produz Coordenadores de Operações e Agentes de Contra-Espionagem. Permite espionar (revela a raça do alvo)." },
       { key: "servicoSecreto", name: "Formação de Serviço Secreto", desc: "Agentes Padrão: revelam raça, pontuação, moral, qtd de cada roid e qtd de naves (não quais) + status online." },
@@ -133,8 +133,8 @@ export const TECHS: TechDef[] = [
   ),
   // --- Sabotagem ---
   ...pesqConstrChain("sabotagem",
-    { metalium: 5000, carbonum: 3500, plutonium: 4000 },
-    { metalium: 7000, carbonum: 5000, plutonium: 5000 },
+    { metalium: 2000, carbonum: 1500, plutonium: 1200 },
+    { metalium: 2500, carbonum: 1800, plutonium: 1500 },
     [
       { key: "sabSistemasMineracao", name: "Sistemas de Mineração", desc: "Sabotagens: Explosão de Mina (−100% produção por 1 tick) e Intrigas Internas (−5 moral, −20 prontidão)." },
       { key: "sabEquipeProducao", name: "Equipe de Produção", desc: "Blackout Industrial (+4 ticks na produção de naves) e Suborno de Agentes (−30% inteligência por 10 ticks)." },
