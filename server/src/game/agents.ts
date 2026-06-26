@@ -28,6 +28,15 @@ export const AGENTS: Record<AgentKey, AgentDef> = {
   D:  { key: "D",  name: "Agente Duplo (D)",       desc: "Revela todas as frotas do alvo (composição/missão).",      level: 5, offensive: true, m: 2500, c: 2000, p: 600, ticks: 2 },
 };
 
+// Nome completo de cada agente (para notícias/relatórios).
+export const AGENT_FULL_NAME: Record<string, string> = {
+  P: "Agente Padrão",
+  M: "Agente Militar",
+  T: "Agente de Transmissão",
+  D: "Agente Duplo",
+  CE: "Contra-Espionagem",
+};
+
 // Quantos roids 1 agente de CE cobre. Alvo protegido se CE_efetivo × este nº ≥ roids.
 export const ROIDS_POR_CE = 2;
 
