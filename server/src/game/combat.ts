@@ -224,9 +224,11 @@ export async function advanceEngagement(fleetId: string, tick: number) {
     // assim do tick: dAssim = naves do ATACANTE assimiladas pelo defensor;
     // aAssim = naves do DEFENSOR assimiladas pelo atacante.
     const { aAssim, dAssim } = oneRound(st);
-    // Captura do tick: roiders ativos do atacante, limitada pela capacidade e pelo cap%.
+    // Captura POR TICK: cada tick os roiders ativos roubam até a sua capacidade
+    // (roiders × qarm), limitada pelo cap% do round e pelos roids do alvo. A
+    // capacidade reseta a cada tick — ataque mais longo rouba mais (não é carga total).
     const capacity = raidCapacity(st.aActive);
-    let room = Math.max(0, capacity - (cap.metalium + cap.carbonum + cap.plutonium));
+    let room = capacity;
     for (const r of ["metalium", "carbonum", "plutonium"] as const) {
       if (room <= 0) break;
       const take = Math.min(room, Math.floor(roids[r] * st.rate));
