@@ -25,9 +25,9 @@ export const RESOURCE_CAP = 30_000_000;
 
 // Recursos iniciais de um planeta novo.
 export const STARTING = {
-  metalium: 20000,
-  carbonum: 12000,
-  plutonium: 4000,
+  metalium: 10000,
+  carbonum: 10000,
+  plutonium: 10000,
   // Roids iniciais (pra nao comecar do zero absoluto)
   roidMetalium: 3,
   roidCarbonum: 2,
