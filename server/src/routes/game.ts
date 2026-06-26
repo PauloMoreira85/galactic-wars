@@ -466,16 +466,24 @@ gameRouter.post("/spy", async (req: AuthedRequest, res) => {
     // Transmissão: notícias recentes do alvo.
     intel.news = (await recentNews(target.id, 20)).map((n) => `#${n.tick} ${n.message}`);
   } else if (agent === "D") {
-    // Duplo: todas as frotas do alvo (movimento e composição).
+    // Duplo: frotas do alvo AGORA (estado atual). Frota parada (idle) aparece
+    // como "na base" — sem o destino/missão do último ataque (lixo antigo).
     const state = await prisma.gameState.findUnique({ where: { id: 1 } });
     const tick = state?.tickNumber ?? 0;
+    const STATUS_PT: Record<string, string> = { idle: "na base", outbound: "indo", engaged: "em combate", returning: "voltando", garrison: "guarnição" };
     const fleets = await prisma.fleet.findMany({ where: { ownerPlanetId: target.id } });
-    intel.fleets = fleets.map((f) => ({
-      mission: f.mission, status: f.status,
-      target: `${f.targetGalaxy}:${f.targetSystem}:${f.targetSlot}`,
-      ticksRemaining: f.status === "engaged" ? Math.max(0, BATTLE_TICKS - f.battleTicksDone) : Math.max(0, f.arriveTick - tick),
-      units: parseUnits(f.units),
-    }));
+    intel.fleets = fleets
+      .filter((f) => Object.values(parseUnits(f.units)).reduce((a, b) => a + b, 0) > 0) // ignora frotas vazias
+      .map((f) => {
+        const moving = f.status !== "idle";
+        return {
+          mission: moving ? f.mission : "—",
+          status: STATUS_PT[f.status] ?? f.status,
+          target: moving ? `${f.targetGalaxy}:${f.targetSystem}:${f.targetSlot}` : "—",
+          ticksRemaining: moving ? (f.status === "engaged" ? Math.max(0, BATTLE_TICKS - f.battleTicksDone) : Math.max(0, f.arriveTick - tick)) : 0,
+          units: parseUnits(f.units),
+        };
+      });
     intel.base = units; // naves que ficaram na base
   }
   // O alvo é notificado da espionagem (com a coordenada do espião — assim, via
