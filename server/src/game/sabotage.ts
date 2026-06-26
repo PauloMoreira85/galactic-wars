@@ -1,5 +1,5 @@
 import { prisma } from "../db.js";
-import { ROID_PRODUCTION_PER_TICK } from "./constants.js";
+import { ROID_PRODUCTION_PER_TICK, ATTACK_RANGE_MIN_PCT } from "./constants.js";
 import { parseTech } from "./fleet.js";
 import { levelOf, TECH_BY_KEY, miningBonus } from "./tech.js";
 import { isRaceKey } from "./races.js";
@@ -50,6 +50,16 @@ export async function executeSabotage(saboteurPlanetId: string, target: { galaxy
   if (!tgt) throw new Error("Nenhum planeta nessas coordenadas");
   if (tgt.id === me.id) throw new Error("Você não pode sabotar a si mesmo");
   if (tgt.galaxy === me.galaxy) throw new Error("Não dá pra sabotar planetas da sua galáxia (aliados)");
+
+  // Restrição de pontuação (mesma do ataque): só sabota alvos dentro do range.
+  // (Espionagem NÃO tem essa restrição — pode em qualquer um.)
+  const myFleets = await prisma.fleet.findMany({ where: { ownerPlanetId: me.id }, select: { units: true } });
+  const tgtFleets = await prisma.fleet.findMany({ where: { ownerPlanetId: tgt.id }, select: { units: true } });
+  const myScore = scoreOfUnits(parseUnits(me.units)) + myFleets.reduce((s, f) => s + scoreOfUnits(parseUnits(f.units)), 0);
+  const tgtScore = scoreOfUnits(parseUnits(tgt.units)) + tgtFleets.reduce((s, f) => s + scoreOfUnits(parseUnits(f.units)), 0);
+  if (myScore > 0 && tgtScore < (myScore * ATTACK_RANGE_MIN_PCT) / 100) {
+    throw new Error(`Alvo fora do seu alcance: a pontuação dele é menor que ${ATTACK_RANGE_MIN_PCT}% da sua`);
+  }
 
   const tick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
   const cd = await prisma.sabotageCooldown.findUnique({ where: { planetId: saboteurPlanetId } });
