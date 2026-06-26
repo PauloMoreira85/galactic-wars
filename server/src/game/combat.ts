@@ -60,7 +60,13 @@ function distributeUnits(survivors: UnitMap, contributors: { id: string; units: 
   for (const c of contributors) out[c.id] = {};
   for (const type of Object.keys(survivors)) {
     const totalInit = contributors.reduce((a, c) => a + (c.units[type] || 0), 0);
-    if (totalInit <= 0) continue;
+    if (totalInit <= 0) {
+      // Tipo que NENHUM contribuinte tinha (ex.: naves ASSIMILADAS pelo Mech
+      // defensor). Antes era descartado — agora vai todo para a base do planeta.
+      out["base"] = out["base"] || {};
+      out["base"][type] = (out["base"][type] || 0) + survivors[type];
+      continue;
+    }
     const surv = survivors[type];
     const parts = contributors.map((c) => {
       const init = c.units[type] || 0; const exact = (surv * init) / totalInit;
