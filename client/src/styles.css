@@ -96,6 +96,7 @@ body::after {
 .sh-planet-icon { font-size: 34px; filter: drop-shadow(0 0 8px var(--glow)); }
 .sh-name { font-family: "Orbitron", sans-serif; font-weight: 800; font-size: 17px; color: #eaffff; text-shadow: 0 0 10px var(--glow); }
 .sh-cargo { font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; margin-top: 2px; }
+.prot-badge { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; margin-left: 8px; border-radius: 4px; background: rgba(18,181,176,0.18); border: 1px solid var(--carbonum); color: var(--carbonum); font-family: var(--mono); font-weight: 700; font-size: 12px; vertical-align: middle; cursor: help; }
 .sh-grid {
   flex: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(108px, 1fr)); gap: 4px 18px;
   align-content: center; font-family: var(--mono);

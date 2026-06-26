@@ -2,7 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma, TX_OPTS } from "../db.js";
 import { requireAuth, type AuthedRequest } from "../auth.js";
-import { RESOURCES, ROID_PRODUCTION_PER_TICK, nextRoidCost, nextFleetSlotCost, MARKET_FEE, RESOURCE_CAP } from "../game/constants.js";
+import { RESOURCES, ROID_PRODUCTION_PER_TICK, nextRoidCost, nextFleetSlotCost, MARKET_FEE, RESOURCE_CAP, NEWBIE_PROTECTION_TICKS } from "../game/constants.js";
 import { buildRoid, totalRoids } from "../game/roids.js";
 import { RACES, isRaceKey } from "../game/races.js";
 import { startUpgrade, buildUnit, buildAgent, parseTech, cancelOrder } from "../game/fleet.js";
@@ -153,6 +153,10 @@ async function planetView(userId: string) {
       fleetSlots: planet.fleetSlots, fleetsActive: myFleets.length,
       nextFleetSlotCost: nextFleetSlotCost(planet.fleetSlots),
       autoExiles: planet.autoExiles,
+      protection: {
+        active: tick < planet.createdTick + NEWBIE_PROTECTION_TICKS,
+        ticksLeft: Math.max(0, planet.createdTick + NEWBIE_PROTECTION_TICKS - tick),
+      },
     },
     agents: (() => {
       const a = parseAgents(planet.agents);

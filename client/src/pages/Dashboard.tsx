@@ -370,7 +370,12 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
               ? <img className="sh-avatar" src={view.commanderAvatar} alt="" style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", border: "1px solid var(--border)" }} />
               : <span className="sh-planet-icon">🪐</span>}
             <div>
-              <div className="sh-name">{view.commanderTitle}</div>
+              <div className="sh-name">
+                {view.commanderTitle}
+                {planet.protection?.active && (
+                  <span className="prot-badge" title={`Proteção de novato — ninguém pode te atacar (faltam ${planet.protection.ticksLeft} ticks)`}>P</span>
+                )}
+              </div>
               <div className="sh-cargo">{planet.cargo ?? "Comandante"}</div>
             </div>
           </div>
@@ -442,10 +447,10 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                   <button className="link" onClick={() => { localStorage.setItem("gw_intro_hidden", "1"); setShowIntro(false); }}>ocultar</button>
                 </div>
                 <ol className="intro-steps">
-                  <li><b>Minere roids</b> na Página Principal (botão "⛏️ minerar …") — você paga pra abrir cada roid. Mais roids = mais recursos por tick.</li>
-                  <li><b>Pesquise</b> (🔬) pra desbloquear e depois <b>construa</b> (🛠️). Em <b>Naves, Inteligência e Sabotagem</b> a cadeia é: pesquisa → fábrica → libera a próxima.</li>
+                  <li><b>Minere roids</b> em <b>Recursos</b> (botão "⛏️ minerar …") — você paga pra abrir cada roid. Mais roids = mais recursos por tick.</li>
+                  <li><b>Pesquise</b> (🔬) pra desbloquear e depois <b>construa</b> (🛠️). Em <b>Naves, Inteligência e Sabotagem</b> a cadeia é: pesquisa → construção → libera a próxima.</li>
                   <li>Construa <b>naves</b> (em Naves) e monte uma <b>frota</b> em <b>Frotas</b>, com as coordenadas do alvo.</li>
-                  <li>Na <b>Galáxia</b>, envie a frota por 1–3 ticks: mesma galáxia = só <b>defender</b> (aliados); outras = <b>atacar</b>. Seus <b>roiders</b> ativos roubam os roids do alvo.</li>
+                  <li>Você pode <b>atacar ou defender</b> de 1 a 3 ticks: na <b>sua galáxia</b> só dá pra <b>defender</b> (aliados); em <b>outras galáxias</b> dá pra <b>atacar e defender</b>. Seus <b>roiders</b> ativos roubam os roids do alvo.</li>
                   <li><b>Inteligência</b>: treine agentes <b>P/M/T/D</b> pra espionar (gasta 1 por missão) e agentes de <b>Contra-Espionagem (CE)</b> pra se proteger — você fica blindado quando <b>CE ≥ seus roids ÷ 2</b>.</li>
                   <li><b>Sabotagem</b> prejudica o alvo (atrasa produção, rouba recurso/tecnologia…) — também é barrada pelo CE de quem você ataca.</li>
                   <li>Você tem <b>proteção de novato por 72 ticks</b> — ninguém te ataca. Cresça à vontade.</li>

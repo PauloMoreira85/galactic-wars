@@ -117,6 +117,7 @@ export interface PlanetView {
     fleetsActive: number;
     nextFleetSlotCost: Record<Resource, number> | null;
     autoExiles: number;
+    protection: { active: boolean; ticksLeft: number };
   };
   agents: {
     counts: Record<string, number>;
