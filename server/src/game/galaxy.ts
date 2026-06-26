@@ -1,5 +1,5 @@
 import { prisma, TX_OPTS } from "../db.js";
-import { startEngagement, advanceEngagement } from "./combat.js";
+import { startEngagement, resolveSiege } from "./combat.js";
 import { parseUnits, stringifyUnits, totalUnits, addUnits, type UnitMap } from "./unitmap.js";
 import { type Coords } from "./geo.js";
 import { travelTime } from "./travel.js";
@@ -205,12 +205,19 @@ export async function processFleets(uptoTick: number) {
   });
   if (active.length === 0) return;
 
+  // Planetas que terão combate resolvido NESTE tick (1 batalha combinada cada).
+  const besieged = new Set<string>();
+
   for (const fleet of active) {
     if (fleet.status === "returning") {
       if (fleet.arriveTick <= uptoTick) await returnFleetToBase(fleet.id);
       continue;
     }
-    if (fleet.status === "engaged") { await advanceEngagement(fleet.id, uptoTick); continue; }
+    // Já engajada: o combate é resolvido por PLANETA no fim (não por frota).
+    if (fleet.status === "engaged") {
+      besieged.add(`${fleet.targetGalaxy}:${fleet.targetSystem}:${fleet.targetSlot}`);
+      continue;
+    }
     if (fleet.status === "garrison") {
       // Guarnição: fica estacionada até arriveTick (= fim do reforço), aí volta.
       if (fleet.arriveTick <= uptoTick) await scheduleReturn(fleet.id, fleet, parseUnits(fleet.units));
@@ -229,8 +236,9 @@ export async function processFleets(uptoTick: number) {
       where: { galaxy_system_slot: { galaxy: fleet.targetGalaxy, system: fleet.targetSystem, slot: fleet.targetSlot } },
     });
     if (fleet.mission === "attack" && targetPlanet) {
+      // Chegou pra atacar: marca engajada; o combate combinado roda abaixo.
       await startEngagement(fleet.id, targetPlanet.id, fleet.arriveTick);
-      await advanceEngagement(fleet.id, uptoTick);
+      besieged.add(`${fleet.targetGalaxy}:${fleet.targetSystem}:${fleet.targetSlot}`);
       continue;
     }
     // Transporte/defesa: estaciona como GUARNIÇÃO por engageTicks; volta depois.
@@ -239,6 +247,13 @@ export async function processFleets(uptoTick: number) {
       continue;
     }
     await scheduleReturn(fleet.id, fleet, parseUnits(fleet.units));
+  }
+
+  // Resolve cada planeta sob ataque UMA vez: junta TODAS as frotas atacantes +
+  // a defesa numa só batalha (1 rodada por tick).
+  for (const key of besieged) {
+    const [g, s, slot] = key.split(":").map(Number);
+    await resolveSiege({ galaxy: g, system: s, slot }, uptoTick);
   }
 }
 

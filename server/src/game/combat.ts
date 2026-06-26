@@ -61,10 +61,10 @@ function distributeUnits(survivors: UnitMap, contributors: { id: string; units: 
   for (const type of Object.keys(survivors)) {
     const totalInit = contributors.reduce((a, c) => a + (c.units[type] || 0), 0);
     if (totalInit <= 0) {
-      // Tipo que NENHUM contribuinte tinha (ex.: naves ASSIMILADAS pelo Mech
-      // defensor). Antes era descartado — agora vai todo para a base do planeta.
-      out["base"] = out["base"] || {};
-      out["base"][type] = (out["base"][type] || 0) + survivors[type];
+      // Tipo que NENHUM contribuinte tinha (ex.: naves ASSIMILADAS). Vai todo
+      // pro 1º contribuinte (defesa = "base"; ataque = a frota líder).
+      const fb = contributors[0]?.id;
+      if (fb) out[fb][type] = (out[fb][type] || 0) + survivors[type];
       continue;
     }
     const surv = survivors[type];
@@ -166,185 +166,138 @@ function raidCapacity(active: UnitMap): number {
   return cap;
 }
 
-export async function startEngagement(fleetId: string, defenderPlanetId: string, arriveTick: number) {
-  const fleet = await prisma.fleet.findUnique({ where: { id: fleetId } });
-  const def = await prisma.planet.findUnique({ where: { id: defenderPlanetId } });
-  if (!fleet || !def) return;
+// Marca uma frota como ENGAJADA no alvo. A batalha em si é resolvida POR PLANETA
+// em resolveSiege (todas as frotas atacantes + a defesa, 1 rodada por tick).
+export async function startEngagement(fleetId: string, _defenderPlanetId: string, arriveTick: number) {
+  await prisma.fleet.update({
+    where: { id: fleetId },
+    data: { status: "engaged", battleStartTick: arriveTick, battleTicksDone: 0, battleState: null },
+  });
+}
 
-  const atkInit = parseUnits(fleet.units);
-  // Defesa = "base" (planeta + frotas PARADAS do dono, que são esvaziadas e cujos
-  // sobreviventes voltam pra base) + cada frota de GUARNIÇÃO (reforço de aliado),
-  // que é um contribuinte separado e recebe seus sobreviventes de volta.
-  let homeUnits = parseUnits(def.units);
-  const idleFleets = await prisma.fleet.findMany({ where: { ownerPlanetId: defenderPlanetId, status: "idle" } });
-  for (const f of idleFleets) {
-    const u = parseUnits(f.units);
-    if (totalUnits(u) > 0) {
-      homeUnits = addUnits(homeUnits, u);
-      await prisma.fleet.update({ where: { id: f.id }, data: { units: "{}" } });
-    }
-  }
-  const garrison = await prisma.fleet.findMany({ where: { status: "garrison", targetGalaxy: def.galaxy, targetSystem: def.system, targetSlot: def.slot } });
-  const defContributors = [
-    { id: "base", units: homeUnits },
-    ...garrison.filter((g) => totalUnits(parseUnits(g.units)) > 0).map((g) => ({ id: g.id, units: parseUnits(g.units) })),
-  ];
-  let defInit: UnitMap = {};
-  for (const c of defContributors) defInit = addUnits(defInit, c.units);
-  const ratio = fleetScore(atkInit) / Math.max(1, fleetScore(defInit));
+// Resolve UMA rodada de combate de um PLANETA num tick: junta TODAS as frotas
+// atacantes engajadas + a defesa (base + frotas idle do dono + guarnições),
+// roda 1 rodada e redistribui perdas/espólio. Gera 1 relatório por planeta atacante.
+export async function resolveSiege(target: { galaxy: number; system: number; slot: number }, tick: number) {
+  const engaged = await prisma.fleet.findMany({ where: { status: "engaged", targetGalaxy: target.galaxy, targetSystem: target.system, targetSlot: target.slot } });
+  if (engaged.length === 0) return;
+  const def = await prisma.planet.findUnique({ where: { galaxy_system_slot: target }, include: { user: { select: { race: true, username: true } } } });
+  if (!def) { for (const f of engaged) await finalize(f.id, tick); return; }
+
+  // Atacantes vivos (frotas vazias finalizam direto).
+  const atkContribs: { id: string; units: UnitMap }[] = [];
+  for (const f of engaged) { const u = parseUnits(f.units); if (totalUnits(u) > 0) atkContribs.push({ id: f.id, units: u }); }
+  if (atkContribs.length === 0) { for (const f of engaged) await finalize(f.id, tick); return; }
+
+  // Defesa: base + frotas idle do dono + guarnições estacionadas no planeta.
+  const defContribs: { id: string; units: UnitMap }[] = [{ id: "base", units: parseUnits(def.units) }];
+  const idle = await prisma.fleet.findMany({ where: { ownerPlanetId: def.id, status: "idle" } });
+  for (const f of idle) { const u = parseUnits(f.units); if (totalUnits(u) > 0) defContribs.push({ id: f.id, units: u }); }
+  const garr = await prisma.fleet.findMany({ where: { status: "garrison", targetGalaxy: target.galaxy, targetSystem: target.system, targetSlot: target.slot } });
+  for (const f of garr) { const u = parseUnits(f.units); if (totalUnits(u) > 0) defContribs.push({ id: f.id, units: u }); }
+
+  const aActive: UnitMap = {}; for (const c of atkContribs) for (const n of Object.keys(c.units)) aActive[n] = (aActive[n] || 0) + c.units[n];
+  const dActive: UnitMap = {}; for (const c of defContribs) for (const n of Object.keys(c.units)) dActive[n] = (dActive[n] || 0) + c.units[n];
+
+  const ratio = fleetScore(aActive) / Math.max(1, fleetScore(dActive));
   const rate = Math.max(CAP_MIN, Math.min(CAP_MAX, CAP_MAX - CAP_MIN * (ratio - 1)));
+  const st: BattleState = { atkInit: { ...aActive }, defInit: { ...dActive }, aActive: { ...aActive }, dActive: { ...dActive }, aLost: {}, dLost: {}, aPem: {}, dPem: {}, rate };
+  // dAssim = atacantes assimilados pela defesa; aAssim = defensores assimilados pelo atacante.
+  const { aAssim, dAssim } = oneRound(st);
 
-  const st: BattleState = {
-    atkInit, defInit, aActive: { ...atkInit }, dActive: { ...defInit },
-    aLost: {}, dLost: {}, aPem: {}, dPem: {}, rate, defContributors,
-  };
-  await prisma.fleet.update({
-    where: { id: fleetId },
-    data: { status: "engaged", battleStartTick: arriveTick, battleTicksDone: 0, battleState: JSON.stringify(st) },
-  });
-}
+  // Roids: roiders atacantes ativos × cap% × roids do alvo (por tick).
+  const roids = { metalium: def.roidMetalium, carbonum: def.roidCarbonum, plutonium: def.roidPlutonium };
+  const capacity = raidCapacity(st.aActive);
+  let room = capacity; const roundCap = { metalium: 0, carbonum: 0, plutonium: 0 };
+  for (const r of ["metalium", "carbonum", "plutonium"] as const) {
+    if (room <= 0) break;
+    const take = Math.min(room, Math.floor(roids[r] * st.rate));
+    if (take > 0) { roids[r] -= take; room -= take; roundCap[r] += take; }
+  }
 
-export async function advanceEngagement(fleetId: string, tick: number) {
-  const fleet = await prisma.fleet.findUnique({ where: { id: fleetId } });
-  if (!fleet || fleet.status !== "engaged" || !fleet.battleState || fleet.battleStartTick == null) return;
-  const def = await prisma.planet.findUnique({ where: { galaxy_system_slot: { galaxy: fleet.targetGalaxy, system: fleet.targetSystem, slot: fleet.targetSlot } }, include: { user: { select: { race: true } } } });
-  if (!def) { await finalize(fleetId, tick); return; }
-  const atkP = await prisma.planet.findUnique({ where: { id: fleet.ownerPlanetId }, include: { user: { select: { race: true } } } });
+  // Sobreviventes -> distribui de volta a cada frota/contribuinte.
+  const aDist = distributeUnits(survivors(st.aActive, st.aPem), atkContribs);
+  const dDist = distributeUnits(survivors(st.dActive, st.dPem), defContribs);
 
-  const st: BattleState = JSON.parse(fleet.battleState);
-  // Duração escolhida no envio (1-3 ticks), limitada ao máximo do jogo.
-  const maxT = Math.max(1, Math.min(BATTLE_TICKS, fleet.engageTicks ?? BATTLE_TICKS));
-  const targetDone = Math.min(maxT, tick - fleet.battleStartTick + 1);
-  let done = fleet.battleTicksDone;
-  const cap = { metalium: fleet.capMetalium, carbonum: fleet.capCarbonum, plutonium: fleet.capPlutonium };
-  let roids = { metalium: def.roidMetalium, carbonum: def.roidCarbonum, plutonium: def.roidPlutonium };
+  // Persiste a defesa (base + frotas defensoras) e os roids restantes.
+  await prisma.planet.update({ where: { id: def.id }, data: { units: stringifyUnits(dDist["base"] ?? {}), roidMetalium: roids.metalium, roidCarbonum: roids.carbonum, roidPlutonium: roids.plutonium } });
+  for (const c of defContribs) if (c.id !== "base") await prisma.fleet.update({ where: { id: c.id }, data: { units: stringifyUnits(dDist[c.id] ?? {}) } });
 
+  // Espólio dividido entre frotas atacantes por capacidade de roider de cada uma.
+  const caps = atkContribs.map((c) => ({ id: c.id, cap: raidCapacity(aDist[c.id] ?? {}) }));
+  const totalRoiderCap = caps.reduce((s, x) => s + x.cap, 0) || 1;
+
+  // Linhas do relatório (combinado): antes = init do tick, perdas/pem = desta rodada.
   const initKeys = Array.from(new Set([...Object.keys(st.atkInit), ...Object.keys(st.defInit)]));
-  // Linhas da RODADA: o que entrou (ativas no começo do tick), destruídas e paralisadas NESTE tick.
-  const roundRows = (activeB: UnitMap, lostB: UnitMap, lostA: UnitMap, pemB: UnitMap, pemA: UnitMap, assim?: UnitMap) =>
-    initKeys.map((n) => {
-      const before = activeB[n] || 0;
-      const lost = (lostA[n] || 0) - (lostB[n] || 0);
-      const pem = (pemA[n] || 0) - (pemB[n] || 0);
-      return { name: n, before, lost, pem, assim: assim?.[n] ?? 0, survivors: Math.max(0, before - lost - pem) };
-    }).filter((r) => r.before > 0 || r.lost > 0 || r.pem > 0);
+  const rows = (before: UnitMap, lost: UnitMap, pem: UnitMap, assim: UnitMap) =>
+    initKeys.map((n) => ({ name: n, before: before[n] || 0, lost: lost[n] || 0, pem: pem[n] || 0, assim: assim[n] ?? 0, survivors: Math.max(0, (before[n] || 0) - (lost[n] || 0) - (pem[n] || 0)) }))
+      .filter((r) => r.before > 0 || r.lost > 0 || r.pem > 0);
+  const raidRows = Object.keys(st.aActive).filter((n) => st.aActive[n] > 0 && roiderCargo(n) > 0)
+    .map((n) => ({ name: n, active: st.aActive[n], cargo: roiderCargo(n), capacity: st.aActive[n] * roiderCargo(n) }));
+  const baseReport = {
+    defenderRace: raceTable(raceOf(def.user.race)),
+    attacker: rows(st.atkInit, st.aLost, st.aPem, dAssim),
+    defender: rows(st.defInit, st.dLost, st.dPem, aAssim),
+    captured: roundCap, raid: { capacity, ratePct: Math.round(st.rate * 100), rows: raidRows, captured: roundCap.metalium + roundCap.carbonum + roundCap.plutonium },
+    round: 1, ticks: 1, log: st.log ?? [],
+  };
 
-  while (done < targetDone) {
-    // PEM dura 1 TICK: os paralisados do tick anterior VOLTAM a ativos (precisam
-    // ser paralisados de novo). Antes a paralisia ficava permanente (bug).
-    for (const n of Object.keys(st.aPem)) if (st.aPem[n] > 0) st.aActive[n] = (st.aActive[n] || 0) + st.aPem[n];
-    for (const n of Object.keys(st.dPem)) if (st.dPem[n] > 0) st.dActive[n] = (st.dActive[n] || 0) + st.dPem[n];
-    st.aPem = {}; st.dPem = {};
-
-    // Snapshot antes da rodada (pra calcular o delta deste tick; PEM já zerado acima).
-    const aActiveB = { ...st.aActive }, dActiveB = { ...st.dActive };
-    const aLostB = { ...st.aLost }, dLostB = { ...st.dLost };
-    const aPemB = { ...st.aPem }, dPemB = { ...st.dPem };
-    const roundCap = { metalium: 0, carbonum: 0, plutonium: 0 };
-
-    // assim do tick: dAssim = naves do ATACANTE assimiladas pelo defensor;
-    // aAssim = naves do DEFENSOR assimiladas pelo atacante.
-    const { aAssim, dAssim } = oneRound(st);
-    // Captura POR TICK: cada tick os roiders ativos roubam até a sua capacidade
-    // (roiders × qarm), limitada pelo cap% do round e pelos roids do alvo. A
-    // capacidade reseta a cada tick — ataque mais longo rouba mais (não é carga total).
-    const capacity = raidCapacity(st.aActive);
-    let room = capacity;
-    for (const r of ["metalium", "carbonum", "plutonium"] as const) {
-      if (room <= 0) break;
-      const take = Math.min(room, Math.floor(roids[r] * st.rate));
-      if (take > 0) { roids[r] -= take; cap[r] += take; room -= take; roundCap[r] += take; }
-    }
-    // Resumo do roubo deste tick: roiders ATIVOS (não-paralisados) × capacidade (qarm).
-    const raidRows = Object.keys(st.aActive)
-      .filter((n) => st.aActive[n] > 0 && roiderCargo(n) > 0)
-      .map((n) => ({ name: n, active: st.aActive[n], cargo: roiderCargo(n), capacity: st.aActive[n] * roiderCargo(n) }));
-    const raid = {
-      capacity, ratePct: Math.round(st.rate * 100), rows: raidRows,
-      captured: roundCap.metalium + roundCap.carbonum + roundCap.plutonium,
-    };
-    done++;
-
-    // 1 relatório de combate POR TICK (este tick).
-    if (atkP) {
-      const report = JSON.stringify({
-        attackerRace: raceTable(raceOf(atkP.user.race)), defenderRace: raceTable(raceOf(def.user.race)),
-        attacker: roundRows(aActiveB, aLostB, st.aLost, aPemB, st.aPem, dAssim),
-        defender: roundRows(dActiveB, dLostB, st.dLost, dPemB, st.dPem, aAssim),
-        captured: roundCap, raid, round: done, ticks: 1, log: st.log ?? [],
-      });
-      await prisma.battleReport.create({ data: {
-        tick: fleet.battleStartTick + done - 1,
-        attackerPlanetId: atkP.id, defenderPlanetId: def.id,
-        attackerName: atkP.name, defenderName: def.name,
-        attackerCoords: `${atkP.galaxy}:${atkP.system}:${atkP.slot}`,
-        defenderCoords: `${def.galaxy}:${def.system}:${def.slot}`,
-        winner: "engaged",
-        capturedMetalium: roundCap.metalium, capturedCarbonum: roundCap.carbonum, capturedPlutonium: roundCap.plutonium,
-        report,
-      }});
-    }
+  // Aplica sobreviventes + espólio em cada frota atacante; finaliza quem acabou.
+  const atkOwners = new Set<string>();
+  for (const f of engaged) {
+    const surv = aDist[f.id] ?? {};
+    const my = caps.find((x) => x.id === f.id);
+    const share = my && totalRoiderCap > 0 ? my.cap / totalRoiderCap : 0;
+    const done = (f.battleTicksDone ?? 0) + 1;
+    const maxT = Math.max(1, Math.min(BATTLE_TICKS, f.engageTicks ?? BATTLE_TICKS));
+    await prisma.fleet.update({ where: { id: f.id }, data: {
+      units: stringifyUnits(surv), battleTicksDone: done,
+      capMetalium: f.capMetalium + Math.floor(roundCap.metalium * share),
+      capCarbonum: f.capCarbonum + Math.floor(roundCap.carbonum * share),
+      capPlutonium: f.capPlutonium + Math.floor(roundCap.plutonium * share),
+    } });
+    atkOwners.add(f.ownerPlanetId);
+    if (done >= maxT || totalUnits(surv) <= 0) await finalize(f.id, tick);
   }
 
-  // Persiste: distribui os sobreviventes entre base e guarnições; roids; estado; espólio.
-  const defSurv = survivors(st.dActive, st.dPem);
-  const contributors = st.defContributors ?? [{ id: "base", units: st.defInit }];
-  const dist = distributeUnits(defSurv, contributors);
-  await prisma.planet.update({
-    where: { id: def.id },
-    data: { units: stringifyUnits(dist["base"] ?? {}), roidMetalium: roids.metalium, roidCarbonum: roids.carbonum, roidPlutonium: roids.plutonium },
-  });
-  for (const c of contributors) {
-    if (c.id !== "base") await prisma.fleet.update({ where: { id: c.id }, data: { units: stringifyUnits(dist[c.id] ?? {}) } });
+  // 1 relatório por planeta atacante (cada um vê o combate COMBINADO).
+  for (const ownerId of atkOwners) {
+    const atk = await prisma.planet.findUnique({ where: { id: ownerId }, include: { user: { select: { race: true } } } });
+    if (!atk) continue;
+    await prisma.battleReport.create({ data: {
+      tick, attackerPlanetId: atk.id, defenderPlanetId: def.id,
+      attackerName: atk.name, defenderName: def.name,
+      attackerCoords: `${atk.galaxy}:${atk.system}:${atk.slot}`, defenderCoords: `${def.galaxy}:${def.system}:${def.slot}`,
+      winner: "engaged",
+      capturedMetalium: roundCap.metalium, capturedCarbonum: roundCap.carbonum, capturedPlutonium: roundCap.plutonium,
+      report: JSON.stringify({ ...baseReport, attackerRace: raceTable(raceOf(atk.user.race)) }),
+    }});
   }
-  await prisma.fleet.update({
-    where: { id: fleetId },
-    data: { battleTicksDone: done, battleState: JSON.stringify(st), capMetalium: cap.metalium, capCarbonum: cap.carbonum, capPlutonium: cap.plutonium },
-  });
-  if (done >= maxT) await finalize(fleetId, tick);
+  await addNews(def.id, tick, `🛡️ Combate no seu planeta — ${atkContribs.length} frota(s) atacante(s); você perdeu ${totalUnits(st.dLost)} nave(s), inimigo perdeu ${totalUnits(st.aLost)}`);
 }
 
+// Manda a frota de volta pra casa com o que sobrou (+ espólio já acumulado).
 export async function finalize(fleetId: string, tick: number) {
   const fleet = await prisma.fleet.findUnique({ where: { id: fleetId } });
   if (!fleet) return;
-  const atkP = await prisma.planet.findUnique({ where: { id: fleet.ownerPlanetId }, include: { user: { select: { race: true } } } });
-  const def = await prisma.planet.findUnique({ where: { galaxy_system_slot: { galaxy: fleet.targetGalaxy, system: fleet.targetSystem, slot: fleet.targetSlot } }, include: { user: { select: { race: true } } } });
-  const st: BattleState | null = fleet.battleState ? JSON.parse(fleet.battleState) : null;
-
-  let atkSurv: UnitMap;
-  if (st && atkP && def) {
-    // A assimilação Mech já ocorre POR TICK durante o combate (naves assimiladas
-    // entram nos ativos e lutam nos ticks seguintes). Logo, os sobreviventes de
-    // st.aActive/st.dActive JÁ incluem as naves assimiladas — nada a somar aqui.
-    atkSurv = survivors(st.aActive, st.aPem);
-    // Os relatórios de combate são gerados POR TICK em advanceEngagement.
-    // Aqui só fechamos: resumo nas notícias e retorno da frota.
-    const aLost = totalUnits(st.aLost), dLost = totalUnits(st.dLost);
-    const cap = fleet.capMetalium + fleet.capCarbonum + fleet.capPlutonium;
-    const defCoords = `${def.galaxy}:${def.system}:${def.slot}`;
-    const atkCoords = `${atkP.galaxy}:${atkP.system}:${atkP.slot}`;
-    await addNews(atkP.id, tick, `⚔️ Seu ataque a ${def.name} (${defCoords}) terminou — perdeu ${aLost} nave(s), inimigo perdeu ${dLost}, capturou ${cap} roid(s)`);
-    await addNews(def.id, tick, `🛡️ Você foi atacado por ${atkP.name} (${atkCoords}) — perdeu ${dLost} nave(s), inimigo perdeu ${aLost}, perdeu ${cap} roid(s)`);
-  } else {
-    atkSurv = parseUnits(fleet.units);
-  }
-
+  const atkP = await prisma.planet.findUnique({ where: { id: fleet.ownerPlanetId } });
+  const atkSurv = parseUnits(fleet.units);
   let propLevel = 0;
   try { propLevel = atkP ? travelReductionTicks(JSON.parse(atkP.tech)) : 0; } catch {}
-  // Se a frota CHEGOU (combate/defesa concluída no alvo), volta no TEC cheio.
-  // Se foi RECUADA no meio do caminho (nunca chegou), volta só o que já viajou.
-  const arrived = fleet.status === "engaged" || st != null || tick >= fleet.arriveTick;
+  const arrived = fleet.status === "engaged" || tick >= fleet.arriveTick;
   const back = arrived
     ? travelTime(fleet.targetGalaxy, fleet.originGalaxy, atkSurv, propLevel)
     : Math.max(1, tick - fleet.departTick);
-  // Frota dizimada: o container (pago) persiste, vazio e parado na base.
   if (totalUnits(atkSurv) <= 0) {
     await prisma.fleet.update({ where: { id: fleetId }, data: { status: "idle", units: "{}", battleState: null, departTick: 0, arriveTick: 0, capMetalium: 0, capCarbonum: 0, capPlutonium: 0 } });
+    if (atkP) await addNews(atkP.id, tick, `💥 Sua frota foi dizimada no combate em ${fleet.targetGalaxy}:${fleet.targetSystem}:${fleet.targetSlot}`);
     return;
   }
+  const cap = fleet.capMetalium + fleet.capCarbonum + fleet.capPlutonium;
   await prisma.fleet.update({ where: { id: fleetId }, data: {
     status: "returning", battleState: null, departTick: tick, arriveTick: tick + back, units: stringifyUnits(atkSurv),
   }});
+  if (atkP && arrived) await addNews(atkP.id, tick, `⚔️ Sua frota terminou o combate em ${fleet.targetGalaxy}:${fleet.targetSystem}:${fleet.targetSlot} e está voltando${cap > 0 ? ` (capturou ${cap} roid[s])` : ""}`);
 }
 
 export async function recallFleet(fleetId: string, ownerPlanetId: string, tick: number) {
