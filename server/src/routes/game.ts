@@ -6,7 +6,7 @@ import { RESOURCES, ROID_PRODUCTION_PER_TICK, nextRoidCost, nextFleetSlotCost, M
 import { buildRoid, totalRoids } from "../game/roids.js";
 import { RACES, isRaceKey } from "../game/races.js";
 import { startUpgrade, buildUnit, buildAgent, parseTech, cancelOrder } from "../game/fleet.js";
-import { AGENTS, AGENT_KEYS, AGENT_FULL_NAME, isAgentKey, parseAgents, stringifyAgents, isShielded, ceNeeded, ROIDS_POR_CE } from "../game/agents.js";
+import { AGENTS, AGENT_KEYS, AGENT_FULL_NAME, isAgentKey, parseAgents, stringifyAgents, isShielded, ceNeeded, blockChance, ROIDS_POR_CE } from "../game/agents.js";
 import { createFleet, setFleetComposition, renameFleet, dispatchFleet, fuelCost, viewSystem, galaxyTraffic, type ShipCounts } from "../game/galaxy.js";
 import { recallFleet, BATTLE_TICKS } from "../game/combat.js";
 import { unitsOfRace, isUnitUnlocked, CLASS_LABEL, unitByName, shipImage } from "../game/catalog.js";
@@ -449,9 +449,10 @@ gameRouter.post("/spy", async (req: AuthedRequest, res) => {
   const tgtCE = tgtAgents["CE"] ?? 0;
   const tgtRoids = target.roidMetalium + target.roidCarbonum + target.roidPlutonium;
   const myCoords = `${me.galaxy}:${me.system}:${me.slot}`;
-  if (isShielded(tgtCE, tgtRoids, target.user.race)) {
+  const bc = blockChance(tgtCE, tgtRoids, target.user.race);
+  if (Math.random() < bc) {
     await addNews(target.id, tkNow, `🛡️ Sua contra-espionagem bloqueou um ${AGENT_FULL_NAME[agent]} de ${myCoords}`);
-    return res.json({ failed: true, error: `Espionagem bloqueada — o alvo tem contra-espionagem suficiente (perdeu 1 agente ${agent})` });
+    return res.json({ failed: true, error: `Espionagem bloqueada pela contra-espionagem do alvo (chance ${Math.round(bc * 100)}%). Perdeu 1 agente ${agent} — mande mais pra furar.` });
   }
   const units = parseUnits(target.units);
   const totalShips = Object.values(units).reduce((a, b) => a + b, 0);

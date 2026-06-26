@@ -42,6 +42,8 @@ export function Inteligencia() {
       else setSpy(r.intel);
       await loadAgents(); // atualiza a contagem (gastou 1 agente)
     } catch (e: any) { setError(e.message ?? "Falha"); }
+    // Rola até o resultado/erro (que aparece abaixo) pra não parecer que nada aconteceu.
+    setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }), 120);
   }
 
   const count = (k: string) => data?.catalog.find((c) => c.key === k)?.count ?? 0;
@@ -54,13 +56,13 @@ export function Inteligencia() {
         <div className="panel">
           <h2>🛡️ Minha contra-espionagem</h2>
           <div className="cost">
-            O planeta fica <b>protegido</b> quando você tem <b>CE ≥ roids ÷ {prot.roidsPerCE}</b>. Quanto mais roids, mais CE precisa.
+            Mais CE = maior chance de <b>bloquear</b> espião/sabotador. Cobertura cheia (<b>CE ≥ roids ÷ {prot.roidsPerCE}</b>) bloqueia <b>~85%</b> — nunca 100% (sempre dá pra furar mandando vários agentes).
           </div>
           <div className="roid-row" style={{ marginTop: 6 }}>
             <div className="roid-label"><div>
-              <div><b>{fmt(prot.ce)}</b> agentes de CE · precisa de <b>{fmt(prot.needed)}</b> (você tem {fmt(prot.roids)} roids)</div>
+              <div><b>{fmt(prot.ce)}</b> agentes de CE · cobertura cheia em <b>{fmt(prot.needed)}</b> (você tem {fmt(prot.roids)} roids)</div>
               <div className="roid-count" style={{ color: prot.shielded ? "var(--carbonum)" : "var(--danger)" }}>
-                {prot.shielded ? "✅ Protegido — espionagens inimigas falham" : `⚠️ Descoberto — faltam ${fmt(Math.max(0, prot.needed - prot.ce))} CE`}
+                {prot.shielded ? "✅ Bem protegido (~85% de bloqueio)" : `⚠️ Pouco protegido — bloqueio ~${Math.round(Math.min(85, (prot.ce * prot.roidsPerCE / Math.max(1, prot.roids)) * 100))}% (cheio em ${fmt(prot.needed)} CE)`}
               </div>
             </div></div>
           </div>

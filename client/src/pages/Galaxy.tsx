@@ -90,6 +90,8 @@ export function Galaxy({ view, onChanged }: { view: PlanetView; onChanged: () =>
       if (r.failed || !r.intel) setError(r.error ?? "Espionagem falhou");
       else setSpy({ ...r.intel, _hash: r.hash });
     } catch (e: any) { setError(e.message ?? "Falha"); }
+    // Rola até o resultado/erro (aparece abaixo da tabela) pra ficar visível.
+    setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }), 120);
   }
 
   const myCoords = view.planet.coords;

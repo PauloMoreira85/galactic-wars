@@ -63,7 +63,18 @@ export function ceNeeded(targetRoids: number, targetRace: string): number {
   return Math.ceil(targetRoids / (ROIDS_POR_CE * mult));
 }
 
-// O alvo está protegido contra espionagem?
+// O alvo está protegido contra espionagem? (cobertura "cheia" = CE×2 ≥ roids)
 export function isShielded(targetCE: number, targetRoids: number, targetRace: string): boolean {
   return effectiveCE(targetCE, targetRace) * ROIDS_POR_CE >= targetRoids;
+}
+
+// Teto de bloqueio: a contra-espionagem NUNCA bloqueia 100% — sempre há chance
+// de furar (mandando mais agentes). Mesmo totalmente coberto, ~15% passa.
+export const MAX_BLOCK = 0.85;
+
+// Chance de a espionagem/sabotagem ser BLOQUEADA. = cobertura (CE×2 / roids),
+// limitada ao teto. Sem CE -> 0% (sempre passa). Coberto -> 85% (15% fura).
+export function blockChance(targetCE: number, targetRoids: number, targetRace: string): number {
+  const cov = (effectiveCE(targetCE, targetRace) * ROIDS_POR_CE) / Math.max(1, targetRoids);
+  return Math.min(MAX_BLOCK, Math.max(0, cov));
 }
