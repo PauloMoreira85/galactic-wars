@@ -174,7 +174,7 @@ export function Galaxy({ view, onChanged }: { view: PlanetView; onChanged: () =>
                   <td>{(() => { const r = attackRange(sl); return r == null ? <span className="roid-count">—</span> : <span title={r.why}>{r.ok ? "🟢" : "🔴"}</span>; })()}</td>
                   <td>
                     {isSelf ? <span className="roid-count">—</span> : (["P","M","T","D"] as const).map((a) => (
-                      <button key={a} disabled={!agentsIHave[a]} title={agentsIHave[a] ? `Espionar com agente ${a}` : `Sem agente ${a}`}
+                      <button key={a} disabled={!agentsIHave[a]} title={agentsIHave[a] ? `Espionar com agente ${a}` : `Sem agentes ${a} treinados — treine na Inteligência`}
                         onClick={() => doSpy(sl.slot, a)}
                         style={{ padding: "1px 6px", marginRight: 2, fontSize: 12, opacity: agentsIHave[a] ? 1 : 0.3 }}>{a}</button>
                     ))}
@@ -186,6 +186,8 @@ export function Galaxy({ view, onChanged }: { view: PlanetView; onChanged: () =>
           </tbody>
         </table>
       </div>
+
+      {error && <div className="error" style={{ marginTop: 10 }}>{error}</div>}
 
       {data?.flag && (
         <div className="panel" style={{ textAlign: "center" }}>

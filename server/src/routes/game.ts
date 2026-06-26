@@ -268,9 +268,12 @@ gameRouter.get("/galaxy/:galaxy/:system", async (req: AuthedRequest, res) => {
   const me = await prisma.planet.findUnique({ where: { userId: req.userId! } });
   // Online/inatividade só na própria galáxia; raça é segredo (própria/MG/espionada).
   const view: any = await viewSystem(galaxy, system, me ? { id: me.id, galaxy: me.galaxy } : null);
-  // Agentes que EU possuo (nível da minha Inteligência): P(≥2) M(≥3) T(≥4) D(≥5).
+  // Agentes que EU posso USAR aqui: precisa ter PESQUISADO o tipo E ter pelo menos
+  // 1 TREINADO (espionar gasta 1). Sem treinar, o botão fica desabilitado.
   const lvl = me ? espionageLevel(parseTech(me.tech)) : 0;
-  view.agents = { P: lvl >= 2, M: lvl >= 3, T: lvl >= 4, D: lvl >= 5 };
+  const myAgents = me ? parseAgents(me.agents) : {};
+  const usable = (k: string, need: number) => lvl >= need && (myAgents[k] ?? 0) >= 1;
+  view.agents = { P: usable("P", 2), M: usable("M", 3), T: usable("T", 4), D: usable("D", 5) };
   res.json(view);
 });
 
