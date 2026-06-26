@@ -423,6 +423,7 @@ const spySchema = z.object({
 gameRouter.post("/spy", async (req: AuthedRequest, res) => {
   const parsed = spySchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Pedido invalido" });
+  try {
   const me = await prisma.planet.findUnique({ where: { userId: req.userId! } });
   if (!me) return res.status(404).json({ error: "Planeta nao encontrado" });
   const lvl = espionageLevel(parseTech(me.tech));
@@ -500,14 +501,21 @@ gameRouter.post("/spy", async (req: AuthedRequest, res) => {
   // O alvo é notificado da espionagem (com a coordenada do espião — assim, via
   // agente T, dá pra ver quem andou espionando o alvo).
   const tk = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
-  await addNews(target.id, tk, `🛰️ Você foi espionado (${AGENT_FULL_NAME[agent]}) por ${myCoords}`);
-  // Guarda o relatório para "Visualizar Espionagem" + gera um código compartilhável.
-  const hash = randomBytes(4).toString("hex").toUpperCase();
-  await prisma.spyReport.create({ data: {
-    hash, spyPlanetId: me.id, targetName: target.name, targetCoords: `${target.galaxy}:${target.system}:${target.slot}`,
-    agent, tick: tk, data: JSON.stringify(intel),
-  } });
+  const hash = randomBytes(6).toString("hex").toUpperCase();
+  // Notificar o alvo e salvar o relatório são SECUNDÁRIOS: se falharem, ainda
+  // devolvemos o intel (não trava a espionagem por causa disso).
+  try {
+    await addNews(target.id, tk, `🛰️ Você foi espionado (${AGENT_FULL_NAME[agent]}) por ${myCoords}`);
+    await prisma.spyReport.create({ data: {
+      hash, spyPlanetId: me.id, targetName: target.name, targetCoords: `${target.galaxy}:${target.system}:${target.slot}`,
+      agent, tick: tk, data: JSON.stringify(intel),
+    } });
+  } catch (e) { console.error("[spy] aviso/relatório falhou (intel devolvido mesmo assim):", e); }
   res.json({ intel, hash });
+  } catch (e: any) {
+    console.error("[spy] erro:", e);
+    return res.status(500).json({ error: `Falha na espionagem: ${e?.message ?? e}` });
+  }
 });
 
 // Histórico de espionagem (Visualizar Espionagem).
