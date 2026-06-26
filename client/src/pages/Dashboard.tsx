@@ -415,7 +415,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
           />
           {/* Defesa (verde se reforço chegando) e Ataque (vermelho se sob ataque) */}
           <button
-            className={`action-tab ${section === "trafego" ? "active" : ""} ${alerts.incomingDefense ? "alert-def" : ""}`}
+            className={`action-tab ${alerts.incomingDefense ? "alert-def" : ""}`}
             onClick={() => setSection("trafego")}
           >
             🛡️ Defesa
