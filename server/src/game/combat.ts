@@ -1,7 +1,6 @@
 import { prisma } from "../db.js";
 import { isRaceKey, type RaceKey } from "./races.js";
 import { unitByName, raceTable } from "./catalog.js";
-import { type ClasseCode } from "./unitTable.js";
 import { parseUnits, stringifyUnits, totalUnits, addUnits, type UnitMap } from "./unitmap.js";
 import { travelTime } from "./travel.js";
 import { travelReductionTicks } from "./tech.js";
@@ -13,12 +12,12 @@ const CAP_MIN = 0.05;   // roid cap mínimo (atacante >> defensor)
 const CAP_MAX = 0.15;   // roid cap máximo (equilibrado/azarão)
 const ASSIM_RATE = 0.5; // Mech: fração das naves inimigas destruídas que assimila
 
-const CLASS_RANK: Record<ClasseCode, number> = { Ca: 1, Co: 2, Fr: 3, De: 4, Cr: 5, Na: 6, Ro: 0 };
-// Capacidade de carga de roids por roider (por classe). Sem coluna na tabela -> assumido.
+// Carga de roids por roider: 1 roider ativo (não-paralisado) rouba no máximo 1 roid.
+// Só naves com a flag `roider` carregam; as demais carregam 0.
 function roiderCargo(name: string): number {
   const u = unitByName(name);
   if (!u || !u.roider) return 0;
-  return CLASS_RANK[u.classe] * 80;
+  return 1;
 }
 
 function raceOf(r: string): RaceKey { return isRaceKey(r) ? r : "humanos"; }
