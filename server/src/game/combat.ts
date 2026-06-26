@@ -74,7 +74,7 @@ function distributeUnits(survivors: UnitMap, contributors: { id: string; units: 
 }
 
 // Uma unidade dispara contra o lado inimigo (alvos por classe; aplica já as baixas).
-function fireAt(typeName: string, count: number, enemyActive: UnitMap, enemyLost: UnitMap, enemyPem: UnitMap, log?: LogEvent[], side?: "a" | "d") {
+function fireAt(typeName: string, count: number, enemyActive: UnitMap, enemyLost: UnitMap, enemyPem: UnitMap, log?: LogEvent[], side?: "a" | "d", assimOut?: UnitMap) {
   const A = unitByName(typeName);
   if (!A || A.qarm <= 0 || count <= 0) return;
   const targets = Object.keys(enemyActive).filter((t) => {
@@ -98,6 +98,9 @@ function fireAt(typeName: string, count: number, enemyActive: UnitMap, enemyLost
       const dmg = shotsT * cma * A.pfog;
       const killed = Math.min(enemyActive[t], Math.floor(dmg / T.fusel));
       enemyActive[t] -= killed; enemyLost[t] = (enemyLost[t] || 0) + killed;
+      // Mech: parte das naves que ABATE é assimilada (passa a lutar pelo Mech
+      // a partir do PRÓXIMO tick). Acumula aqui; é aplicado no fim da rodada.
+      if (A.tipo === "Assimiladora" && assimOut && killed > 0) assimOut[t] = (assimOut[t] || 0) + Math.floor(killed * ASSIM_RATE);
       if (log && side && killed > 0) log.push({ side, ini: A.ini, ship: typeName, count, target: t, shots: Math.round(shotsT), action: A.tipo === "Assimiladora" ? "assim" : "destroy", amount: killed, chance: Math.round(cma * 100) });
     }
   }
@@ -111,12 +114,17 @@ function oneRound(st: BattleState) {
   for (const t of Object.keys(st.aActive)) if (st.aActive[t] > 0) firers.push({ side: "a", type: t, ini: unitByName(t)?.ini ?? 999 });
   for (const t of Object.keys(st.dActive)) if (st.dActive[t] > 0) firers.push({ side: "d", type: t, ini: unitByName(t)?.ini ?? 999 });
   firers.sort((x, y) => (x.ini - y.ini) || (x.side === y.side ? 0 : x.side === "d" ? -1 : 1));
+  const aAssim: UnitMap = {}, dAssim: UnitMap = {}; // naves assimiladas nesta rodada
   for (const f of firers) {
     const me = f.side === "a" ? st.aActive : st.dActive;
     if ((me[f.type] || 0) <= 0) continue; // pode ter sido destruída/paralisada antes de atirar
-    if (f.side === "a") fireAt(f.type, me[f.type], st.dActive, st.dLost, st.dPem, st.log, "a");
-    else fireAt(f.type, me[f.type], st.aActive, st.aLost, st.aPem, st.log, "d");
+    if (f.side === "a") fireAt(f.type, me[f.type], st.dActive, st.dLost, st.dPem, st.log, "a", aAssim);
+    else fireAt(f.type, me[f.type], st.aActive, st.aLost, st.aPem, st.log, "d", dAssim);
   }
+  // Assimiladas entram nos ativos do assimilador AO FIM da rodada -> combatem
+  // só a partir do próximo tick (se assimilar mais no tick seguinte, somam de novo).
+  for (const t of Object.keys(aAssim)) if (aAssim[t] > 0) st.aActive[t] = (st.aActive[t] || 0) + aAssim[t];
+  for (const t of Object.keys(dAssim)) if (dAssim[t] > 0) st.dActive[t] = (st.dActive[t] || 0) + dAssim[t];
 }
 
 function survivors(active: UnitMap, pem: UnitMap): UnitMap {
@@ -271,25 +279,12 @@ export async function finalize(fleetId: string, tick: number) {
 
   let atkSurv: UnitMap;
   if (st && atkP && def) {
-    const atkRace = raceOf(atkP.user.race);
+    // A assimilação Mech já ocorre POR TICK durante o combate (naves assimiladas
+    // entram nos ativos e lutam nos ticks seguintes). Logo, os sobreviventes de
+    // st.aActive/st.dActive JÁ incluem as naves assimiladas — nada a somar aqui.
     atkSurv = survivors(st.aActive, st.aPem);
-    // Assimilação Mech: ganha parte das naves inimigas destruídas.
-    if (atkRace === "mech") {
-      for (const t of Object.keys(st.dLost)) {
-        const g = Math.floor(st.dLost[t] * ASSIM_RATE);
-        if (g > 0) atkSurv[t] = (atkSurv[t] || 0) + g;
-      }
-    }
-    if (raceOf(def.user.race) === "mech") {
-      const inc: UnitMap = {};
-      for (const t of Object.keys(st.aLost)) { const g = Math.floor(st.aLost[t] * ASSIM_RATE); if (g > 0) inc[t] = g; }
-      if (totalUnits(inc) > 0) {
-        const cur = parseUnits(def.units);
-        await prisma.planet.update({ where: { id: def.id }, data: { units: stringifyUnits(addUnits(cur, inc)) } });
-      }
-    }
     // Os relatórios de combate são gerados POR TICK em advanceEngagement.
-    // Aqui só fechamos: assimilação (acima), resumo nas notícias e retorno da frota.
+    // Aqui só fechamos: resumo nas notícias e retorno da frota.
     const aLost = totalUnits(st.aLost), dLost = totalUnits(st.dLost);
     const cap = fleet.capMetalium + fleet.capCarbonum + fleet.capPlutonium;
     const defCoords = `${def.galaxy}:${def.system}:${def.slot}`;
