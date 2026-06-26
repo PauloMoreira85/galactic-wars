@@ -2,15 +2,21 @@
 galacticwar.com.br, www.galacticwar.com.br {
 	encode gzip
 
-	# Cache: arquivos com hash no nome (/assets/*) podem ser eternos; o resto
-	# (index.html, rotas SPA, /art) nunca cacheia de verdade — sempre revalida,
-	# então após um deploy o navegador pega o index novo (e o JS novo) sozinho.
-	@assets path /assets/*
-	@dinamico not path /assets/*
-	header @assets Cache-Control "public, max-age=31536000, immutable"
-	header @dinamico Cache-Control "no-cache"
-
-	reverse_proxy app:3001
+	# Cache: usamos header_down (sobrescreve o Cache-Control do Express; o `header`
+	# normal rodava antes do proxy e DUPLICAVA o cabeçalho).
+	# /assets/* tem hash no nome -> cache eterno. O resto (index.html, rotas SPA,
+	# /art, /api) -> no-cache: sempre revalida, então após um deploy o navegador
+	# pega o index novo (e o JS novo) sozinho.
+	handle /assets/* {
+		reverse_proxy app:3001 {
+			header_down Cache-Control "public, max-age=31536000, immutable"
+		}
+	}
+	handle {
+		reverse_proxy app:3001 {
+			header_down Cache-Control "no-cache"
+		}
+	}
 }
 
 # Fórum do Universo (phpBB) no subdomínio.
