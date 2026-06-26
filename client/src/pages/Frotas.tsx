@@ -166,19 +166,23 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
             <input type="number" min={1} title="Sistema" value={dSystem} onChange={(e) => setDSystem(Math.max(1, Number(e.target.value)))} style={{ width: 60, margin: 0, padding: "6px 6px", textAlign: "center" }} />
             <span>:</span>
             <input type="number" min={1} title="Slot" value={dSlot} onChange={(e) => setDSlot(Math.max(1, Number(e.target.value)))} style={{ width: 60, margin: 0, padding: "6px 6px", textAlign: "center" }} />
-            <select value={dMission} onChange={(e) => setDMission(e.target.value as any)} style={{ width: "auto", margin: 0, background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
-              <option value="attack">Atacar</option>
-              <option value="transport">Defender</option>
+            <select
+              value={dFake ? `${dMission}_fake` : dMission}
+              onChange={(e) => { const v = e.target.value; setDFake(v.endsWith("_fake")); setDMission(v.replace("_fake", "") as "attack" | "transport"); }}
+              title="Falso = a frota vai até a órbita e volta SEM engajar (finta, pra enganar o inimigo)"
+              style={{ width: "auto", margin: 0, background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
+              <option value="attack">⚔️ Atacar</option>
+              <option value="transport">🛡️ Defender</option>
+              <option value="attack_fake">🎭 Ataque falso</option>
+              <option value="transport_fake">🎭 Defesa falsa</option>
             </select>
-            <select value={dTicks} disabled={dFake} onChange={(e) => setDTicks(Number(e.target.value))} title={dFake ? "finta não engaja" : dMission === "attack" ? "ticks de combate" : "ticks de defesa"} style={{ width: "auto", margin: 0, opacity: dFake ? 0.4 : 1, background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
-              <option value={1}>{dMission === "attack" ? "atacar" : "defender"} 1 tick</option>
-              <option value={2}>{dMission === "attack" ? "atacar" : "defender"} 2 ticks</option>
-              <option value={3}>{dMission === "attack" ? "atacar" : "defender"} 3 ticks</option>
-            </select>
-            <label className="roid-count" style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }} title="Finta: a frota vai até a órbita do alvo e volta SEM engajar — só pra enganar/forçar reação do inimigo.">
-              <input type="checkbox" checked={dFake} onChange={(e) => setDFake(e.target.checked)} style={{ width: "auto", margin: 0 }} />
-              {dMission === "attack" ? "🎭 ataque falso" : "🎭 defesa falsa"}
-            </label>
+            {!dFake && (
+              <select value={dTicks} onChange={(e) => setDTicks(Number(e.target.value))} title={dMission === "attack" ? "ticks de combate" : "ticks de defesa"} style={{ width: "auto", margin: 0, background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
+                <option value={1}>{dMission === "attack" ? "atacar" : "defender"} 1 tick</option>
+                <option value={2}>{dMission === "attack" ? "atacar" : "defender"} 2 ticks</option>
+                <option value={3}>{dMission === "attack" ? "atacar" : "defender"} 3 ticks</option>
+              </select>
+            )}
             <select value={dFleet} onChange={(e) => setDFleet(e.target.value)} style={{ width: "auto", margin: 0, background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
               <option value="">escolha a frota...</option>
               {fleets.filter((f) => f.idle && f.totalShips > 0).map((f) => <option key={f.id} value={f.id}>{f.name} ({fmt(f.totalShips)} naves)</option>)}
