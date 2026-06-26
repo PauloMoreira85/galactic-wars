@@ -182,8 +182,8 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
       try {
         const t = await api.traffic();
         setAlerts({
-          underAttack: t.fleets.some((f) => f.toMe && f.mission === "attack"),
-          incomingDefense: t.fleets.some((f) => f.toMe && f.mission === "transport"),
+          underAttack: t.fleets.some((f) => f.toMe && !f.own && f.mission === "attack"),
+          incomingDefense: t.fleets.some((f) => f.toMe && !f.own && f.mission === "transport"),
           galaxyUnderAttack: t.incomingAttacks > 0,
         });
       } catch {}

@@ -332,6 +332,7 @@ export async function galaxyTraffic(planetId: string) {
       ships: totalUnits(parseUnits(f.units)),
       ticks: Math.max(0, f.arriveTick - nowTick),
       toMe: f.targetSystem === me.system && f.targetSlot === me.slot,
+      own: f.ownerPlanetId === planetId, // frota MINHA (não conta como ameaça/reforço recebido)
     };
   }).sort((a, b) => a.ticks - b.ticks);
 

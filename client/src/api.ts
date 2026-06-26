@@ -361,7 +361,7 @@ export const api = {
       incomingToMe: number;
       fleets: {
         origin: string; owner: string; target: string; targetName: string | null;
-        mission: string; status: string; ships: number; ticks: number; toMe: boolean;
+        mission: string; status: string; ships: number; ticks: number; toMe: boolean; own: boolean;
       }[];
       movements: {
         planet: string; owner: string; coords: string;
