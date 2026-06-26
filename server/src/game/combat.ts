@@ -12,12 +12,13 @@ const CAP_MIN = 0.05;   // roid cap mínimo (atacante >> defensor)
 const CAP_MAX = 0.15;   // roid cap máximo (equilibrado/azarão)
 const ASSIM_RATE = 0.5; // Mech: fração das naves inimigas destruídas que assimila
 
-// Carga de roids por roider: 1 roider ativo (não-paralisado) rouba no máximo 1 roid.
+// Carga de roids por roider ATIVO (não-paralisado): cada roider rouba `qarm`
+// roids (Quantidade de Armas da tabela). Ex.: Seth=1, Netuno=2, Thoth=3.
 // Só naves com a flag `roider` carregam; as demais carregam 0.
 function roiderCargo(name: string): number {
   const u = unitByName(name);
   if (!u || !u.roider) return 0;
-  return 1;
+  return u.qarm;
 }
 
 function raceOf(r: string): RaceKey { return isRaceKey(r) ? r : "humanos"; }
