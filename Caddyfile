@@ -1,7 +1,16 @@
 # HTTPS automático (Let's Encrypt) + proxy pro app. Troque o domínio se precisar.
 galacticwar.com.br, www.galacticwar.com.br {
-	reverse_proxy app:3001
 	encode gzip
+
+	# Cache: arquivos com hash no nome (/assets/*) podem ser eternos; o resto
+	# (index.html, rotas SPA, /art) nunca cacheia de verdade — sempre revalida,
+	# então após um deploy o navegador pega o index novo (e o JS novo) sozinho.
+	@assets path /assets/*
+	@dinamico not path /assets/*
+	header @assets Cache-Control "public, max-age=31536000, immutable"
+	header @dinamico Cache-Control "no-cache"
+
+	reverse_proxy app:3001
 }
 
 # Fórum do Universo (phpBB) no subdomínio.
