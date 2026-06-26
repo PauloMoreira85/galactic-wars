@@ -10,7 +10,9 @@ import { addNews } from "./news.js";
 export const BATTLE_TICKS = 3;
 const CAP_MIN = 0.05;   // roid cap mínimo (atacante >> defensor)
 const CAP_MAX = 0.15;   // roid cap máximo (equilibrado/azarão)
-const ASSIM_RATE = 0.5; // Mech: fração das naves inimigas destruídas que assimila
+const ASSIM_RATE = 0.25; // Mech: fração das naves que abate e assimila (por tick).
+// Cuidado: efeito bola de neve (assimiladas lutam e abatem mais nos ticks seguintes),
+// então valores altos ficam fortes rápido. Ajuste fino aqui.
 
 // Carga de roids por roider ATIVO (não-paralisado): cada roider rouba `qarm`
 // roids (Quantidade de Armas da tabela). Ex.: Seth=1, Netuno=2, Thoth=3.
