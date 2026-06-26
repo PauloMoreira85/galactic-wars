@@ -5,7 +5,8 @@ import { requireAuth, type AuthedRequest } from "../auth.js";
 import { RESOURCES, ROID_PRODUCTION_PER_TICK, nextRoidCost, nextFleetSlotCost, MARKET_FEE, RESOURCE_CAP } from "../game/constants.js";
 import { buildRoid, totalRoids } from "../game/roids.js";
 import { RACES, isRaceKey } from "../game/races.js";
-import { startUpgrade, buildUnit, parseTech, cancelOrder } from "../game/fleet.js";
+import { startUpgrade, buildUnit, buildAgent, parseTech, cancelOrder } from "../game/fleet.js";
+import { AGENTS, AGENT_KEYS, isAgentKey, parseAgents, stringifyAgents, isShielded, ceNeeded, ROIDS_POR_CE } from "../game/agents.js";
 import { createFleet, setFleetComposition, renameFleet, dispatchFleet, fuelCost, viewSystem, galaxyTraffic, type ShipCounts } from "../game/galaxy.js";
 import { recallFleet, BATTLE_TICKS } from "../game/combat.js";
 import { unitsOfRace, isUnitUnlocked, CLASS_LABEL, unitByName, shipImage } from "../game/catalog.js";
@@ -22,7 +23,7 @@ import { createAlliance, invitePlayer, acceptInvite, leaveAlliance, kickMember, 
 import { forumIndex, listTopics, createTopic, getTopic, reply as forumReply, isForum } from "../game/forum.js";
 import { sendChat, recentChat, resolveRoom } from "../game/chat.js";
 import { sendPM, inbox, sentbox, markRead, unreadCount } from "../game/pm.js";
-import { SABOTAGES, availableSabotages, executeSabotage, infiltrationChance } from "../game/sabotage.js";
+import { SABOTAGES, availableSabotages, executeSabotage } from "../game/sabotage.js";
 import { parseUnits, totalUnits } from "../game/unitmap.js";
 import {
   TECHS, TECH_BY_KEY, levelOf, upgradeCost, upgradeTicks, reqsMet, espionageLevel,
@@ -118,6 +119,8 @@ async function planetView(userId: string) {
     techKind: o.kind === "tech" ? (TECH_BY_KEY[o.techKey ?? ""]?.kind ?? null) : null,
     label: o.kind === "ship" && o.shipClass
       ? `${o.quantity}x ${o.shipClass}`
+      : o.kind === "agent" && o.shipClass
+      ? `${o.quantity}x ${AGENTS[o.shipClass as keyof typeof AGENTS]?.name ?? o.shipClass}`
       : `${TECH_BY_KEY[o.techKey ?? ""]?.name ?? o.techKey} (nv ${o.targetLevel})`,
     quantity: o.quantity,
     ticksRemaining: Math.max(0, o.completeTick - tick),
@@ -151,6 +154,15 @@ async function planetView(userId: string) {
       nextFleetSlotCost: nextFleetSlotCost(planet.fleetSlots),
       autoExiles: planet.autoExiles,
     },
+    agents: (() => {
+      const a = parseAgents(planet.agents);
+      const myCE = a["CE"] ?? 0;
+      const need = ceNeeded(roids.total, raceKey);
+      return {
+        counts: a,
+        protection: { ce: myCE, needed: need, shielded: myCE >= need, roids: roids.total, roidsPerCE: ROIDS_POR_CE },
+      };
+    })(),
     onlineCount,
     tech: techCatalog,
     units,
@@ -328,8 +340,44 @@ gameRouter.get("/travel/:galaxy/:system/:slot", async (req: AuthedRequest, res) 
   res.json({ penalty: galaxyPenalty(planet.galaxy, Number(req.params.galaxy)) });
 });
 
+// ===== Treino de agentes de inteligência =====
+gameRouter.get("/agents", async (req: AuthedRequest, res) => {
+  const me = await prisma.planet.findUnique({ where: { userId: req.userId! }, include: { user: { select: { race: true } } } });
+  if (!me) return res.status(404).json({ error: "Planeta nao encontrado" });
+  const lvl = espionageLevel(parseTech(me.tech));
+  const counts = parseAgents(me.agents);
+  const raceKey = isRaceKey(me.user.race) ? me.user.race : "humanos";
+  const myRoids = me.roidMetalium + me.roidCarbonum + me.roidPlutonium;
+  const myCE = counts["CE"] ?? 0;
+  const need = ceNeeded(myRoids, raceKey);
+  const orders = await prisma.buildOrder.findMany({ where: { planetId: me.id, kind: "agent" }, orderBy: { completeTick: "asc" } });
+  const tick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
+  res.json({
+    catalog: AGENT_KEYS.map((k) => {
+      const d = AGENTS[k];
+      return { key: k, name: d.name, desc: d.desc, level: d.level, offensive: d.offensive,
+        cost: { metalium: d.m, carbonum: d.c, plutonium: d.p }, ticks: d.ticks,
+        unlocked: lvl >= d.level, count: counts[k] ?? 0 };
+    }),
+    protection: { ce: myCE, needed: need, shielded: myCE >= need, roids: myRoids, roidsPerCE: ROIDS_POR_CE },
+    training: orders.map((o) => ({ id: o.id, key: o.shipClass, quantity: o.quantity, ticksRemaining: Math.max(0, o.completeTick - tick) })),
+  });
+});
+
+const buildAgentSchema = z.object({ key: z.string(), quantity: z.number().int().min(1).max(1_000_000) });
+gameRouter.post("/agents/build", async (req: AuthedRequest, res) => {
+  const parsed = buildAgentSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "Pedido invalido" });
+  const planet = await prisma.planet.findUnique({ where: { userId: req.userId! } });
+  if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
+  try { await buildAgent(planet.id, parsed.data.key, parsed.data.quantity); }
+  catch (e: any) { return res.status(400).json({ error: e.message ?? "Falha no treino" }); }
+  res.json(await planetView(req.userId!));
+});
+
 // Espionagem por AGENTE: P(padrão) M(militar) T(transmissão) D(duplo).
-const AGENT_LEVEL: Record<string, number> = { P: 2, M: 3, T: 4, D: 5 };
+// Gasta 1 agente do tipo (dê certo ou não). Sucesso é DETERMINÍSTICO: o alvo
+// está protegido se CE × 2 ≥ roids do alvo (Rakshasa: CE +30%).
 const spySchema = z.object({
   galaxy: z.number().int().min(1), system: z.number().int().min(1), slot: z.number().int().min(1).max(15),
   agent: z.enum(["P", "M", "T", "D"]),
@@ -341,19 +389,29 @@ gameRouter.post("/spy", async (req: AuthedRequest, res) => {
   if (!me) return res.status(404).json({ error: "Planeta nao encontrado" });
   const lvl = espionageLevel(parseTech(me.tech));
   const { galaxy, system, slot, agent } = parsed.data;
-  if (lvl < AGENT_LEVEL[agent]) return res.status(400).json({ error: `Você não tem o agente ${agent}` });
+  if (lvl < AGENTS[agent].level) return res.status(400).json({ error: `Pesquise mais Inteligência para o agente ${agent}` });
+
+  // Precisa ter o agente treinado. Gasta 1 (dê certo ou não).
+  const myAgents = parseAgents(me.agents);
+  if ((myAgents[agent] ?? 0) < 1) return res.status(400).json({ error: `Você não tem agentes ${agent} treinados (treine na Inteligência)` });
 
   const target = await prisma.planet.findUnique({ where: { galaxy_system_slot: { galaxy, system, slot } }, include: { user: { select: { username: true, race: true, lastSeen: true } } } });
   if (!target) return res.status(404).json({ error: "Nenhum planeta nessas coordenadas" });
+  if (target.id === me.id) return res.status(400).json({ error: "Você não espiona o próprio planeta" });
   const raceKey = isRaceKey(target.user.race) ? target.user.race : "humanos";
 
-  // Contra-espionagem: pode falhar (mais roids no alvo / Rakshasa = mais difícil).
+  // Consome 1 agente do tipo, sempre.
+  myAgents[agent] = (myAgents[agent] ?? 0) - 1;
+  await prisma.planet.update({ where: { id: me.id }, data: { agents: stringifyAgents(myAgents) } });
+
+  // Contra-espionagem DETERMINÍSTICA: alvo protegido se CE × 2 ≥ roids do alvo.
   const tkNow = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
-  const myRoids = me.roidMetalium + me.roidCarbonum + me.roidPlutonium;
+  const tgtAgents = parseAgents(target.agents);
+  const tgtCE = tgtAgents["CE"] ?? 0;
   const tgtRoids = target.roidMetalium + target.roidCarbonum + target.roidPlutonium;
-  if (Math.random() >= infiltrationChance(myRoids, tgtRoids, target.user.race)) {
-    await addNews(target.id, tkNow, `🛡️ Você repeliu uma tentativa de espionagem (agente ${agent})`);
-    return res.json({ failed: true, error: "Espionagem falhou (contra-espionagem do alvo)" });
+  if (isShielded(tgtCE, tgtRoids, target.user.race)) {
+    await addNews(target.id, tkNow, `🛡️ Sua contra-espionagem bloqueou um agente ${agent}`);
+    return res.json({ failed: true, error: `Espionagem bloqueada — o alvo tem contra-espionagem suficiente (perdeu 1 agente ${agent})` });
   }
   const units = parseUnits(target.units);
   const totalShips = Object.values(units).reduce((a, b) => a + b, 0);

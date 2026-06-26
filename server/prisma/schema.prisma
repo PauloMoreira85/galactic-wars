@@ -67,6 +67,10 @@ model Planet {
   // Hangar real: { "NomeDaNave": quantidade } (tabela oficial de unidades)
   units String @default("{}")
 
+  // Agentes de inteligência treinados: { "P": n, "M": n, "T": n, "D": n, "CE": n }
+  // P/M/T/D = espionagem ofensiva; CE = contra-espionagem (defesa).
+  agents String @default("{}")
+
   // Maior classe ja pesquisada (legado - substituido por `tech`)
   researchTier Int @default(0)
 

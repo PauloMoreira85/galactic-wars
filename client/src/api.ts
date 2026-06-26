@@ -118,6 +118,10 @@ export interface PlanetView {
     nextFleetSlotCost: Record<Resource, number> | null;
     autoExiles: number;
   };
+  agents: {
+    counts: Record<string, number>;
+    protection: { ce: number; needed: number; shielded: boolean; roids: number; roidsPerCE: number };
+  };
   onlineCount: number;
   tech: TechItem[];
   effects: { espionage: number };
@@ -243,6 +247,15 @@ export const api = {
 
   spy: (galaxy: number, system: number, slot: number, agent: "P" | "M" | "T" | "D") =>
     request<{ intel?: any; failed?: boolean; error?: string; hash?: string }>("/game/spy", { method: "POST", body: JSON.stringify({ galaxy, system, slot, agent }) }),
+
+  agents: () =>
+    request<{
+      catalog: { key: string; name: string; desc: string; level: number; offensive: boolean; cost: Record<Resource, number>; ticks: number; unlocked: boolean; count: number }[];
+      protection: { ce: number; needed: number; shielded: boolean; roids: number; roidsPerCE: number };
+      training: { id: string; key: string; quantity: number; ticksRemaining: number }[];
+    }>("/game/agents"),
+  buildAgent: (key: string, quantity: number) =>
+    request<PlanetView>("/game/agents/build", { method: "POST", body: JSON.stringify({ key, quantity }) }),
   spyLookup: (hash: string) =>
     request<{ hash: string; targetName: string; targetCoords: string; agent: string; tick: number; intel: any }>(`/game/spy/lookup/${encodeURIComponent(hash)}`),
 

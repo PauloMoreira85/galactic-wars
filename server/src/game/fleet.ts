@@ -5,8 +5,9 @@ import { parseUnits, stringifyUnits, addUnits } from "./unitmap.js";
 import { addNews } from "./news.js";
 import {
   TECH_BY_KEY, type TechLevels,
-  levelOf, upgradeCost, upgradeTicks, reqsMet,
+  levelOf, upgradeCost, upgradeTicks, reqsMet, espionageLevel,
 } from "./tech.js";
+import { AGENTS, isAgentKey, parseAgents, stringifyAgents } from "./agents.js";
 
 async function currentTick(): Promise<number> {
   const s = await prisma.gameState.findUnique({ where: { id: 1 } });
@@ -80,6 +81,34 @@ export async function buildUnit(planetId: string, unitName: string, quantity: nu
   }, TX_OPTS);
 }
 
+// Treina `quantity` agentes do tipo `agentKey` (P/M/T/D/CE). Exige nível de
+// Inteligência (espionageLevel) suficiente. Resolve pela fila (kind "agent").
+export async function buildAgent(planetId: string, agentKey: string, quantity: number) {
+  if (!Number.isInteger(quantity) || quantity < 1) throw new Error("Quantidade invalida");
+  if (!isAgentKey(agentKey)) throw new Error("Agente invalido");
+  const def = AGENTS[agentKey];
+  return prisma.$transaction(async (tx) => {
+    const planet = await tx.planet.findUnique({ where: { id: planetId } });
+    if (!planet) throw new Error("Planeta nao encontrado");
+    const levels = parseTech(planet.tech);
+    if (espionageLevel(levels) < def.level) throw new Error(`Pesquise mais Inteligência p/ treinar ${def.name}`);
+    const cost = { metalium: def.m * quantity, carbonum: def.c * quantity, plutonium: def.p * quantity };
+    if (planet.metalium < cost.metalium || planet.carbonum < cost.carbonum || planet.plutonium < cost.plutonium) {
+      throw new Error("Recursos insuficientes para o treino");
+    }
+    const tick = await currentTick();
+    await tx.planet.update({
+      where: { id: planetId },
+      data: { metalium: { decrement: cost.metalium }, carbonum: { decrement: cost.carbonum }, plutonium: { decrement: cost.plutonium } },
+    });
+    const order = await tx.buildOrder.create({
+      data: { planetId, kind: "agent", shipClass: agentKey, quantity, startTick: tick, completeTick: tick + def.ticks },
+    });
+    await addNews(planetId, tick, `🕵️ Treino iniciado: ${quantity}x ${def.name}`);
+    return order;
+  }, TX_OPTS);
+}
+
 // Cancela uma ordem da fila (pesquisa/construção/nave) e reembolsa proporcional
 // ao tempo que FALTAVA (você perde a parte já feita).
 export async function cancelOrder(planetId: string, orderId: string) {
@@ -98,6 +127,9 @@ export async function cancelOrder(planetId: string, orderId: string) {
     } else if (order.kind === "ship" && order.shipClass) {
       const u = unitByName(order.shipClass);
       if (u) cost = { metalium: u.m * order.quantity, carbonum: u.c * order.quantity, plutonium: u.p * order.quantity };
+    } else if (order.kind === "agent" && order.shipClass && isAgentKey(order.shipClass)) {
+      const a = AGENTS[order.shipClass];
+      cost = { metalium: a.m * order.quantity, carbonum: a.c * order.quantity, plutonium: a.p * order.quantity };
     }
     const refund = {
       metalium: Math.floor(cost.metalium * remainingFrac),
@@ -124,6 +156,13 @@ export async function processBuildOrders(uptoTick: number) {
         const hangar = addUnits(parseUnits(planet.units), { [order.shipClass]: order.quantity });
         await prisma.planet.update({ where: { id: order.planetId }, data: { units: stringifyUnits(hangar) } });
         await addNews(order.planetId, uptoTick, `Construção concluída: ${order.quantity}x ${order.shipClass}`);
+      }
+    } else if (order.kind === "agent" && order.shipClass && isAgentKey(order.shipClass)) {
+      const planet = await prisma.planet.findUnique({ where: { id: order.planetId } });
+      if (planet) {
+        const agents = addUnits(parseAgents(planet.agents), { [order.shipClass]: order.quantity });
+        await prisma.planet.update({ where: { id: order.planetId }, data: { agents: stringifyAgents(agents) } });
+        await addNews(order.planetId, uptoTick, `🕵️ Treino concluído: ${order.quantity}x ${AGENTS[order.shipClass].name}`);
       }
     } else if (order.kind === "tech" && order.techKey && order.targetLevel != null) {
       const planet = await prisma.planet.findUnique({ where: { id: order.planetId } });
