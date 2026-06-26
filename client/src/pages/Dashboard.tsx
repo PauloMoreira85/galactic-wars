@@ -18,7 +18,7 @@ import { Preferencias } from "./Preferencias";
 const RES_META: { key: Resource; label: string }[] = [
   { key: "metalium", label: "Metalium" },
   { key: "carbonum", label: "Carbonum" },
-  { key: "plutonium", label: "Plutônio" },
+  { key: "plutonium", label: "Plutonium" },
 ];
 
 function fmt(n: number) {

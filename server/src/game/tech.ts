@@ -32,7 +32,7 @@ export const SHIP_FACTORY: Record<ShipClass, string> = {
 interface ChainItem { key: string; name: string; kind: TechKind; desc: string; m: number; c: number; ticks: number; max?: number }
 
 // Cadeia sequencial: cada item requer o ANTERIOR (level 1). Custo só em M/C
-// (plutônio é exclusivo de combustível). max=1 salvo indicado.
+// (plutonium é exclusivo de combustível). max=1 salvo indicado.
 function chain(category: TechCategory, items: ChainItem[]): TechDef[] {
   return items.map((it, i) => ({
     key: it.key, name: it.name, category, kind: it.kind, max: it.max ?? 1, desc: it.desc,
@@ -79,14 +79,14 @@ const MINERACAO = chain("mineracao", [
   { key: "centroMineracao", name: "Centro de Mineração", kind: "building", desc: "+1500 de produção de Metalium por tick.", m: 1250, c: 1250, ticks: 6 },
   { key: "extracaoCristal", name: "Extração de Carbonum", kind: "research", desc: "Desbloqueia a Mina de Carbonum.", m: 2500, c: 2500, ticks: 10 },
   { key: "minaCristal", name: "Mina de Carbonum", kind: "building", desc: "+1500 de produção de Carbonum por tick.", m: 5000, c: 5000, ticks: 13 },
-  { key: "fusaoEonio", name: "Fusão de Plutônio", kind: "research", desc: "Desbloqueia o Laboratório de Plutônio.", m: 7500, c: 7500, ticks: 19 },
-  { key: "labEonio", name: "Laboratório de Plutônio", kind: "building", desc: "+1500 de produção de Plutônio por tick.", m: 15000, c: 15000, ticks: 26 },
+  { key: "fusaoEonio", name: "Fusão de Plutonium", kind: "research", desc: "Desbloqueia o Laboratório de Plutonium.", m: 7500, c: 7500, ticks: 19 },
+  { key: "labEonio", name: "Laboratório de Plutonium", kind: "building", desc: "+1500 de produção de Plutonium por tick.", m: 15000, c: 15000, ticks: 26 },
   { key: "recursosProfundidade", name: "Recursos em Profundidade", kind: "research", desc: "Desbloqueia minas mais profundas.", m: 22500, c: 22500, ticks: 26 },
   { key: "minaProfundaMetal", name: "Mina Profunda de Metalium", kind: "building", desc: "+10000 de produção de Metalium por tick.", m: 45000, c: 45000, ticks: 35 },
   { key: "armasPlasma", name: "Sondas de Carbonum Profundo", kind: "research", desc: "Desbloqueia a Mina Profunda de Carbonum.", m: 67500, c: 67500, ticks: 35 },
   { key: "minaProfundaCristal", name: "Mina Profunda de Carbonum", kind: "building", desc: "+10000 de produção de Carbonum por tick.", m: 135000, c: 135000, ticks: 50 },
   { key: "materiaisReforcados", name: "Materiais Reforçados", kind: "research", desc: "Desbloqueia o Laboratório Reforçado.", m: 135000, c: 135000, ticks: 50 },
-  { key: "labReforcado", name: "Laboratório Reforçado", kind: "building", desc: "+10000 de produção de Plutônio por tick.", m: 135000, c: 135000, ticks: 50 },
+  { key: "labReforcado", name: "Laboratório Reforçado", kind: "building", desc: "+10000 de produção de Plutonium por tick.", m: 135000, c: 135000, ticks: 50 },
 ]);
 
 // ===== Deslocamento (cada construção reduz 1 tick do tempo de viagem) =====
@@ -161,7 +161,7 @@ export function upgradeCost(def: TechDef, currentLevel: number) {
   return {
     metalium: Math.ceil(def.baseCost.metalium * f),
     carbonum: Math.ceil(def.baseCost.carbonum * f),
-    plutonium: 0, // plutônio é exclusivo para combustível
+    plutonium: 0, // plutonium é exclusivo para combustível
   };
 }
 export function upgradeTicks(def: TechDef, currentLevel: number) {

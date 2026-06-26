@@ -10,7 +10,7 @@ import { allianceTags } from "./alliance.js";
 import { hasActiveTreaty } from "./governance.js";
 import { nextFleetSlotCost, NEWBIE_PROTECTION_TICKS, ATTACK_RANGE_MIN_PCT, SLOTS_PER_SYSTEM } from "./constants.js";
 
-// Combustível (plutônio) para enviar uma frota = soma do Comb de cada nave.
+// Combustível (plutonium) para enviar uma frota = soma do Comb de cada nave.
 export function fuelCost(units: UnitMap): number {
   let f = 0;
   for (const name of Object.keys(units)) {
@@ -137,7 +137,7 @@ export async function dispatchFleet(planetId: string, fleetId: string, target: C
     }
 
     const fuel = fuelCost(fleetUnits);
-    if (planet.plutonium < fuel) throw new Error(`Plutônio (combustível) insuficiente: precisa de ${fuel}`);
+    if (planet.plutonium < fuel) throw new Error(`Plutonium (combustível) insuficiente: precisa de ${fuel}`);
     await tx.planet.update({ where: { id: planetId }, data: { plutonium: { decrement: fuel } } });
 
     const tick = await currentTick();

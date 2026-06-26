@@ -267,7 +267,7 @@ export function Galaxy({ view, onChanged }: { view: PlanetView; onChanged: () =>
               <div className="roid-row" key={f.id}>
                 <div className="roid-label"><div>
                   <div><b>{f.name}</b> <span className="roid-count">{fmt(f.totalShips)} naves</span></div>
-                  <div className="roid-count">chega em {eta}t · ⛽ {fmt(f.travel.fuel)} plutônio{noFuel ? " (insuficiente)" : ""}</div>
+                  <div className="roid-count">chega em {eta}t · ⛽ {fmt(f.travel.fuel)} plutonium{noFuel ? " (insuficiente)" : ""}</div>
                 </div></div>
                 <button disabled={busy || noFuel} onClick={() => dispatch(f.id)}>{busy ? "..." : "🚀 enviar"}</button>
               </div>

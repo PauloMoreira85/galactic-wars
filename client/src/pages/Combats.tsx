@@ -92,7 +92,7 @@ export function Combats() {
             <tbody>
               <tr><td><span className="dot metalium" /> Metalium</td><td>{fmt(cap.metalium)}</td></tr>
               <tr><td><span className="dot carbonum" /> Carbonum</td><td>{fmt(cap.carbonum)}</td></tr>
-              <tr><td><span className="dot plutonium" /> Plutônio</td><td>{fmt(cap.plutonium)}</td></tr>
+              <tr><td><span className="dot plutonium" /> Plutonium</td><td>{fmt(cap.plutonium)}</td></tr>
             </tbody>
           </table>
           {!(cap.metalium || cap.carbonum || cap.plutonium) && <div className="roid-count" style={{ marginTop: 6 }}>Nenhum roid capturado neste combate.</div>}
