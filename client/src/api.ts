@@ -381,6 +381,7 @@ export const api = {
         defenderRace: string;
         ticks: number;
         captured: Record<Resource, number>;
+        raid?: { capacity: number; ratePct: number; captured: number; rows: { name: string; active: number; cargo: number; capacity: number }[] };
         attacker: { name: string; before: number; lost: number; pem: number; survivors: number }[];
         defender: { name: string; before: number; lost: number; pem: number; survivors: number }[];
         log?: { side: "a" | "d"; ini: number; ship: string; count: number; target: string; shots: number; action: "pem" | "destroy" | "assim"; amount: number; chance: number }[];

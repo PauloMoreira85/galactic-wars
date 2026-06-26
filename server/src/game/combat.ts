@@ -213,6 +213,14 @@ export async function advanceEngagement(fleetId: string, tick: number) {
       const take = Math.min(room, Math.floor(roids[r] * st.rate));
       if (take > 0) { roids[r] -= take; cap[r] += take; room -= take; roundCap[r] += take; }
     }
+    // Resumo do roubo deste tick: roiders ATIVOS (não-paralisados) × capacidade (qarm).
+    const raidRows = Object.keys(st.aActive)
+      .filter((n) => st.aActive[n] > 0 && roiderCargo(n) > 0)
+      .map((n) => ({ name: n, active: st.aActive[n], cargo: roiderCargo(n), capacity: st.aActive[n] * roiderCargo(n) }));
+    const raid = {
+      capacity, ratePct: Math.round(st.rate * 100), rows: raidRows,
+      captured: roundCap.metalium + roundCap.carbonum + roundCap.plutonium,
+    };
     done++;
 
     // 1 relatório de combate POR TICK (este tick).
@@ -221,7 +229,7 @@ export async function advanceEngagement(fleetId: string, tick: number) {
         attackerRace: raceTable(raceOf(atkP.user.race)), defenderRace: raceTable(raceOf(def.user.race)),
         attacker: roundRows(aActiveB, aLostB, st.aLost, aPemB, st.aPem),
         defender: roundRows(dActiveB, dLostB, st.dLost, dPemB, st.dPem),
-        captured: roundCap, round: done, ticks: 1, log: st.log ?? [],
+        captured: roundCap, raid, round: done, ticks: 1, log: st.log ?? [],
       });
       await prisma.battleReport.create({ data: {
         tick: fleet.battleStartTick + done - 1,

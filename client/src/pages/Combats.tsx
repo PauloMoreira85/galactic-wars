@@ -96,6 +96,34 @@ export function Combats() {
             </tbody>
           </table>
           {!(cap.metalium || cap.carbonum || cap.plutonium) && <div className="roid-count" style={{ marginTop: 6 }}>Nenhum roid capturado neste combate.</div>}
+
+          {d.raid && (
+            <div style={{ marginTop: 10 }}>
+              <div className="roid-count" style={{ marginBottom: 4 }}>
+                Roiders ativos (não-paralisados) e capacidade de roubo:
+              </div>
+              {d.raid.rows.length > 0 ? (
+                <table>
+                  <thead><tr><th>Roider</th><th>Ativos</th><th>Roids/nave</th><th>Capacidade</th></tr></thead>
+                  <tbody>
+                    {d.raid.rows.map((r) => (
+                      <tr key={r.name}>
+                        <td>{r.name}</td>
+                        <td>{fmt(r.active)}</td>
+                        <td>{r.cargo}</td>
+                        <td>{fmt(r.capacity)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="roid-count">Nenhum roider ativo neste tick (todos paralisados ou ausentes).</div>
+              )}
+              <div className="roid-count" style={{ marginTop: 6 }}>
+                Capacidade total: <b>{fmt(d.raid.capacity)}</b> roids · limite do round: <b>{d.raid.ratePct}%</b> dos roids do alvo · capturado: <b>{fmt(d.raid.captured)}</b>
+              </div>
+            </div>
+          )}
         </div>
 
         {d.log && d.log.length > 0 && (
