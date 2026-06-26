@@ -22,6 +22,20 @@ authRouter.get("/races", (_req, res) => {
   res.json({ races });
 });
 
+// Hall da Fama (público — aparece na landing page).
+authRouter.get("/hall", async (_req, res) => {
+  const rows = await prisma.hallOfFame.findMany({ orderBy: [{ round: "desc" }, { position: "asc" }] });
+  const byRound = new Map<number, any>();
+  for (const r of rows) {
+    if (!byRound.has(r.round)) byRound.set(r.round, { round: r.round, endedAt: r.endedAt, top: [] });
+    byRound.get(r.round).top.push({
+      position: r.position, commander: r.commander, planet: r.planet,
+      coords: r.coords, race: r.race, roids: r.roids, score: r.score,
+    });
+  }
+  res.json({ rounds: [...byRound.values()] });
+});
+
 const registerSchema = z.object({
   email: z.string().email(),
   username: z.string().min(3).max(20),

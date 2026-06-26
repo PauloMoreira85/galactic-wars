@@ -395,6 +395,23 @@ model AllowedPair {
   @@unique([aId, bId])
 }
 
+// Hall da Fama: top-3 de cada round encerrado (persiste entre rounds).
+// Gravado pelo reset-round ANTES de apagar o universo.
+model HallOfFame {
+  id        String   @id @default(cuid())
+  round     Int      // número sequencial do round (1, 2, 3, ...)
+  position  Int      // 1 | 2 | 3
+  commander String
+  planet    String
+  coords    String
+  race      String?
+  roids     Int      @default(0)
+  score     Int      @default(0)
+  endedAt   DateTime @default(now())
+
+  @@index([round])
+}
+
 // Estado global do universo (linha unica) - controla o relogio de ticks
 model GameState {
   id         Int      @id @default(1)

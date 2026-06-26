@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, setToken, type RaceInfo } from "../api";
+import { api, setToken, type RaceInfo, type HallRound } from "../api";
 
 export function Auth({ onAuthed }: { onAuthed: () => void }) {
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -12,6 +12,7 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
   const [password, setPassword] = useState("");
   const [races, setRaces] = useState<RaceInfo[]>([]);
   const [race, setRace] = useState<string>("");
+  const [hall, setHall] = useState<HallRound[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [forgot, setForgot] = useState(false);
@@ -30,6 +31,7 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
       setRaces(r.races);
       setRace((prev) => prev || r.races[0]?.key || "");
     }).catch(() => {});
+    api.hall().then((h) => setHall(h.rounds)).catch(() => {});
   }, []);
 
   async function submit(e: React.FormEvent) {
@@ -180,6 +182,35 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Hall da Fama: campeões dos rounds anteriores (some se ainda não houve round). */}
+      {hall.length > 0 && (
+        <div className="landing-hall">
+          <h2 className="landing-h2">🏆 Hall da Fama</h2>
+          <div className="hall-rounds">
+            {hall.map((r) => (
+              <div className="hall-round" key={r.round}>
+                <div className="hall-round-title">Round #{r.round}</div>
+                {r.top.map((c) => (
+                  <div className={`hall-row pos-${c.position}`} key={c.position}>
+                    <span className="hall-medal">{c.position === 1 ? "🥇" : c.position === 2 ? "🥈" : "🥉"}</span>
+                    <span className="hall-name">{c.commander}</span>
+                    <span className="hall-roids">{c.roids.toLocaleString("pt-BR")} roids</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Espaço de patrocínio (vendável). */}
+      <div className="landing-sponsors">
+        <div className="sponsor-label">Patrocínio</div>
+        <a className="sponsor-slot" href="mailto:contato@galacticwar.com.br?subject=Patroc%C3%ADnio%20Galactic%20Wars">
+          📣 Seu anúncio aqui — fale com a gente: contato@galacticwar.com.br
+        </a>
       </div>
 
       <div className="landing-foot">Galactic Wars · {new Date().getFullYear()}</div>

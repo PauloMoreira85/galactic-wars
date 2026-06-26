@@ -167,6 +167,23 @@ body::after {
 .rs-label.bad { color: var(--danger); }
 .rs-item { font-size: 12.5px; color: var(--text); padding: 1px 0; }
 .race-show-ships { margin-top: 12px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--border); padding-top: 8px; }
+/* Hall da Fama (landing) */
+.landing-hall { margin-top: 10px; }
+.hall-rounds { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+.hall-round { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; box-shadow: 0 8px 26px rgba(0,0,0,0.4); }
+.hall-round-title { font-family: "Orbitron", sans-serif; letter-spacing: 1px; color: var(--accent); text-shadow: 0 0 10px var(--glow); margin-bottom: 10px; font-size: 14px; }
+.hall-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 13px; }
+.hall-medal { font-size: 16px; }
+.hall-name { flex: 1; min-width: 0; color: var(--text); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hall-roids { color: var(--muted); font-family: var(--mono); font-size: 12px; }
+.hall-row.pos-1 .hall-name { color: #ffe07a; text-shadow: 0 0 8px rgba(255,210,80,0.4); }
+
+/* Espaço de patrocínio (landing) */
+.landing-sponsors { margin-top: 30px; text-align: center; }
+.sponsor-label { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); margin-bottom: 6px; }
+.sponsor-slot { display: block; border: 1px dashed var(--border-strong); border-radius: 10px; padding: 18px; color: var(--muted); text-decoration: none; font-size: 13px; transition: all 0.15s; background: rgba(255,255,255,0.02); }
+.sponsor-slot:hover { color: var(--text); border-color: var(--accent); box-shadow: 0 0 18px var(--glow); }
+
 .landing-foot { text-align: center; color: var(--muted); font-size: 12px; margin-top: 30px; font-family: var(--mono); }
 
 @media (max-width: 640px) {

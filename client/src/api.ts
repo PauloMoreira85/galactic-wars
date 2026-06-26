@@ -87,6 +87,12 @@ export interface TechItem {
   canStart: boolean;
 }
 
+export interface HallChampion {
+  position: number; commander: string; planet: string; coords: string;
+  race: string | null; roids: number; score: number;
+}
+export interface HallRound { round: number; endedAt: string; top: HallChampion[] }
+
 export interface PlanetView {
   commander: string;
   commanderAvatar: string | null;
@@ -158,6 +164,8 @@ export const ALLIANCE_ROLES = ["lider", "alto_comando", "dc", "scanner", "porta_
 
 export const api = {
   races: () => request<{ races: RaceInfo[] }>("/auth/races"),
+
+  hall: () => request<{ rounds: HallRound[] }>("/auth/hall"),
 
   register: (body: {
     email: string;
