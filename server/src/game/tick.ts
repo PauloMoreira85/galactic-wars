@@ -81,9 +81,14 @@ async function advance() {
       where: { id: 1 },
       data: { tickNumber: newTickNumber, lastTickAt: newLastTick },
     });
-    // Resolve construcoes/pesquisas e chegadas de frota ate o tick atingido.
+    // Resolve construcoes/pesquisas ate o tick atingido (são "concluir", pode em lote).
     await processBuildOrders(newTickNumber);
-    await processFleets(newTickNumber);
+    // Frotas/combate: UM tick por vez. Assim o combate avança 1 rodada por tick
+    // (nunca "vários de uma vez"), mesmo num catch-up após deploy/downtime —
+    // dando chance de reagir entre os ticks.
+    for (let t = state.tickNumber + 1; t <= newTickNumber; t++) {
+      await processFleets(t);
+    }
     console.log(`[tick] +${due} tick(s) -> tick #${newTickNumber}`);
   } finally {
     running = false;
