@@ -442,14 +442,15 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                   <button className="link" onClick={() => { localStorage.setItem("gw_intro_hidden", "1"); setShowIntro(false); }}>ocultar</button>
                 </div>
                 <ol className="intro-steps">
-                  <li><b>Inicie a mineração de roids</b> na Página Principal (botão "⛏️ minerar …") — você paga pra começar a minerar. Mais roids = mais recursos por tick.</li>
-                  <li><b>Pesquise</b> (🔬) pra desbloquear construções; depois <b>construa</b> (🛠️).</li>
-                  <li>Em <b>Naves, Inteligência e Sabotagem</b> a cadeia é: pesquisa → fábrica → libera a próxima.</li>
-                  <li>Construa naves nas fábricas (<b>Naves</b>) e monte uma frota em <b>Frotas</b>.</li>
-                  <li>Na <b>Galáxia</b>, envie a frota: mesma galáxia = só <b>defender</b> (aliados); outras = <b>atacar</b>.</li>
+                  <li><b>Minere roids</b> na Página Principal (botão "⛏️ minerar …") — você paga pra abrir cada roid. Mais roids = mais recursos por tick.</li>
+                  <li><b>Pesquise</b> (🔬) pra desbloquear e depois <b>construa</b> (🛠️). Em <b>Naves, Inteligência e Sabotagem</b> a cadeia é: pesquisa → fábrica → libera a próxima.</li>
+                  <li>Construa <b>naves</b> (em Naves) e monte uma <b>frota</b> em <b>Frotas</b>, com as coordenadas do alvo.</li>
+                  <li>Na <b>Galáxia</b>, envie a frota por 1–3 ticks: mesma galáxia = só <b>defender</b> (aliados); outras = <b>atacar</b>. Seus <b>roiders</b> ativos roubam os roids do alvo.</li>
+                  <li><b>Inteligência</b>: treine agentes <b>P/M/T/D</b> pra espionar (gasta 1 por missão) e agentes de <b>Contra-Espionagem (CE)</b> pra se proteger — você fica blindado quando <b>CE ≥ seus roids ÷ 2</b>.</li>
+                  <li><b>Sabotagem</b> prejudica o alvo (atrasa produção, rouba recurso/tecnologia…) — também é barrada pelo CE de quem você ataca.</li>
                   <li>Você tem <b>proteção de novato por 72 ticks</b> — ninguém te ataca. Cresça à vontade.</li>
                 </ol>
-                <div className="roid-count">💡 A raça dos inimigos é segredo — descubra espionando (Inteligência). Tudo detalhado na <b>Árvore Tecnológica</b> (Ferramentas).</div>
+                <div className="roid-count">💡 A raça dos inimigos é segredo — descubra com um <b>Agente Padrão</b> (Inteligência). Tudo detalhado na <b>Árvore Tecnológica</b> (Ferramentas).</div>
               </div>
             ) : (
               <button className="link" style={{ marginBottom: 12 }} onClick={() => setShowIntro(true)}>❔ Como jogar</button>
