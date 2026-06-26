@@ -143,6 +143,10 @@ model Fleet {
   // Quantos ticks a frota fica engajada (ataque): 1, 2 ou 3 (escolhido no envio).
   engageTicks Int @default(3)
 
+  // Ameaça FALSA (feint): viaja como ataque/defesa real (aparece no tráfego do
+  // alvo), mas ao chegar na órbita volta pra base SEM engajar/guarnecer.
+  fake Boolean @default(false)
+
   createdAt DateTime @default(now())
 
   @@index([arriveTick])

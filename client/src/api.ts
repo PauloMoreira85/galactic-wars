@@ -332,7 +332,7 @@ export const api = {
     request<PlanetView>(`/game/fleets/${id}/load`, { method: "POST", body: JSON.stringify({ units }) }),
   renameFleet: (id: string, name: string) =>
     request<{ ok: true }>(`/game/fleets/${id}/rename`, { method: "POST", body: JSON.stringify({ name }) }),
-  dispatchFleet: (id: string, body: { galaxy: number; system: number; slot: number; mission: "attack" | "transport"; ticks?: number }) =>
+  dispatchFleet: (id: string, body: { galaxy: number; system: number; slot: number; mission: "attack" | "transport"; ticks?: number; fake?: boolean }) =>
     request<{ ok: true }>(`/game/fleets/${id}/dispatch`, { method: "POST", body: JSON.stringify(body) }),
 
   recallFleet: (id: string) =>

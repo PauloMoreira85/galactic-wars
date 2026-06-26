@@ -92,7 +92,7 @@ export async function setFleetComposition(planetId: string, fleetId: string, des
 }
 
 // Envia uma frota IDLE (já carregada) para um destino.
-export async function dispatchFleet(planetId: string, fleetId: string, target: Coords, mission: "attack" | "transport", ticks = 3) {
+export async function dispatchFleet(planetId: string, fleetId: string, target: Coords, mission: "attack" | "transport", ticks = 3, fake = false) {
   const engageTicks = Math.max(1, Math.min(3, Math.floor(ticks)));
   return prisma.$transaction(async (tx) => {
     const planet = await tx.planet.findUnique({ where: { id: planetId } });
@@ -149,10 +149,11 @@ export async function dispatchFleet(planetId: string, fleetId: string, target: C
         originGalaxy: origin.galaxy, originSystem: origin.system, originSlot: origin.slot,
         targetGalaxy: target.galaxy, targetSystem: target.system, targetSlot: target.slot,
         departTick: tick, arriveTick: tick + tt, capMetalium: 0, capCarbonum: 0, capPlutonium: 0,
-        engageTicks,
+        engageTicks, fake,
       },
     });
-    await tx.news.create({ data: { planetId, tick, message: `${fleet.name} (${mission === "attack" ? "ataque" : "defesa"}) enviada para ${target.galaxy}:${target.system}:${target.slot} (chega em ${tt}t)` } });
+    const tipoMsg = fake ? (mission === "attack" ? "ataque falso" : "defesa falsa") : (mission === "attack" ? "ataque" : "defesa");
+    await tx.news.create({ data: { planetId, tick, message: `${fleet.name} (${tipoMsg}) enviada para ${target.galaxy}:${target.system}:${target.slot} (chega em ${tt}t)` } });
     return { ok: true, arriveIn: tt };
   }, TX_OPTS);
 }
@@ -204,6 +205,13 @@ export async function processFleets(uptoTick: number) {
       continue;
     }
     if (fleet.arriveTick > uptoTick) continue;
+
+    // Ameaça FALSA: chegou na órbita e volta SEM engajar nem guarnecer.
+    if (fleet.fake) {
+      await prisma.news.create({ data: { planetId: fleet.ownerPlanetId, tick: uptoTick, message: `${fleet.name} fez a finta e está voltando pra base (não engajou)` } });
+      await scheduleReturn(fleet.id, fleet, parseUnits(fleet.units));
+      continue;
+    }
 
     const targetPlanet = await prisma.planet.findUnique({
       where: { galaxy_system_slot: { galaxy: fleet.targetGalaxy, system: fleet.targetSystem, slot: fleet.targetSlot } },
