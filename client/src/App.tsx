@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { getToken } from "./api";
+import { getToken, clearToken } from "./api";
 import { Auth } from "./pages/Auth";
 import { Dashboard } from "./pages/Dashboard";
 import { Ferramentas } from "./pages/Ferramentas";
@@ -15,5 +15,5 @@ export default function App() {
   if (window.location.pathname.replace(/\/+$/, "") === "/ferramentas") {
     return <Ferramentas onClose={() => { window.location.href = "/"; }} />;
   }
-  return <Dashboard onLogout={() => setAuthed(false)} />;
+  return <Dashboard onLogout={() => { clearToken(); setAuthed(false); }} />;
 }

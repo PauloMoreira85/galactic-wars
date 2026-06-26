@@ -189,7 +189,11 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
       } catch {}
       try { setUnreadMsgs((await api.pmUnread()).unread); } catch {}
     } catch (e: any) {
-      if (String(e.message).includes("autenticado") || String(e.message).includes("Token")) {
+      // Token inválido/expirado OU conta apagada (ex: depois de um reset de round):
+      // o token continua "válido" mas o /me responde "Planeta/Usuário não encontrado".
+      // Em qualquer desses casos, desloga (limpa o token) em vez de travar no loading.
+      const msg = String(e?.message ?? "");
+      if (/autenticado|token|encontrad/i.test(msg)) {
         onLogout();
       }
     }
