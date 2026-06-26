@@ -31,21 +31,29 @@ export function IntelReport({ intel }: { intel: any }) {
             : intel.news.map((n: string, i: number) => <div key={i} className="roid-count">{n}</div>)}
         </div>
       )}
-      {intel.fleets && (
-        <table>
-          <thead><tr><th>Missão</th><th>Estado</th><th>Destino</th><th>Chega</th><th>Naves</th></tr></thead>
-          <tbody>
-            {intel.fleets.length === 0
-              ? <tr><td colSpan={5} className="roid-count">nenhuma frota em movimento</td></tr>
-              : intel.fleets.map((f: any, i: number) => (
-                <tr key={i}>
-                  <td>{f.mission}</td><td>{f.status}</td><td>{f.target}</td><td>{f.ticksRemaining}t</td>
-                  <td className="roid-count">{Object.entries(f.units).map(([n, c]) => `${n}:${c}`).join(", ")}</td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      )}
+      {(intel.base || intel.fleets) && (() => {
+        // Grade igual ao menu Frotas do alvo: naves nas linhas, Base + cada frota nas colunas.
+        const cols: { key: string; label: string; units: Record<string, number>; info: any }[] = [
+          { key: "base", label: "Base", units: intel.base ?? {}, info: null },
+          ...((intel.fleets ?? []) as any[]).map((f, i) => ({ key: `f${i}`, label: f.name ?? `Frota ${i + 1}`, units: f.units ?? {}, info: f })),
+        ];
+        const ships = Array.from(new Set(cols.flatMap((c) => Object.keys(c.units)))).filter((n) => cols.some((c) => (c.units[n] ?? 0) > 0));
+        if (ships.length === 0) return <div className="roid-count" style={{ marginTop: 6 }}>Nenhuma nave detectada no alvo.</div>;
+        return (
+          <div style={{ overflowX: "auto", marginTop: 6 }}>
+            <table className="fleet-grid">
+              <thead><tr><th>Nave</th>{cols.map((c) => <th key={c.key}>{c.label}</th>)}</tr></thead>
+              <tbody>
+                {ships.map((n) => (
+                  <tr key={n}><td className="fg-name"><b>{n}</b></td>{cols.map((c) => <td key={c.key}>{(c.units[n] ?? 0) > 0 ? fmt(c.units[n]) : "·"}</td>)}</tr>
+                ))}
+                <tr><td className="roid-count">Estado</td>{cols.map((c) => <td key={c.key} className="roid-count">{c.info ? c.info.status : "na base"}</td>)}</tr>
+                <tr><td className="roid-count">Destino</td>{cols.map((c) => <td key={c.key} className="roid-count">{c.info && c.info.target && c.info.target !== "—" ? `${c.info.target} (${c.info.ticksRemaining}t)` : "—"}</td>)}</tr>
+              </tbody>
+            </table>
+          </div>
+        );
+      })()}
     </>
   );
 }

@@ -490,6 +490,7 @@ gameRouter.post("/spy", async (req: AuthedRequest, res) => {
       .map((f) => {
         const moving = f.status !== "idle";
         return {
+          name: f.name,
           mission: moving ? f.mission : "—",
           status: STATUS_PT[f.status] ?? f.status,
           target: moving ? `${f.targetGalaxy}:${f.targetSystem}:${f.targetSlot}` : "—",
