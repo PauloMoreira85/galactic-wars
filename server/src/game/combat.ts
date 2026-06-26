@@ -116,7 +116,7 @@ function fireAt(typeName: string, count: number, enemyActive: UnitMap, enemyLost
 
 // Uma rodada (1 tick): todos atiram em ordem de INICIATIVA (menor primeiro).
 // Empate de iniciativa: a DEFESA atira primeiro (vantagem sempre da defesa).
-function oneRound(st: BattleState) {
+function oneRound(st: BattleState): { aAssim: UnitMap; dAssim: UnitMap } {
   st.log = []; // registra só a última rodada
   const firers: { side: "a" | "d"; type: string; ini: number }[] = [];
   for (const t of Object.keys(st.aActive)) if (st.aActive[t] > 0) firers.push({ side: "a", type: t, ini: unitByName(t)?.ini ?? 999 });
@@ -133,6 +133,7 @@ function oneRound(st: BattleState) {
   // só a partir do próximo tick (se assimilar mais no tick seguinte, somam de novo).
   for (const t of Object.keys(aAssim)) if (aAssim[t] > 0) st.aActive[t] = (st.aActive[t] || 0) + aAssim[t];
   for (const t of Object.keys(dAssim)) if (dAssim[t] > 0) st.dActive[t] = (st.dActive[t] || 0) + dAssim[t];
+  return { aAssim, dAssim };
 }
 
 function survivors(active: UnitMap, pem: UnitMap): UnitMap {
@@ -199,12 +200,12 @@ export async function advanceEngagement(fleetId: string, tick: number) {
 
   const initKeys = Array.from(new Set([...Object.keys(st.atkInit), ...Object.keys(st.defInit)]));
   // Linhas da RODADA: o que entrou (ativas no começo do tick), destruídas e paralisadas NESTE tick.
-  const roundRows = (activeB: UnitMap, lostB: UnitMap, lostA: UnitMap, pemB: UnitMap, pemA: UnitMap) =>
+  const roundRows = (activeB: UnitMap, lostB: UnitMap, lostA: UnitMap, pemB: UnitMap, pemA: UnitMap, assim?: UnitMap) =>
     initKeys.map((n) => {
       const before = activeB[n] || 0;
       const lost = (lostA[n] || 0) - (lostB[n] || 0);
       const pem = (pemA[n] || 0) - (pemB[n] || 0);
-      return { name: n, before, lost, pem, survivors: Math.max(0, before - lost - pem) };
+      return { name: n, before, lost, pem, assim: assim?.[n] ?? 0, survivors: Math.max(0, before - lost - pem) };
     }).filter((r) => r.before > 0 || r.lost > 0 || r.pem > 0);
 
   while (done < targetDone) {
@@ -220,7 +221,9 @@ export async function advanceEngagement(fleetId: string, tick: number) {
     const aPemB = { ...st.aPem }, dPemB = { ...st.dPem };
     const roundCap = { metalium: 0, carbonum: 0, plutonium: 0 };
 
-    oneRound(st);
+    // assim do tick: dAssim = naves do ATACANTE assimiladas pelo defensor;
+    // aAssim = naves do DEFENSOR assimiladas pelo atacante.
+    const { aAssim, dAssim } = oneRound(st);
     // Captura do tick: roiders ativos do atacante, limitada pela capacidade e pelo cap%.
     const capacity = raidCapacity(st.aActive);
     let room = Math.max(0, capacity - (cap.metalium + cap.carbonum + cap.plutonium));
@@ -243,8 +246,8 @@ export async function advanceEngagement(fleetId: string, tick: number) {
     if (atkP) {
       const report = JSON.stringify({
         attackerRace: raceTable(raceOf(atkP.user.race)), defenderRace: raceTable(raceOf(def.user.race)),
-        attacker: roundRows(aActiveB, aLostB, st.aLost, aPemB, st.aPem),
-        defender: roundRows(dActiveB, dLostB, st.dLost, dPemB, st.dPem),
+        attacker: roundRows(aActiveB, aLostB, st.aLost, aPemB, st.aPem, dAssim),
+        defender: roundRows(dActiveB, dLostB, st.dLost, dPemB, st.dPem, aAssim),
         captured: roundCap, raid, round: done, ticks: 1, log: st.log ?? [],
       });
       await prisma.battleReport.create({ data: {

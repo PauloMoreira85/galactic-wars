@@ -34,12 +34,12 @@ export function Combats() {
     const d = detail.detail;
     const cap = d.captured;
     const iAmAtk = detail.iAmAttacker;
-    type Row = { name: string; before: number; lost: number; pem: number; survivors: number };
+    type Row = { name: string; before: number; lost: number; pem: number; assim: number; survivors: number };
     const defMap = new Map<string, Row>(d.defender.map((r) => [r.name, r]));
     const atkMap = new Map<string, Row>(d.attacker.map((r) => [r.name, r]));
     const names = Array.from(new Set([...d.defender.map((r) => r.name), ...d.attacker.map((r) => r.name)]));
     const cell = (r?: Row) => r
-      ? <><td>{fmt(r.before)}</td><td style={{ color: r.lost > 0 ? "var(--danger)" : undefined }}>{fmt(r.lost)}</td><td style={{ color: r.pem > 0 ? "var(--plutonium)" : undefined }}>{r.pem ? fmt(r.pem) : "—"}</td></>
+      ? <><td>{fmt(r.before)}</td><td style={{ color: r.lost > 0 ? "var(--danger)" : undefined }}>{fmt(r.lost)}{r.assim > 0 && <span title="dessas perdas, quantas foram assimiladas pelo inimigo" style={{ color: "var(--accent)" }}> ({fmt(r.assim)})</span>}</td><td style={{ color: r.pem > 0 ? "var(--plutonium)" : undefined }}>{r.pem ? fmt(r.pem) : "—"}</td></>
       : <><td className="fg-zero">·</td><td className="fg-zero">·</td><td className="fg-zero">·</td></>;
     const youDef = !iAmAtk ? { background: "rgba(37,211,255,0.06)" } : undefined;
     const youAtk = iAmAtk ? { background: "rgba(37,211,255,0.06)" } : undefined;
