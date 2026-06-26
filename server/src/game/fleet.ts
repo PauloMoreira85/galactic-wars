@@ -174,7 +174,9 @@ export async function processBuildOrders(uptoTick: number) {
             where: { id: order.planetId },
             data: { tech: JSON.stringify(levels) },
           });
-          await addNews(order.planetId, uptoTick, `${TECH_BY_KEY[order.techKey]?.name ?? order.techKey} concluída (nível ${order.targetLevel})`);
+          const def = TECH_BY_KEY[order.techKey];
+          const isResearch = def?.kind === "research";
+          await addNews(order.planetId, uptoTick, `${isResearch ? "🔬 Pesquisa" : "🛠️ Construção"} concluída: ${def?.name ?? order.techKey}`);
         }
       }
     }

@@ -31,14 +31,25 @@ export const SHIP_FACTORY: Record<ShipClass, string> = {
 
 interface ChainItem { key: string; name: string; kind: TechKind; desc: string; m: number; c: number; ticks: number; max?: number }
 
-// Cadeia sequencial: cada item requer o ANTERIOR (level 1). Custo só em M/C
-// (plutonium é exclusivo de combustível). max=1 salvo indicado.
+// Duas TRILHAS PARALELAS na mesma categoria (custo só em M/C):
+//  - Pesquisa: cada pesquisa exige apenas a pesquisa ANTERIOR -> a fila de
+//    pesquisa flui sozinha, nunca trava esperando uma construção.
+//  - Construção: cada construção exige a pesquisa imediatamente anterior a ela
+//    na lista (a que a "desbloqueia"). A 1ª construção (sem pesquisa antes) é livre.
+// Assim sempre há pesquisa E construção disponível ao mesmo tempo.
 function chain(category: TechCategory, items: ChainItem[]): TechDef[] {
-  return items.map((it, i) => ({
-    key: it.key, name: it.name, category, kind: it.kind, max: it.max ?? 1, desc: it.desc,
-    requires: i > 0 ? [{ key: items[i - 1].key, level: 1 }] : [],
-    baseCost: { metalium: it.m, carbonum: it.c, plutonium: 0 }, costGrowth: 1, baseTicks: it.ticks,
-  }));
+  let lastResearch: string | null = null;
+  return items.map((it) => {
+    // Pesquisa e construção dependem só da pesquisa anterior (a 1ª construção,
+    // sem pesquisa antes dela, fica livre). Pesquisa nunca espera construção.
+    const def: TechDef = {
+      key: it.key, name: it.name, category, kind: it.kind, max: it.max ?? 1, desc: it.desc,
+      requires: lastResearch ? [{ key: lastResearch, level: 1 }] : [],
+      baseCost: { metalium: it.m, carbonum: it.c, plutonium: 0 }, costGrowth: 1, baseTicks: it.ticks,
+    };
+    if (it.kind === "research") lastResearch = it.key;
+    return def;
+  });
 }
 
 // Cadeia Inteligencia/Sabotagem (pesquisa -> construcao alternadas).
@@ -51,7 +62,9 @@ function pesqConstrChain(
   const out: TechDef[] = [];
   items.forEach((it, i) => {
     const scale = Math.pow(1.8, i);
-    const prevBuild = i > 0 ? items[i - 1].key : null;
+    // Pesquisa exige a PESQUISA anterior (não a construção) -> a trilha de
+    // pesquisa flui sozinha; cada construção exige só a sua própria pesquisa.
+    const prevPesq = i > 0 ? "pesq_" + items[i - 1].key : null;
     const pesqKey = "pesq_" + it.key;
     const sc = (b: { metalium: number; carbonum: number; plutonium: number }) => ({
       metalium: Math.round(b.metalium * scale), carbonum: Math.round(b.carbonum * scale), plutonium: Math.round(b.plutonium * scale),
@@ -59,7 +72,7 @@ function pesqConstrChain(
     out.push({
       key: pesqKey, name: `Pesquisa: ${it.name}`, category, kind: "research", max: 1,
       desc: `Desbloqueia a construção de ${it.name}.`,
-      requires: prevBuild ? [{ key: prevBuild, level: 1 }] : [],
+      requires: prevPesq ? [{ key: prevPesq, level: 1 }] : [],
       baseCost: sc(pesqBase), costGrowth: 1, baseTicks: 3 + i,
     });
     out.push({
