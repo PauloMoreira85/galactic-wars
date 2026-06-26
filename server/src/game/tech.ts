@@ -37,19 +37,14 @@ interface ChainItem { key: string; name: string; kind: TechKind; desc: string; m
 //  - Construção: cada construção exige a pesquisa imediatamente anterior a ela
 //    na lista (a que a "desbloqueia"). A 1ª construção (sem pesquisa antes) é livre.
 // Assim sempre há pesquisa E construção disponível ao mesmo tempo.
+// Cadeia sequencial: cada item requer o ANTERIOR (level 1) — alterna
+// construção ↔ pesquisa. Custo só em M/C (plutonium é só combustível).
 function chain(category: TechCategory, items: ChainItem[]): TechDef[] {
-  let lastResearch: string | null = null;
-  return items.map((it) => {
-    // Pesquisa e construção dependem só da pesquisa anterior (a 1ª construção,
-    // sem pesquisa antes dela, fica livre). Pesquisa nunca espera construção.
-    const def: TechDef = {
-      key: it.key, name: it.name, category, kind: it.kind, max: it.max ?? 1, desc: it.desc,
-      requires: lastResearch ? [{ key: lastResearch, level: 1 }] : [],
-      baseCost: { metalium: it.m, carbonum: it.c, plutonium: 0 }, costGrowth: 1, baseTicks: it.ticks,
-    };
-    if (it.kind === "research") lastResearch = it.key;
-    return def;
-  });
+  return items.map((it, i) => ({
+    key: it.key, name: it.name, category, kind: it.kind, max: it.max ?? 1, desc: it.desc,
+    requires: i > 0 ? [{ key: items[i - 1].key, level: 1 }] : [],
+    baseCost: { metalium: it.m, carbonum: it.c, plutonium: 0 }, costGrowth: 1, baseTicks: it.ticks,
+  }));
 }
 
 // Cadeia Inteligencia/Sabotagem (pesquisa -> construcao alternadas).
@@ -62,9 +57,8 @@ function pesqConstrChain(
   const out: TechDef[] = [];
   items.forEach((it, i) => {
     const scale = Math.pow(1.8, i);
-    // Pesquisa exige a PESQUISA anterior (não a construção) -> a trilha de
-    // pesquisa flui sozinha; cada construção exige só a sua própria pesquisa.
-    const prevPesq = i > 0 ? "pesq_" + items[i - 1].key : null;
+    // Sequencial: a pesquisa do nível exige a construção do nível anterior.
+    const prevBuild = i > 0 ? items[i - 1].key : null;
     const pesqKey = "pesq_" + it.key;
     const sc = (b: { metalium: number; carbonum: number; plutonium: number }) => ({
       metalium: Math.round(b.metalium * scale), carbonum: Math.round(b.carbonum * scale), plutonium: Math.round(b.plutonium * scale),
@@ -72,7 +66,7 @@ function pesqConstrChain(
     out.push({
       key: pesqKey, name: `Pesquisa: ${it.name}`, category, kind: "research", max: 1,
       desc: `Desbloqueia a construção de ${it.name}.`,
-      requires: prevPesq ? [{ key: prevPesq, level: 1 }] : [],
+      requires: prevBuild ? [{ key: prevBuild, level: 1 }] : [],
       baseCost: sc(pesqBase), costGrowth: 1, baseTicks: 3 + i,
     });
     out.push({
@@ -89,12 +83,12 @@ export const INTEL_TIERS = ["centralInteligencia", "servicoSecreto", "agentesMil
 
 // ===== Mineração (cada construção adiciona produção FLAT do recurso) =====
 const MINERACAO = chain("mineracao", [
-  { key: "centroMineracao", name: "Centro de Mineração", kind: "building", desc: "+1500 de produção de Metalium por tick.", m: 1250, c: 1250, ticks: 6 },
-  { key: "extracaoCristal", name: "Extração de Carbonum", kind: "research", desc: "Desbloqueia a Mina de Carbonum.", m: 2500, c: 2500, ticks: 10 },
-  { key: "minaCristal", name: "Mina de Carbonum", kind: "building", desc: "+1500 de produção de Carbonum por tick.", m: 5000, c: 5000, ticks: 13 },
-  { key: "fusaoEonio", name: "Fusão de Plutonium", kind: "research", desc: "Desbloqueia o Laboratório de Plutonium.", m: 7500, c: 7500, ticks: 19 },
-  { key: "labEonio", name: "Laboratório de Plutonium", kind: "building", desc: "+1500 de produção de Plutonium por tick.", m: 15000, c: 15000, ticks: 26 },
-  { key: "recursosProfundidade", name: "Recursos em Profundidade", kind: "research", desc: "Desbloqueia minas mais profundas.", m: 22500, c: 22500, ticks: 26 },
+  { key: "centroMineracao", name: "Centro de Mineração", kind: "building", desc: "+1500 de produção de Metalium por tick.", m: 1250, c: 1250, ticks: 8 },
+  { key: "extracaoCristal", name: "Extração de Carbonum", kind: "research", desc: "Desbloqueia a Mina de Carbonum.", m: 2500, c: 2500, ticks: 8 },
+  { key: "minaCristal", name: "Mina de Carbonum", kind: "building", desc: "+1500 de produção de Carbonum por tick.", m: 5000, c: 5000, ticks: 14 },
+  { key: "fusaoEonio", name: "Fusão de Plutonium", kind: "research", desc: "Desbloqueia o Laboratório de Plutonium.", m: 7500, c: 7500, ticks: 14 },
+  { key: "labEonio", name: "Laboratório de Plutonium", kind: "building", desc: "+1500 de produção de Plutonium por tick.", m: 15000, c: 15000, ticks: 22 },
+  { key: "recursosProfundidade", name: "Recursos em Profundidade", kind: "research", desc: "Desbloqueia minas mais profundas.", m: 22500, c: 22500, ticks: 22 },
   { key: "minaProfundaMetal", name: "Mina Profunda de Metalium", kind: "building", desc: "+10000 de produção de Metalium por tick.", m: 45000, c: 45000, ticks: 35 },
   { key: "armasPlasma", name: "Sondas de Carbonum Profundo", kind: "research", desc: "Desbloqueia a Mina Profunda de Carbonum.", m: 67500, c: 67500, ticks: 35 },
   { key: "minaProfundaCristal", name: "Mina Profunda de Carbonum", kind: "building", desc: "+10000 de produção de Carbonum por tick.", m: 135000, c: 135000, ticks: 50 },
@@ -116,12 +110,12 @@ const DESLOCAMENTO = chain("tec", [
 
 // ===== Naves (construir a fábrica habilita a classe; pesquisa libera a próxima) =====
 const NAVES = chain("naves", [
-  { key: "fundicaoCacas", name: "Fundição de Caças", kind: "building", desc: "Permite produzir Caças.", m: 1250, c: 1250, ticks: 6 },
-  { key: "lancadoresTorpedos", name: "Lançadores de Torpedos", kind: "research", desc: "Desbloqueia a Produção de Corvetas.", m: 2500, c: 2500, ticks: 10 },
-  { key: "producaoCorvetas", name: "Produção de Corvetas", kind: "building", desc: "Permite produzir Corvetas.", m: 5000, c: 5000, ticks: 13 },
-  { key: "disparosRapidos", name: "Disparos Rápidos", kind: "research", desc: "Desbloqueia a Montagem de Fragatas.", m: 7500, c: 7500, ticks: 19 },
-  { key: "montagemFragatas", name: "Montagem de Fragatas", kind: "building", desc: "Permite produzir Fragatas.", m: 15000, c: 15000, ticks: 26 },
-  { key: "resistenciaTorpedos", name: "Resistência a Torpedos", kind: "research", desc: "Desbloqueia a Fábrica de Destróiers.", m: 22500, c: 22500, ticks: 26 },
+  { key: "fundicaoCacas", name: "Fundição de Caças", kind: "building", desc: "Permite produzir Caças.", m: 1250, c: 1250, ticks: 8 },
+  { key: "lancadoresTorpedos", name: "Lançadores de Torpedos", kind: "research", desc: "Desbloqueia a Produção de Corvetas.", m: 2500, c: 2500, ticks: 8 },
+  { key: "producaoCorvetas", name: "Produção de Corvetas", kind: "building", desc: "Permite produzir Corvetas.", m: 5000, c: 5000, ticks: 14 },
+  { key: "disparosRapidos", name: "Disparos Rápidos", kind: "research", desc: "Desbloqueia a Montagem de Fragatas.", m: 7500, c: 7500, ticks: 14 },
+  { key: "montagemFragatas", name: "Montagem de Fragatas", kind: "building", desc: "Permite produzir Fragatas.", m: 15000, c: 15000, ticks: 22 },
+  { key: "resistenciaTorpedos", name: "Resistência a Torpedos", kind: "research", desc: "Desbloqueia a Fábrica de Destróiers.", m: 22500, c: 22500, ticks: 22 },
   { key: "fabricaDestroyers", name: "Fábrica de Destróiers", kind: "building", desc: "Permite produzir Destróiers.", m: 45000, c: 45000, ticks: 35 },
   { key: "fuselagensAltaResist", name: "Fuselagens de Alta Resistência", kind: "research", desc: "Desbloqueia a Indústria de Cruzadores.", m: 67500, c: 67500, ticks: 35 },
   { key: "industriaCruzadores", name: "Indústria de Cruzadores", kind: "building", desc: "Permite produzir Cruzadores.", m: 135000, c: 135000, ticks: 50 },
