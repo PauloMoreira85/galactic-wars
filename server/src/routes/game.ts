@@ -409,8 +409,9 @@ gameRouter.post("/spy", async (req: AuthedRequest, res) => {
   const tgtAgents = parseAgents(target.agents);
   const tgtCE = tgtAgents["CE"] ?? 0;
   const tgtRoids = target.roidMetalium + target.roidCarbonum + target.roidPlutonium;
+  const myCoords = `${me.galaxy}:${me.system}:${me.slot}`;
   if (isShielded(tgtCE, tgtRoids, target.user.race)) {
-    await addNews(target.id, tkNow, `🛡️ Sua contra-espionagem bloqueou um agente ${agent}`);
+    await addNews(target.id, tkNow, `🛡️ Sua contra-espionagem bloqueou um agente ${agent} de ${myCoords}`);
     return res.json({ failed: true, error: `Espionagem bloqueada — o alvo tem contra-espionagem suficiente (perdeu 1 agente ${agent})` });
   }
   const units = parseUnits(target.units);
@@ -443,9 +444,10 @@ gameRouter.post("/spy", async (req: AuthedRequest, res) => {
     }));
     intel.base = units; // naves que ficaram na base
   }
-  // O alvo é notificado da espionagem.
+  // O alvo é notificado da espionagem (com a coordenada do espião — assim, via
+  // agente T, dá pra ver quem andou espionando o alvo).
   const tk = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
-  await addNews(target.id, tk, `🛰️ Você foi alvo de espionagem (agente ${agent})`);
+  await addNews(target.id, tk, `🛰️ Você foi espionado (agente ${agent}) por ${myCoords}`);
   // Guarda o relatório para "Visualizar Espionagem" + gera um código compartilhável.
   const hash = randomBytes(4).toString("hex").toUpperCase();
   await prisma.spyReport.create({ data: {
