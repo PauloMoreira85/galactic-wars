@@ -429,8 +429,15 @@ gameRouter.post("/spy", async (req: AuthedRequest, res) => {
     intel.totalShips = totalShips;
     intel.online = Date.now() - new Date(target.user.lastSeen).getTime() < 5 * 60 * 1000;
   } else if (agent === "M") {
-    // Militar: QUAIS e quantas naves (Rakshasa: só roiders aparecem).
-    const u = raceKey === "rakshasa" ? Object.fromEntries(Object.entries(units).filter(([n]) => unitByName(n)?.roider)) : units;
+    // Militar: QUAIS e quantas naves — TODAS do alvo (base + todas as frotas,
+    // inclusive em trânsito). Rakshasa: só roiders aparecem.
+    const fleets = await prisma.fleet.findMany({ where: { ownerPlanetId: target.id }, select: { units: true } });
+    const all: Record<string, number> = { ...units };
+    for (const f of fleets) {
+      const fu = parseUnits(f.units);
+      for (const n of Object.keys(fu)) all[n] = (all[n] || 0) + fu[n];
+    }
+    const u = raceKey === "rakshasa" ? Object.fromEntries(Object.entries(all).filter(([n]) => unitByName(n)?.roider)) : all;
     intel.ships = Object.keys(u).map((name) => ({ name, count: u[name] }));
   } else if (agent === "T") {
     // Transmissão: notícias recentes do alvo.
