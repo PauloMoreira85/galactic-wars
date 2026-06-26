@@ -10,9 +10,8 @@ import { addNews } from "./news.js";
 export const BATTLE_TICKS = 3;
 const CAP_MIN = 0.05;   // roid cap mínimo (atacante >> defensor)
 const CAP_MAX = 0.15;   // roid cap máximo (equilibrado/azarão)
-const ASSIM_RATE = 0.25; // Mech: fração das naves que abate e assimila (por tick).
-// Cuidado: efeito bola de neve (assimiladas lutam e abatem mais nos ticks seguintes),
-// então valores altos ficam fortes rápido. Ajuste fino aqui.
+// Mech: a assimilação CONSOME a assimiladora e é equilibrada por VALOR (custo),
+// não 1:1. Pra assimilar naves inimigas de valor V, gasta V em assimiladoras.
 
 // Carga de roids por roider ATIVO (não-paralisado): cada roider rouba `qarm`
 // roids (Quantidade de Armas da tabela). Ex.: Seth=1, Netuno=2, Thoth=3.
@@ -82,7 +81,7 @@ function distributeUnits(survivors: UnitMap, contributors: { id: string; units: 
 }
 
 // Uma unidade dispara contra o lado inimigo (alvos por classe; aplica já as baixas).
-function fireAt(typeName: string, count: number, enemyActive: UnitMap, enemyLost: UnitMap, enemyPem: UnitMap, log?: LogEvent[], side?: "a" | "d", assimOut?: UnitMap) {
+function fireAt(typeName: string, count: number, enemyActive: UnitMap, enemyLost: UnitMap, enemyPem: UnitMap, log?: LogEvent[], side?: "a" | "d", assimOut?: UnitMap, selfActive?: UnitMap, selfLost?: UnitMap) {
   const A = unitByName(typeName);
   if (!A || A.qarm <= 0 || count <= 0) return;
   const targets = Object.keys(enemyActive).filter((t) => {
@@ -92,6 +91,11 @@ function fireAt(typeName: string, count: number, enemyActive: UnitMap, enemyLost
   if (targets.length === 0) return;
   const sum = targets.reduce((s, t) => s + enemyActive[t], 0);
   const shots = count * A.qarm;
+  // Orçamento de assimilação = VALOR total da esquadra assimiladora (custo × qtd).
+  // Cada nave inimiga assimilada gasta o custo dela desse orçamento; o Mech perde
+  // assimiladoras de valor equivalente. Assim a troca é justa (valor por valor).
+  const aCost = (A.m + A.c + A.p) || 1;
+  let valueBudget = A.tipo === "Assimiladora" ? count * aCost : 0;
   for (const t of targets) {
     const T = unitByName(t)!;
     const shotsT = shots * (enemyActive[t] / sum);
@@ -106,9 +110,23 @@ function fireAt(typeName: string, count: number, enemyActive: UnitMap, enemyLost
       const dmg = shotsT * cma * A.pfog;
       const killed = Math.min(enemyActive[t], Math.floor(dmg / T.fusel));
       enemyActive[t] -= killed; enemyLost[t] = (enemyLost[t] || 0) + killed;
-      // Mech: parte das naves que ABATE é assimilada (passa a lutar pelo Mech
-      // a partir do PRÓXIMO tick). Acumula aqui; é aplicado no fim da rodada.
-      if (A.tipo === "Assimiladora" && assimOut && killed > 0) assimOut[t] = (assimOut[t] || 0) + Math.floor(killed * ASSIM_RATE);
+      // Mech: das naves que ABATE, assimila as que couberem no orçamento de VALOR
+      // (luta pelo Mech a partir do próximo tick). Gasta assimiladoras de valor
+      // equivalente (selfLost) — o resto abatido é só destruído.
+      if (A.tipo === "Assimiladora" && assimOut && killed > 0 && valueBudget > 0) {
+        const tCost = (T.m + T.c + T.p) || 1;
+        const g = Math.min(killed, Math.floor(valueBudget / tCost)); // quantas dá pra assimilar
+        if (g > 0) {
+          assimOut[t] = (assimOut[t] || 0) + g;
+          const spent = g * tCost;
+          valueBudget -= spent;
+          if (selfActive && selfLost) {
+            const lose = Math.min(selfActive[typeName] ?? 0, Math.round(spent / aCost));
+            selfActive[typeName] = (selfActive[typeName] ?? 0) - lose;
+            selfLost[typeName] = (selfLost[typeName] ?? 0) + lose;
+          }
+        }
+      }
       if (log && side && killed > 0) log.push({ side, ini: A.ini, ship: typeName, count, target: t, shots: Math.round(shotsT), action: A.tipo === "Assimiladora" ? "assim" : "destroy", amount: killed, chance: Math.round(cma * 100) });
     }
   }
@@ -126,8 +144,8 @@ function oneRound(st: BattleState): { aAssim: UnitMap; dAssim: UnitMap } {
   for (const f of firers) {
     const me = f.side === "a" ? st.aActive : st.dActive;
     if ((me[f.type] || 0) <= 0) continue; // pode ter sido destruída/paralisada antes de atirar
-    if (f.side === "a") fireAt(f.type, me[f.type], st.dActive, st.dLost, st.dPem, st.log, "a", aAssim);
-    else fireAt(f.type, me[f.type], st.aActive, st.aLost, st.aPem, st.log, "d", dAssim);
+    if (f.side === "a") fireAt(f.type, me[f.type], st.dActive, st.dLost, st.dPem, st.log, "a", aAssim, st.aActive, st.aLost);
+    else fireAt(f.type, me[f.type], st.aActive, st.aLost, st.aPem, st.log, "d", dAssim, st.dActive, st.dLost);
   }
   // Assimiladas entram nos ativos do assimilador AO FIM da rodada -> combatem
   // só a partir do próximo tick (se assimilar mais no tick seguinte, somam de novo).
