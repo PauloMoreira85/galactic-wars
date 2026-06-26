@@ -628,7 +628,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                 </thead>
                 <tbody>
                   {view.units.map((u) => (
-                    <tr key={u.name} style={{ opacity: u.unlocked ? 1 : 0.4 }}>
+                    <tr key={u.name} style={{ opacity: (u.unlocked || u.captured) ? 1 : 0.4 }}>
                       <td>
                         <div className="ship-cell">
                           <ArtImg src={u.img} alt={u.name} className="ship-thumb" placeholder="🚀" onZoom={(s, a) => setZoom({ src: s, alt: a })} />
@@ -654,6 +654,8 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                               {shipBusy === u.name ? "..." : "+"}
                             </button>
                           </div>
+                        ) : u.captured ? (
+                          <span className="roid-count" title="nave de outra raça, assimilada — não dá pra construir, mas pode carregar em frota">🛸 capturada</span>
                         ) : (
                           <span className="roid-count">🔒 requer fábrica da classe</span>
                         )}

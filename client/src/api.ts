@@ -55,6 +55,7 @@ export interface UnitItem {
   ticks: number;
   count: number;
   unlocked: boolean;
+  captured?: boolean; // nave de outra raça (assimilada) — só pra carregar em frota
 }
 
 export interface QueueItem {

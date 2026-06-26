@@ -111,7 +111,29 @@ async function planetView(userId: string) {
     ticks: u.ticks,
     count: hangar[u.nome] ?? 0,
     unlocked: isUnitUnlocked(raceKey, u, levels),
+    captured: false,
   }));
+
+  // Naves CAPTURADAS/assimiladas: estão no hangar mas são de OUTRA raça. Aparecem
+  // pra você ver e CARREGAR em frotas (não dá pra construir — não é sua raça).
+  const ownNames = new Set(unitsOfRace(raceKey).map((u) => u.nome));
+  for (const name of Object.keys(hangar)) {
+    if ((hangar[name] ?? 0) <= 0 || ownNames.has(name)) continue;
+    const u = unitByName(name);
+    if (!u) continue;
+    units.push({
+      name: u.nome, classe: u.classe, classeLabel: CLASS_LABEL[u.classe], tipo: u.tipo, roider: u.roider,
+      img: shipImage(u.nome),
+      alvos: u.alvos.map((a) => CLASS_LABEL[a]),
+      stats: { ini: u.ini, agi: u.agi, varm: u.varm, qarm: u.qarm, pfog: u.pfog, fusel: u.fusel, rp: u.rp, tec: u.tec, comb: u.comb },
+      travelTec: effectiveTec(u.classe, propLevel),
+      cost: { metalium: u.m, carbonum: u.c, plutonium: u.p },
+      ticks: u.ticks,
+      count: hangar[name],
+      unlocked: false,
+      captured: true,
+    });
+  }
 
   const queue = orders.map((o) => ({
     id: o.id, kind: o.kind, shipClass: o.shipClass, key: o.techKey ?? null,
