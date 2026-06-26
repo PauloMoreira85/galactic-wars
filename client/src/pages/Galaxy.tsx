@@ -167,7 +167,7 @@ export function Galaxy({ view, onChanged }: { view: PlanetView; onChanged: () =>
                     </span>
                     {sl.role && <span className="roid-count" style={{ color: ROLE_COLOR[sl.role] }}> {ROLE_TAG[sl.role]}</span>}
                   </td>
-                  <td><span className="roid-count">{sl.preposition ?? "de"} </span><b>{sl.name}</b> <span className="roid-count">[{sl.raceTag ?? "?"}]</span>{sl.allianceTag && <span style={{ color: "var(--accent)" }}> {`{${sl.allianceTag}}`}</span>}{sl.protected && <span title="Proteção de novato — não pode ser atacado" style={{ color: "var(--carbonum)" }}> 🛡️</span>}</td>
+                  <td><span className="roid-count">{sl.preposition ?? "de"} </span><b>{sl.name}</b> <span className="roid-count">[{sl.raceTag ?? "?"}]</span>{sl.allianceTag && <span style={{ color: "var(--accent)" }}> {`{${sl.allianceTag}}`}</span>}{sl.protected && <span className="prot-badge" title="Proteção de novato — não pode ser atacado">P</span>}</td>
                   <td>{fmt(sl.roids ?? 0)}</td>
                   <td>{fmt(sl.score ?? 0)}</td>
                   <td className="roid-count">{sl.rank}º</td>
