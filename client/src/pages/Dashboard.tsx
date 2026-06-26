@@ -623,7 +623,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
               <table>
                 <thead>
                   <tr>
-                    <th>Nave</th><th>Classe</th><th>Alvos</th><th>⚔️ Tiros</th><th>🛡️ Fusel</th><th>Ini</th><th>Custo (M/C/P)</th><th>Frota</th><th>Construir</th>
+                    <th>Nave</th><th>Classe</th><th>Alvos</th><th>⚔️ Tiros</th><th>🛡️ Fusel</th><th>Ini</th><th>Custo (M/C/P)</th><th title="total que você tem: base + todas as frotas">Total</th><th>Construir</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -641,7 +641,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                       <td>{u.stats.fusel}</td>
                       <td>{u.stats.ini}</td>
                       <td className="roid-count">{fmt(u.cost.metalium)}/{fmt(u.cost.carbonum)}/{fmt(u.cost.plutonium)}</td>
-                      <td>{fmt(u.count)}</td>
+                      <td title={u.total !== u.count ? `${fmt(u.count)} na base · ${fmt(u.total - u.count)} em frotas` : "tudo na base"}>{fmt(u.total)}</td>
                       <td>
                         {u.unlocked ? (
                           <div style={{ display: "flex", gap: 6 }}>

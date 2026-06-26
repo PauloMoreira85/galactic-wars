@@ -67,6 +67,12 @@ async function planetView(userId: string) {
 
   const orders = await prisma.buildOrder.findMany({ where: { planetId: planet.id }, orderBy: { completeTick: "asc" } });
   const myFleets = await prisma.fleet.findMany({ where: { ownerPlanetId: planet.id } });
+  // Total de cada nave = base (hangar) + TODAS as frotas (idle/atacando/defendendo).
+  const shipTotals: Record<string, number> = { ...hangar };
+  for (const f of myFleets) {
+    const fu = parseUnits(f.units);
+    for (const n of Object.keys(fu)) shipTotals[n] = (shipTotals[n] || 0) + fu[n];
+  }
   const score = scoreOfUnits(hangar) + myFleets.reduce((s, f) => s + scoreOfUnits(parseUnits(f.units)), 0);
 
   // Rank global por pontuação + usuários online + cargo na galáxia.
@@ -109,16 +115,17 @@ async function planetView(userId: string) {
     travelTec: effectiveTec(u.classe, propLevel), // TEC efetivo dentro da galáxia (com propulsão)
     cost: { metalium: u.m, carbonum: u.c, plutonium: u.p },
     ticks: u.ticks,
-    count: hangar[u.nome] ?? 0,
+    count: hangar[u.nome] ?? 0,           // na BASE (pra Frotas usar)
+    total: shipTotals[u.nome] ?? 0,       // base + todas as frotas
     unlocked: isUnitUnlocked(raceKey, u, levels),
     captured: false,
   }));
 
-  // Naves CAPTURADAS/assimiladas: estão no hangar mas são de OUTRA raça. Aparecem
+  // Naves CAPTURADAS/assimiladas: de OUTRA raça (na base ou em frotas). Aparecem
   // pra você ver e CARREGAR em frotas (não dá pra construir — não é sua raça).
   const ownNames = new Set(unitsOfRace(raceKey).map((u) => u.nome));
-  for (const name of Object.keys(hangar)) {
-    if ((hangar[name] ?? 0) <= 0 || ownNames.has(name)) continue;
+  for (const name of Object.keys(shipTotals)) {
+    if ((shipTotals[name] ?? 0) <= 0 || ownNames.has(name)) continue;
     const u = unitByName(name);
     if (!u) continue;
     units.push({
@@ -129,7 +136,8 @@ async function planetView(userId: string) {
       travelTec: effectiveTec(u.classe, propLevel),
       cost: { metalium: u.m, carbonum: u.c, plutonium: u.p },
       ticks: u.ticks,
-      count: hangar[name],
+      count: hangar[name] ?? 0,
+      total: shipTotals[name] ?? 0,
       unlocked: false,
       captured: true,
     });

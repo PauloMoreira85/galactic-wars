@@ -53,7 +53,8 @@ export interface UnitItem {
   travelTec: number; // TEC efetivo dentro da galáxia (com propulsão)
   cost: Record<Resource, number>;
   ticks: number;
-  count: number;
+  count: number;        // quantas estão na BASE (usado pela Frotas pra transferir)
+  total: number;        // total que você tem: base + todas as frotas
   unlocked: boolean;
   captured?: boolean; // nave de outra raça (assimilada) — só pra carregar em frota
 }
