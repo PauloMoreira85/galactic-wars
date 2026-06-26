@@ -142,6 +142,7 @@ export function Combats() {
                     <div key={i} className="combat-line">
                       <span style={{ color: e.side === "a" ? "var(--danger)" : "var(--carbonum)" }}>{who}:</span>{" "}
                       {fmt(e.count)} {e.ship} atirando {fmt(e.shots)} vez(es) ({fmt(e.count)} naves × {tirosPorNave} tiros) em {e.target}, {verbo} {fmt(e.amount)} naves
+                      {e.action === "assim" && (e.assimCost ?? 0) > 0 && <span style={{ color: "var(--danger)" }}> — ao custo de {fmt(e.assimCost!)} naves</span>}
                       <span className="roid-count"> ({chanceLabel} — {e.chance}%)</span>
                     </div>
                   );

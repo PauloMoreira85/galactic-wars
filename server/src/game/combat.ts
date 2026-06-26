@@ -38,6 +38,7 @@ function fleetScore(m: UnitMap): number {
 interface LogEvent {
   side: "a" | "d"; ini: number; ship: string; count: number;
   target: string; shots: number; action: "pem" | "destroy" | "assim"; amount: number; chance: number;
+  assimCost?: number; // naves assimiladoras consumidas nessa assimilação (Mech)
 }
 
 interface BattleState {
@@ -113,6 +114,7 @@ function fireAt(typeName: string, count: number, enemyActive: UnitMap, enemyLost
       // Mech: das naves que ABATE, assimila as que couberem no orçamento de VALOR
       // (luta pelo Mech a partir do próximo tick). Gasta assimiladoras de valor
       // equivalente (selfLost) — o resto abatido é só destruído.
+      let assimCost = 0;
       if (A.tipo === "Assimiladora" && assimOut && killed > 0 && valueBudget > 0) {
         const tCost = (T.m + T.c + T.p) || 1;
         const g = Math.min(killed, Math.floor(valueBudget / tCost)); // quantas dá pra assimilar
@@ -121,13 +123,13 @@ function fireAt(typeName: string, count: number, enemyActive: UnitMap, enemyLost
           const spent = g * tCost;
           valueBudget -= spent;
           if (selfActive && selfLost) {
-            const lose = Math.min(selfActive[typeName] ?? 0, Math.round(spent / aCost));
-            selfActive[typeName] = (selfActive[typeName] ?? 0) - lose;
-            selfLost[typeName] = (selfLost[typeName] ?? 0) + lose;
+            assimCost = Math.min(selfActive[typeName] ?? 0, Math.round(spent / aCost));
+            selfActive[typeName] = (selfActive[typeName] ?? 0) - assimCost;
+            selfLost[typeName] = (selfLost[typeName] ?? 0) + assimCost;
           }
         }
       }
-      if (log && side && killed > 0) log.push({ side, ini: A.ini, ship: typeName, count, target: t, shots: Math.round(shotsT), action: A.tipo === "Assimiladora" ? "assim" : "destroy", amount: killed, chance: Math.round(cma * 100) });
+      if (log && side && killed > 0) log.push({ side, ini: A.ini, ship: typeName, count, target: t, shots: Math.round(shotsT), action: A.tipo === "Assimiladora" ? "assim" : "destroy", amount: killed, chance: Math.round(cma * 100), assimCost });
     }
   }
 }
