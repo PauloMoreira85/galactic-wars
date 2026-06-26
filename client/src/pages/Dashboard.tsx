@@ -413,16 +413,17 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             title={alerts.galaxyUnderAttack ? "Alerta: planeta(s) da galáxia sob ataque!" : "Radar da galáxia: tudo calmo"}
             onClick={() => setSection("trafego")}
           />
-          {/* Defesa (verde se reforço chegando) e Ataque (vermelho se sob ataque) */}
+          {/* Defesa (verde se reforço chegando) e Ataque (vermelho se sob ataque).
+              blur() remove o realce de foco do botão após clicar. */}
           <button
             className={`action-tab ${alerts.incomingDefense ? "alert-def" : ""}`}
-            onClick={() => setSection("trafego")}
+            onClick={(e) => { e.currentTarget.blur(); setSection("trafego"); }}
           >
             🛡️ Defesa
           </button>
           <button
             className={`action-tab ${alerts.underAttack ? "alert-atk" : ""}`}
-            onClick={() => setSection("trafego")}
+            onClick={(e) => { e.currentTarget.blur(); setSection("trafego"); }}
           >
             ⚔️ Ataque
           </button>
