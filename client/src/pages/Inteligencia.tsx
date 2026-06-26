@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
+import { IntelReport } from "../components/IntelReport";
 
 function fmt(n: number) { return n.toLocaleString("pt-BR"); }
 
@@ -127,18 +128,7 @@ export function Inteligencia() {
       {spy && (
         <div className="panel">
           <h2>🛰️ [{spy.agent}] {spy.name} ({spy.coords})</h2>
-          <div className="cost">Comandante: {spy.commander} · Raça: {spy.race}{spy.online != null && ` · ${spy.online ? "online" : "offline"}`}</div>
-          {spy.score != null && <div className="roid-count">Pontuação: {fmt(spy.score)}</div>}
-          {spy.roids && <div className="roid-count">Roids: {fmt(spy.roids.metalium)} M · {fmt(spy.roids.carbonum)} C · {fmt(spy.roids.plutonium)} P</div>}
-          {spy.totalShips != null && <div className="roid-count">Total de naves: {fmt(spy.totalShips)} (use agente M p/ detalhar)</div>}
-          {spy.ships && <table><thead><tr><th>Nave</th><th>Qtd</th></tr></thead><tbody>{spy.ships.map((x: any) => <tr key={x.name}><td>{x.name}</td><td>{fmt(x.count)}</td></tr>)}</tbody></table>}
-          {spy.news && (<div><div className="cost">Notícias do alvo:</div>{spy.news.length === 0 ? <div className="roid-count">sem notícias</div> : spy.news.map((n: string, i: number) => <div key={i} className="roid-count">{n}</div>)}</div>)}
-          {spy.fleets && (
-            <table><thead><tr><th>Missão</th><th>Estado</th><th>Destino</th><th>Chega</th><th>Naves</th></tr></thead>
-              <tbody>{spy.fleets.length === 0 ? <tr><td colSpan={5} className="roid-count">nenhuma frota em movimento</td></tr> : spy.fleets.map((f: any, i: number) => (
-                <tr key={i}><td>{f.mission}</td><td>{f.status}</td><td>{f.target}</td><td>{f.ticksRemaining}t</td><td className="roid-count">{Object.entries(f.units).map(([n, c]) => `${n}:${c}`).join(", ")}</td></tr>
-              ))}</tbody></table>
-          )}
+          <IntelReport intel={spy} />
         </div>
       )}
     </>

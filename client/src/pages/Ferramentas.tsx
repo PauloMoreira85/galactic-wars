@@ -1,5 +1,6 @@
 import { useEffect, useState, Fragment } from "react";
 import { api } from "../api";
+import { IntelReport } from "../components/IntelReport";
 
 function fmt(n: number) {
   return n.toLocaleString("pt-BR");
@@ -321,7 +322,7 @@ function Espionagem() {
         {looked && (
           <div style={{ marginTop: 12 }}>
             <div className="combat-ini">{looked.targetName} ({looked.targetCoords}) · agente {AGENT[looked.agent] ?? looked.agent} · tick #{looked.tick}</div>
-            <pre style={{ whiteSpace: "pre-wrap", fontSize: 12, color: "var(--muted)", margin: "6px 0 0" }}>{JSON.stringify(looked.intel, null, 2)}</pre>
+            <div style={{ marginTop: 6 }}><IntelReport intel={looked.intel} /></div>
           </div>
         )}
       </div>
@@ -342,7 +343,7 @@ function Espionagem() {
                     <td><button onClick={() => setOpen(open === r.id ? null : r.id)}>{open === r.id ? "fechar" : "ver"}</button></td>
                   </tr>
                   {open === r.id && (
-                    <tr><td colSpan={6}><pre style={{ whiteSpace: "pre-wrap", fontSize: 12, color: "var(--muted)", margin: 0 }}>{JSON.stringify(r.intel, null, 2)}</pre></td></tr>
+                    <tr><td colSpan={6}><IntelReport intel={r.intel} /></td></tr>
                   )}
                 </Fragment>
               ))}
