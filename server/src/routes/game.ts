@@ -2,9 +2,9 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma, TX_OPTS } from "../db.js";
 import { requireAuth, type AuthedRequest } from "../auth.js";
-import { RESOURCES, ROID_PRODUCTION_PER_TICK, nextRoidCost, nextFleetSlotCost, MARKET_FEE, RESOURCE_CAP, NEWBIE_PROTECTION_TICKS } from "../game/constants.js";
+import { RESOURCES, ROID_PRODUCTION_PER_TICK, nextRoidCost, nextFleetSlotCost, MARKET_FEE, RESOURCE_CAP, NEWBIE_PROTECTION_TICKS, STARTING } from "../game/constants.js";
 import { buildRoid, totalRoids } from "../game/roids.js";
-import { RACES, isRaceKey } from "../game/races.js";
+import { RACES, isRaceKey, RACE_KEYS } from "../game/races.js";
 import { startUpgrade, buildUnit, buildAgent, parseTech, cancelOrder } from "../game/fleet.js";
 import { AGENTS, AGENT_KEYS, AGENT_FULL_NAME, isAgentKey, parseAgents, stringifyAgents, isShielded, ceNeeded, blockChance, ROIDS_POR_CE } from "../game/agents.js";
 import { createFleet, setFleetComposition, renameFleet, dispatchFleet, fuelCost, viewSystem, galaxyTraffic, type ShipCounts } from "../game/galaxy.js";
@@ -205,6 +205,7 @@ async function planetView(userId: string) {
     game: {
       tickNumber: tick, lastTickAt: state?.lastTickAt ?? null, tickIntervalSeconds: config.tickIntervalSeconds,
       roundTicks: config.roundTicks, roundEnded: tick >= config.roundTicks,
+      roundStartAt: state?.roundStartAt ?? null,
     },
   };
 }
@@ -907,6 +908,37 @@ gameRouter.post("/account/email", async (req: AuthedRequest, res) => {
   if (taken) return res.status(409).json({ error: "Esse e-mail já está em uso" });
   await prisma.user.update({ where: { id: user.id }, data: { email } });
   res.json({ ok: true, email });
+});
+
+// Trocar de raça — SÓ durante a proteção de novato (início do round). Como as
+// naves são específicas de cada raça, recomeça o planeta do zero (limpa naves,
+// tech, roids, agentes, frotas e construções) com a nova raça. Pensado pro
+// ciclo diário: a cada round (proteção ativa) o jogador pode escolher a raça.
+gameRouter.post("/account/race", async (req: AuthedRequest, res) => {
+  const parsed = z.object({ race: z.enum(RACE_KEYS as [string, ...string[]]) }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "Raça inválida" });
+  const planet = await prisma.planet.findUnique({ where: { userId: req.userId! } });
+  if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
+  const tick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
+  if (tick >= planet.createdTick + NEWBIE_PROTECTION_TICKS) {
+    return res.status(400).json({ error: "Só dá pra trocar de raça durante a proteção de novato (início do round)." });
+  }
+  // Recomeça o planeta do zero com a nova raça.
+  await prisma.fleet.deleteMany({ where: { ownerPlanetId: planet.id } });
+  await prisma.buildOrder.deleteMany({ where: { planetId: planet.id } });
+  await prisma.user.update({ where: { id: req.userId! }, data: { race: parsed.data.race } });
+  await prisma.planet.update({
+    where: { id: planet.id },
+    data: {
+      metalium: STARTING.metalium, carbonum: STARTING.carbonum, plutonium: STARTING.plutonium,
+      roidMetalium: STARTING.roidMetalium, roidCarbonum: STARTING.roidCarbonum, roidPlutonium: STARTING.roidPlutonium,
+      shipCaca: 0, shipCorveta: 0, shipFragata: 0, shipDestroyer: 0, shipCruzador: 0, shipNavemae: 0,
+      roider1: 0, roider2: 0, units: "{}", agents: "{}", researchTier: 0,
+      tech: JSON.stringify({ pesqMineracao: 1, pesq_centralInteligencia: 1 }),
+      prodMul: 100, travelMul: 100, fleetSlots: 0,
+    },
+  });
+  res.json(await planetView(req.userId!));
 });
 
 // Alterar a própria senha (precisa da senha atual).

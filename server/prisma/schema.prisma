@@ -422,7 +422,10 @@ model HallOfFame {
 
 // Estado global do universo (linha unica) - controla o relogio de ticks
 model GameState {
-  id         Int      @id @default(1)
-  tickNumber Int      @default(0)
-  lastTickAt DateTime @default(now())
+  id           Int       @id @default(1)
+  tickNumber   Int       @default(0)
+  lastTickAt   DateTime  @default(now())
+  // Início (08:00) do round atualmente carregado. O motor de ticks deriva o
+  // tick a partir daqui (ciclo diário automático). Null = ainda não alinhado.
+  roundStartAt DateTime?
 }

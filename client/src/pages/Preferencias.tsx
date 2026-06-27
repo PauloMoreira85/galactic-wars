@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, type PlanetView } from "../api";
+import { api, type PlanetView, type RaceInfo } from "../api";
 
 // Redimensiona uma imagem (File) para um data URL pequeno (máx ~160px, JPEG).
 function fileToAvatar(file: File): Promise<string> {
@@ -49,6 +49,13 @@ export function Preferencias({ view, onChanged }: { view: PlanetView; onChanged:
   const [profMsg, setProfMsg] = useState("");
   const [profErr, setProfErr] = useState("");
 
+  // ===== Raça (trocável durante a proteção de novato) =====
+  const [races, setRaces] = useState<RaceInfo[]>([]);
+  const [raceMsg, setRaceMsg] = useState("");
+  const [raceErr, setRaceErr] = useState("");
+  const [raceBusy, setRaceBusy] = useState(false);
+  const canChangeRace = view.planet.protection.active;
+
   useEffect(() => {
     api.account().then((a) => {
       setEmail(a.email);
@@ -56,7 +63,21 @@ export function Preferencias({ view, onChanged }: { view: PlanetView; onChanged:
       setPixKey(a.pixKey ?? "");
       setAvatar(a.avatar ?? null);
     }).catch(() => {});
+    api.races().then((r) => setRaces(r.races)).catch(() => {});
   }, []);
+
+  async function pickRace(key: string) {
+    if (key === view.race.key) return;
+    const name = races.find((r) => r.key === key)?.name ?? key;
+    if (!window.confirm(`Trocar para ${name}? Seu planeta RECOMEÇA do zero (naves, tecnologias, roids e agentes são zerados) com a nova raça.`)) return;
+    setRaceMsg(""); setRaceErr(""); setRaceBusy(true);
+    try {
+      await api.changeRace(key);
+      setRaceMsg(`Raça alterada para ${name}! Planeta recomeçado.`);
+      onChanged();
+    } catch (e: any) { setRaceErr(e.message ?? "Falha ao trocar de raça"); }
+    finally { setRaceBusy(false); }
+  }
 
   async function changePassword() {
     setPwMsg(""); setPwErr("");
@@ -111,6 +132,34 @@ export function Preferencias({ view, onChanged }: { view: PlanetView; onChanged:
 
   return (
     <>
+      {/* ===== Raça do round (trocável só na proteção de novato) ===== */}
+      <div className="panel">
+        <h2>🧬 Raça</h2>
+        <div className="cost" style={{ marginBottom: 8 }}>
+          Sua raça atual é <b>{view.race.name}</b>.{" "}
+          {canChangeRace
+            ? <>Você está sob <b>proteção de novato</b> ({view.planet.protection.ticksLeft} ticks restantes) — dá pra trocar de raça. Trocar <b>recomeça seu planeta do zero</b>.</>
+            : <>A troca de raça só é liberada durante a <b>proteção de novato</b> (início do round).</>}
+        </div>
+        {canChangeRace && (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {races.map((r) => (
+              <button
+                key={r.key}
+                disabled={raceBusy || r.key === view.race.key}
+                onClick={() => pickRace(r.key)}
+                title={r.tagline}
+                className={r.key === view.race.key ? "section-active" : ""}
+              >
+                {r.key === view.race.key ? "✓ " : ""}{r.name}
+              </button>
+            ))}
+          </div>
+        )}
+        {raceMsg && <div className="cost" style={{ marginTop: 10, color: "var(--carbonum)" }}>{raceMsg}</div>}
+        {raceErr && <div className="error" style={{ marginTop: 10 }}>{raceErr}</div>}
+      </div>
+
       {/* ===== Perfil: avatar + contato ===== */}
       <div className="panel">
         <h2>👤 Meu perfil</h2>

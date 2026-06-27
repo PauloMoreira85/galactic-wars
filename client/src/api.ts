@@ -136,6 +136,7 @@ export interface PlanetView {
     tickIntervalSeconds: number;
     roundTicks: number;
     roundEnded: boolean;
+    roundStartAt: string | null;
   };
 }
 
@@ -349,6 +350,8 @@ export const api = {
     request<{ email: string; username: string; whatsapp: string | null; pixKey: string | null; avatar: string | null }>("/game/account/profile", { method: "POST", body: JSON.stringify(body) }),
   changeEmail: (password: string, email: string) =>
     request<{ ok: true; email: string }>("/game/account/email", { method: "POST", body: JSON.stringify({ password, email }) }),
+  changeRace: (race: string) =>
+    request<PlanetView>("/game/account/race", { method: "POST", body: JSON.stringify({ race }) }),
   cancelOrder: (id: string) =>
     request<PlanetView>(`/game/queue/${id}/cancel`, { method: "POST" }),
   marketTrade: (from: Resource, to: Resource, amount: number) =>
