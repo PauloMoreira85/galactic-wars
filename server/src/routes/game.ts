@@ -52,10 +52,15 @@ gameRouter.use(async (req, res, next) => {
 async function planetView(userId: string) {
   const planet = await prisma.planet.findUnique({
     where: { userId },
-    include: { user: { select: { username: true, race: true, avatar: true } } },
+    include: { user: { select: { username: true, race: true, avatar: true, raceRound: true } } },
   });
   if (!planet) return null;
   const state = await prisma.gameState.findUnique({ where: { id: 1 } });
+  // Ciclo diário: se o round atual (roundStartAt) != round da última escolha de
+  // raça, o player precisa (re)escolher a raça antes de jogar (tela obrigatória).
+  const roundStartMs = state?.roundStartAt ? new Date(state.roundStartAt).getTime() : null;
+  const raceRoundMs = planet.user.raceRound ? new Date(planet.user.raceRound).getTime() : null;
+  const mustChooseRace = roundStartMs != null && raceRoundMs !== roundStartMs;
 
   const raceKey = isRaceKey(planet.user.race) ? planet.user.race : "humanos";
   const race = RACES[raceKey];
@@ -202,6 +207,7 @@ async function planetView(userId: string) {
     units,
     queue,
     effects: { espionage: espionageLevel(levels) },
+    mustChooseRace,
     game: {
       tickNumber: tick, lastTickAt: state?.lastTickAt ?? null, tickIntervalSeconds: config.tickIntervalSeconds,
       roundTicks: config.roundTicks, roundEnded: tick >= config.roundTicks,
@@ -910,23 +916,35 @@ gameRouter.post("/account/email", async (req: AuthedRequest, res) => {
   res.json({ ok: true, email });
 });
 
-// Trocar de raça — SÓ durante a proteção de novato (início do round). Como as
-// naves são específicas de cada raça, recomeça o planeta do zero (limpa naves,
-// tech, roids, agentes, frotas e construções) com a nova raça. Pensado pro
-// ciclo diário: a cada round (proteção ativa) o jogador pode escolher a raça.
+// Escolher/trocar de raça no ciclo diário. Liberado quando o player AINDA não
+// escolheu a raça do round atual (tela obrigatória) OU enquanto está na proteção
+// de novato (pode mudar de ideia no início). Como as naves são específicas de
+// cada raça, recomeça o planeta do zero (naves, tech, roids, agentes, frotas).
 gameRouter.post("/account/race", async (req: AuthedRequest, res) => {
   const parsed = z.object({ race: z.enum(RACE_KEYS as [string, ...string[]]) }).safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Raça inválida" });
-  const planet = await prisma.planet.findUnique({ where: { userId: req.userId! } });
+  const planet = await prisma.planet.findUnique({
+    where: { userId: req.userId! },
+    include: { user: { select: { raceRound: true } } },
+  });
   if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
-  const tick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
-  if (tick >= planet.createdTick + NEWBIE_PROTECTION_TICKS) {
-    return res.status(400).json({ error: "Só dá pra trocar de raça durante a proteção de novato (início do round)." });
+  const state = await prisma.gameState.findUnique({ where: { id: 1 } });
+  const tick = state?.tickNumber ?? 0;
+  const roundStartMs = state?.roundStartAt ? new Date(state.roundStartAt).getTime() : null;
+  const raceRoundMs = planet.user.raceRound ? new Date(planet.user.raceRound).getTime() : null;
+  const mustChooseRace = roundStartMs != null && raceRoundMs !== roundStartMs;
+  const underProtection = tick < planet.createdTick + NEWBIE_PROTECTION_TICKS;
+  if (!mustChooseRace && !underProtection) {
+    return res.status(400).json({ error: "A escolha de raça só fica liberada no início do round (proteção de novato)." });
   }
-  // Recomeça o planeta do zero com a nova raça.
+  // Recomeça o planeta do zero com a nova raça e marca a raça como escolhida
+  // para o round atual (sai da tela obrigatória).
   await prisma.fleet.deleteMany({ where: { ownerPlanetId: planet.id } });
   await prisma.buildOrder.deleteMany({ where: { planetId: planet.id } });
-  await prisma.user.update({ where: { id: req.userId! }, data: { race: parsed.data.race } });
+  await prisma.user.update({
+    where: { id: req.userId! },
+    data: { race: parsed.data.race, raceRound: roundStartMs != null ? new Date(roundStartMs) : null },
+  });
   await prisma.planet.update({
     where: { id: planet.id },
     data: {

@@ -125,6 +125,7 @@ export interface PlanetView {
     counts: Record<string, number>;
     protection: { ce: number; needed: number; shielded: boolean; roids: number; roidsPerCE: number };
   };
+  mustChooseRace: boolean;
   onlineCount: number;
   tech: TechItem[];
   effects: { espionage: number };

@@ -14,6 +14,7 @@ import { Mensagens } from "./Mensagens";
 import { Sabotagem } from "./Sabotagem";
 import { Inteligencia } from "./Inteligencia";
 import { Preferencias } from "./Preferencias";
+import { RaceChoiceScreen } from "../components/RaceChoiceScreen";
 
 const RES_META: { key: Resource; label: string }[] = [
   { key: "metalium", label: "Metalium" },
@@ -293,6 +294,9 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   }
 
   if (!view) return <div className="app">Carregando o universo...</div>;
+
+  // Início de round: tela obrigatória de escolha de raça (bloqueia o jogo).
+  if (view.mustChooseRace) return <RaceChoiceScreen view={view} onChosen={refresh} onLogout={onLogout} />;
 
   const { planet, game } = view;
   // Cada roid custa SÓ o próprio recurso (e sobe +250 por roid daquele recurso).

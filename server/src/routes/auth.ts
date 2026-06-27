@@ -80,7 +80,8 @@ authRouter.post("/register", async (req, res) => {
   try {
     const hash = await bcrypt.hash(password, 10);
     const coords = await allocateSlot();
-    const tick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
+    const gs = await prisma.gameState.findUnique({ where: { id: 1 } });
+    const tick = gs?.tickNumber ?? 0;
 
     const user = await prisma.user.create({
       data: {
@@ -88,6 +89,8 @@ authRouter.post("/register", async (req, res) => {
         username,
         password: hash,
         race,
+        // Já escolheu a raça do round atual no registro — não cai na tela obrigatória.
+        raceRound: gs?.roundStartAt ?? null,
         whatsapp: whatsapp?.trim() || null,
         planet: {
           create: {

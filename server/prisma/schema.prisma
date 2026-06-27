@@ -16,6 +16,9 @@ model User {
   username  String   @unique
   password  String
   race      String   @default("humanos")
+  // Início (08:00) do round para o qual a raça foi escolhida. Se != do round
+  // atual, o player cai na tela obrigatória de escolha de raça (ciclo diário).
+  raceRound DateTime?
   associado Boolean  @default(false) // benefícios: trocar nome 3x, galáxia privada
   nameChanges Int    @default(0)     // trocas de nome usadas (máx 3 p/ associado)
   createdAt DateTime @default(now())
