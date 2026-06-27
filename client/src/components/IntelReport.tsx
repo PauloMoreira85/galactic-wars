@@ -11,6 +11,9 @@ export function IntelReport({ intel }: { intel: any }) {
         {intel.online != null && ` · ${intel.online ? "online" : "offline"}`}
       </div>
       {intel.score != null && <div className="roid-count">Pontuação: {fmt(intel.score)}</div>}
+      {intel.resources && (
+        <div className="roid-count">Recursos: {fmt(intel.resources.metalium)} Metalium · {fmt(intel.resources.carbonum)} Carbonum · {fmt(intel.resources.plutonium)} Plutonium</div>
+      )}
       {intel.roids && (
         <div className="roid-count">Roids: {fmt(intel.roids.metalium)} M · {fmt(intel.roids.carbonum)} C · {fmt(intel.roids.plutonium)} P</div>
       )}

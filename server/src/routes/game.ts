@@ -459,8 +459,9 @@ gameRouter.post("/spy", async (req: AuthedRequest, res) => {
   const intel: any = { agent, coords: `${galaxy}:${system}:${slot}`, name: target.name, commander: target.user.username, race: RACES[raceKey].name };
 
   if (agent === "P") {
-    // Padrão: raça, pontuação, roids e qtd TOTAL de naves (sem detalhar tipos).
+    // Padrão: raça, pontuação, recursos em estoque, roids e qtd TOTAL de naves.
     intel.score = scoreOfUnits(units);
+    intel.resources = { metalium: target.metalium, carbonum: target.carbonum, plutonium: target.plutonium };
     intel.roids = { metalium: target.roidMetalium, carbonum: target.roidCarbonum, plutonium: target.roidPlutonium };
     intel.totalShips = totalShips;
     intel.online = Date.now() - new Date(target.user.lastSeen).getTime() < 5 * 60 * 1000;
