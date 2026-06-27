@@ -7,7 +7,7 @@ export const RESOURCES: ResourceKey[] = ["metalium", "carbonum", "plutonium"];
 
 // Quanto cada roid produz do seu recurso por tick (canon: 200 com moral 100).
 // Quando a Moral existir, a produção efetiva será 140 + 0.6*moral.
-export const ROID_PRODUCTION_PER_TICK = 450;
+export const ROID_PRODUCTION_PER_TICK = 300;
 
 // Custo de PRODUZIR um novo roid. Escala com o total de roids do planeta:
 //   custo = base * (growth ^ totalRoids)

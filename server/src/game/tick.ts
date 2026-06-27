@@ -19,7 +19,7 @@ async function ensureGameState() {
   return prisma.gameState.findUnique({ where: { id: 1 } });
 }
 
-// Processa `n` ticks de uma vez. Produção por recurso = roids×450 + bônus FLAT
+// Processa `n` ticks de uma vez. Produção por recurso = roids×300 + bônus FLAT
 // das construções de mineração. Produção é linear, então multiplicamos por n.
 async function processTicks(n: number) {
   if (n <= 0) return;
