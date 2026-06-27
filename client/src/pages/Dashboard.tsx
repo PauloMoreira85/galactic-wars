@@ -71,6 +71,31 @@ function useCountdown(view: PlanetView | null) {
   return `${m}m ${s.toString().padStart(2, "0")}s`;
 }
 
+function fmtDur(secs: number) {
+  if (secs <= 0) return "0s";
+  const h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60), s = secs % 60;
+  if (h > 0) return `${h}h ${m.toString().padStart(2, "0")}m`;
+  if (m > 0) return `${m}m ${s.toString().padStart(2, "0")}s`;
+  return `${s}s`;
+}
+
+// Status do round no ciclo diário: começando, rodando (termina em…) ou
+// encerrado (próximo round em…). Recalcula a cada segundo.
+function useRoundStatus(view: PlanetView | null) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  if (!view?.game.roundStartAt) return null;
+  const start = new Date(view.game.roundStartAt).getTime();
+  const end = start + view.game.roundTicks * view.game.tickIntervalSeconds * 1000;
+  if (now < start) return { label: "Começa em", time: fmtDur(Math.floor((start - now) / 1000)) };
+  if (now < end) return { label: "Termina em", time: fmtDur(Math.floor((end - now) / 1000)) };
+  const next = start + 24 * 3600 * 1000; // próximo 08:00
+  return { label: "Próximo round", time: fmtDur(Math.floor((next - now) / 1000)) };
+}
+
 type Section = "planeta" | "galaxia" | "frotas" | "trafego" | "pesquisa" | "construcao" | "naves" | "recursos" | "combates" | "votacao" | "noticias" | "aliancas" | "associados" | "preferencias" | "forum" | "forumgalaxia" | "chat" | "mensagens" | "sabotagem" | "intel";
 
 interface MenuItem {
@@ -166,6 +191,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [alerts, setAlerts] = useState({ underAttack: false, incomingDefense: false, galaxyUnderAttack: false });
   const [unreadMsgs, setUnreadMsgs] = useState(0);
   const countdown = useCountdown(view);
+  const roundStatus = useRoundStatus(view);
 
   useEffect(() => {
     if (!zoom) return;
@@ -363,7 +389,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
       <main className="content">
         {game.roundEnded && (
           <div className="panel round-ended">
-            🏆 <b>Round encerrado!</b>{ranking[0] && <> Campeão: <b>{ranking[0].username}</b> — {ranking[0].planet} ({ranking[0].coords})</>}. As ações estão congeladas; aguarde o próximo round.
+            🏆 <b>Round encerrado!</b>{ranking[0] && <> Campeão: <b>{ranking[0].username}</b> — {ranking[0].planet} ({ranking[0].coords})</>}. As ações estão congeladas.{roundStatus ? <> Próximo round em <b>{roundStatus.time}</b>.</> : " Aguarde o próximo round."}
           </div>
         )}
 
@@ -391,6 +417,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             <div className="sh-cell"><span>Pontuação</span><b>{fmt(planet.score)}</b></div>
             <div className="sh-cell"><span>Ranking</span><b>#{planet.rank}</b></div>
             <div className="sh-cell"><span>Tick</span><b>#{game.tickNumber} / {game.roundTicks}{countdown ? ` · ${countdown}` : ""}</b></div>
+            {roundStatus && <div className="sh-cell"><span>{roundStatus.label}</span><b>{roundStatus.time}</b></div>}
             <div className="sh-cell"><span>Online</span><b>{view.onlineCount}</b></div>
             <div className="sh-cell"><span>Moral</span><b>—</b></div>
           </div>
