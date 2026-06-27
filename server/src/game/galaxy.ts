@@ -4,7 +4,7 @@ import { parseUnits, stringifyUnits, totalUnits, addUnits, type UnitMap } from "
 import { type Coords } from "./geo.js";
 import { travelTime } from "./travel.js";
 import { travelReductionTicks } from "./tech.js";
-import { unitByName } from "./catalog.js";
+import { unitByName, radarVisibleCount } from "./catalog.js";
 import { scoreOfUnits } from "./score.js";
 import { allianceTags } from "./alliance.js";
 import { hasActiveTreaty } from "./governance.js";
@@ -356,7 +356,8 @@ export async function galaxyTraffic(planetId: string) {
       targetName: targetMap.get(`${f.targetSystem}:${f.targetSlot}`) ?? null,
       mission: f.mission,            // "attack" | "transport"
       status: f.status,              // "outbound" | "engaged"
-      ships: totalUnits(parseUnits(f.units)),
+      // Radar: frota MINHA mostra tudo; frota de terceiro esconde naves invisíveis (Rakshasa).
+      ships: f.ownerPlanetId === planetId ? totalUnits(parseUnits(f.units)) : radarVisibleCount(parseUnits(f.units)),
       ticks: Math.max(0, f.arriveTick - nowTick),
       toMe: f.targetSystem === me.system && f.targetSlot === me.slot,
       own: f.ownerPlanetId === planetId, // frota MINHA (não conta como ameaça/reforço recebido)
@@ -378,7 +379,7 @@ export async function galaxyTraffic(planetId: string) {
     byOwner.get(o.id)!.fleets.push({
       name: f.name, mission: f.mission, status: f.status,
       target: `${f.targetGalaxy}:${f.targetSystem}:${f.targetSlot}`,
-      ships: totalUnits(parseUnits(f.units)),
+      ships: f.ownerPlanetId === planetId ? totalUnits(parseUnits(f.units)) : radarVisibleCount(parseUnits(f.units)),
       ticks: Math.max(0, f.arriveTick - nowTick),
       captured: { metalium: f.capMetalium, carbonum: f.capCarbonum, plutonium: f.capPlutonium },
     });

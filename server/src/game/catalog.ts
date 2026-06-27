@@ -32,6 +32,18 @@ export function unitByName(name: string): UnitRow | undefined {
   return UNIT_TABLE.find((u) => u.nome === name);
 }
 
+// Naves Invisíveis (Rakshasa) NÃO aparecem no radar de tráfego para terceiros.
+// Só as roiders (e demais tipos) são detectadas. A espionagem fura a invisibilidade.
+const INVISIBLE_SHIPS = new Set(UNIT_TABLE.filter((u) => u.tipo === "Invisivel").map((u) => u.nome));
+export function radarVisibleCount(units: Record<string, number>): number {
+  let n = 0;
+  for (const [name, count] of Object.entries(units)) {
+    if (INVISIBLE_SHIPS.has(name)) continue;
+    n += count;
+  }
+  return n;
+}
+
 // O roider de classe mais baixa de cada raça é NATIVO (construível desde o início).
 export function nativeRoiderName(race: RaceKey): string | null {
   const roiders = unitsOfRace(race).filter((u) => u.roider);

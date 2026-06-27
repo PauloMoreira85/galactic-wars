@@ -9,7 +9,7 @@ import { startUpgrade, buildUnit, buildAgent, parseTech, cancelOrder } from "../
 import { AGENTS, AGENT_KEYS, AGENT_FULL_NAME, isAgentKey, parseAgents, stringifyAgents, isShielded, ceNeeded, blockChance, ROIDS_POR_CE } from "../game/agents.js";
 import { createFleet, setFleetComposition, renameFleet, dispatchFleet, fuelCost, viewSystem, galaxyTraffic, type ShipCounts } from "../game/galaxy.js";
 import { recallFleet, BATTLE_TICKS } from "../game/combat.js";
-import { unitsOfRace, isUnitUnlocked, CLASS_LABEL, unitByName, shipImage } from "../game/catalog.js";
+import { unitsOfRace, isUnitUnlocked, CLASS_LABEL, unitByName, shipImage, radarVisibleCount } from "../game/catalog.js";
 import { UNIT_TABLE } from "../game/unitTable.js";
 import { associadoView, becomeAssociado, changeName } from "../game/associados.js";
 import { autoExile } from "../game/relocation.js";
@@ -455,7 +455,6 @@ gameRouter.post("/spy", async (req: AuthedRequest, res) => {
     return res.json({ failed: true, error: `Espionagem bloqueada pela contra-espionagem do alvo (chance ${Math.round(bc * 100)}%). Perdeu 1 agente ${agent} — mande mais pra furar.` });
   }
   const units = parseUnits(target.units);
-  const totalShips = Object.values(units).reduce((a, b) => a + b, 0);
   const intel: any = { agent, coords: `${galaxy}:${system}:${slot}`, name: target.name, commander: target.user.username, race: RACES[raceKey].name };
 
   if (agent === "P") {
@@ -463,7 +462,8 @@ gameRouter.post("/spy", async (req: AuthedRequest, res) => {
     intel.score = scoreOfUnits(units);
     intel.resources = { metalium: target.metalium, carbonum: target.carbonum, plutonium: target.plutonium };
     intel.roids = { metalium: target.roidMetalium, carbonum: target.roidCarbonum, plutonium: target.roidPlutonium };
-    intel.totalShips = totalShips;
+    // Rakshasa: invisíveis não contam — só roiders. Demais raças: total normal.
+    intel.totalShips = radarVisibleCount(units);
     intel.online = Date.now() - new Date(target.user.lastSeen).getTime() < 5 * 60 * 1000;
   } else if (agent === "M") {
     // Militar: QUAIS e quantas naves — TODAS do alvo (base + todas as frotas,
