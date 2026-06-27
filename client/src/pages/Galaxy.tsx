@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, type PlanetView } from "../api";
+import { IntelReport } from "../components/IntelReport";
 
 function fmt(n: number) {
   return n.toLocaleString("pt-BR");
@@ -204,7 +205,6 @@ export function Galaxy({ view, onChanged }: { view: PlanetView; onChanged: () =>
             <h2>🛰️ Espionagem [{spy.agent}] — {spy.name} ({spy.coords})</h2>
             <button className="link" onClick={() => setSpy(null)}>fechar</button>
           </div>
-          <div className="cost">Comandante: {spy.commander} · Raça: {spy.race}{spy.online != null && ` · ${spy.online ? "online" : "offline"}`}</div>
           {spy._hash && (
             <div className="cost" style={{ margin: "6px 0" }}>
               📋 Código pra compartilhar: <b style={{ color: "var(--accent)", letterSpacing: 1 }}>{spy._hash}</b>{" "}
@@ -212,24 +212,7 @@ export function Galaxy({ view, onChanged }: { view: PlanetView; onChanged: () =>
               <div className="roid-count">Outros jogadores abrem em Ferramentas → Visualizar Espionagem.</div>
             </div>
           )}
-          {spy.score != null && <div className="roid-count">Pontuação: {fmt(spy.score)}</div>}
-          {spy.roids && <div className="roid-count">Roids: {fmt(spy.roids.metalium)} M · {fmt(spy.roids.carbonum)} C · {fmt(spy.roids.plutonium)} P</div>}
-          {spy.totalShips != null && <div className="roid-count">Total de naves: {fmt(spy.totalShips)} (sem detalhe — use agente M)</div>}
-          {spy.ships && <table><thead><tr><th>Nave</th><th>Qtd</th></tr></thead><tbody>{spy.ships.map((s: any) => <tr key={s.name}><td>{s.name}</td><td>{fmt(s.count)}</td></tr>)}</tbody></table>}
-          {spy.news && (
-            <div>
-              <div className="cost">Notícias do alvo:</div>
-              {spy.news.length === 0 ? <div className="roid-count">sem notícias</div> : spy.news.map((n: string, i: number) => <div key={i} className="roid-count">{n}</div>)}
-            </div>
-          )}
-          {spy.note && <div className="roid-count">{spy.note}</div>}
-          {spy.fleets && (
-            <table><thead><tr><th>Missão</th><th>Estado</th><th>Destino</th><th>Chega</th><th>Naves</th></tr></thead>
-              <tbody>{spy.fleets.length === 0 ? <tr><td colSpan={5} className="roid-count">nenhuma frota em movimento</td></tr> : spy.fleets.map((f: any, i: number) => (
-                <tr key={i}><td>{f.mission}</td><td>{f.status}</td><td>{f.target}</td><td>{f.ticksRemaining}t</td>
-                <td className="roid-count">{Object.entries(f.units).map(([n, c]) => `${n}:${c}`).join(", ")}</td></tr>
-              ))}</tbody></table>
-          )}
+          <IntelReport intel={spy} />
         </div>
       )}
 
