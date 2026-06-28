@@ -8,7 +8,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: "3001"
-      DATABASE_URL: "file:/data/prod.db?connection_limit=1"
+      DATABASE_URL: "file:/data/prod.db"
       TICK_INTERVAL_SECONDS: "60"    # TURBO p/ testes (1 min). Produção real: 3600 (1h)
       JWT_SECRET: ${JWT_SECRET}   # vem do arquivo .env ao lado deste
       # E-mail (recuperação de senha). Preencha no .env depois de criar a caixa.
@@ -32,7 +32,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: "3001"
-      DATABASE_URL: "file:/data/rur.db?connection_limit=1"
+      DATABASE_URL: "file:/data/rur.db"
       TICK_INTERVAL_SECONDS: "5"            # ultra-rápido
       ROUND_TICKS: "1200"                   # 1200 × 5s = 100 min por round
       ROUND_START_TIMES: "12:00,18:00,22:00"
