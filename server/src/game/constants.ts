@@ -34,9 +34,9 @@ export const STARTING = {
   roidPlutonium: 1,
 };
 
-// Slots (planetas) por sistema/galáxia. Galáxias pequenas = melhor jogabilidade
-// com poucos jogadores.
-export const SLOTS_PER_SYSTEM = 5;
+// Slots (planetas) por galáxia. Galáxias pequenas = melhor jogabilidade com
+// poucos jogadores. Configurável por env (RUR usa 3).
+export const SLOTS_PER_SYSTEM = Number(process.env.SLOTS_PER_SYSTEM ?? 5);
 
 // Número de galáxias no universo.
 export const GALAXIES = 6;

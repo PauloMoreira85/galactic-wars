@@ -37,6 +37,7 @@ services:
       ROUND_TICKS: "1200"                   # 1200 × 5s = 100 min por round
       ROUND_START_TIMES: "12:00,18:00,22:00"
       RESET_LEAD_MINUTES: "10"              # zera (soft) 10 min antes de cada início
+      SLOTS_PER_SYSTEM: "3"                 # galáxias de 3 planetas no RUR
       JWT_SECRET: ${JWT_SECRET}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
