@@ -53,13 +53,22 @@ process.on("unhandledRejection", (e) => console.error("[unhandledRejection]", e)
 process.on("uncaughtException", (e) => console.error("[uncaughtException]", e));
 
 async function boot() {
-  // SQLite: WAL melhora muito a concorrência de escrita do motor de tick.
+  // SQLite tuning. O gargalo era o fsync por commit (synchronous=FULL) no disco
+  // do droplet: cada escrita do tick/ação custava ~centenas de ms. Com WAL +
+  // synchronous=NORMAL o fsync vira só no checkpoint -> escritas ~10-100x mais
+  // rápidas (sem risco de corrupção; no máximo perde os últimos segundos num
+  // corte de energia). connection_limit=1 (na DATABASE_URL) garante que estes
+  // PRAGMAs por-conexão valham pra TODAS as queries.
   try {
     // PRAGMA retorna linha → usar queryRawUnsafe (executeRawUnsafe rejeita resultados no SQLite).
     await prisma.$queryRawUnsafe("PRAGMA journal_mode=WAL;");
-    await prisma.$queryRawUnsafe("PRAGMA busy_timeout=5000;");
+    await prisma.$queryRawUnsafe("PRAGMA synchronous=NORMAL;");
+    await prisma.$queryRawUnsafe("PRAGMA busy_timeout=10000;");
+    await prisma.$queryRawUnsafe("PRAGMA wal_autocheckpoint=1000;");
+    await prisma.$queryRawUnsafe("PRAGMA cache_size=-16000;"); // ~16 MB de cache
+    console.log("[db] SQLite: WAL + synchronous=NORMAL ativos");
   } catch (e) {
-    console.warn("[db] não foi possível ativar WAL:", e);
+    console.warn("[db] não foi possível aplicar PRAGMAs:", e);
   }
 
   app.listen(config.port, () => {
