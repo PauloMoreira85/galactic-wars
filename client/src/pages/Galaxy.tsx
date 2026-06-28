@@ -11,7 +11,7 @@ const ROLE_COLOR: Record<string, string> = { cg: "#ffd23f", mg: "#ff5050", me: "
 const ROLE_TAG: Record<string, string> = { cg: "(CG)", mg: "(MG)", me: "(ME)", md: "(MD)" };
 const ROLE_LABEL: Record<string, string> = { cg: "Comandante da Galáxia", mg: "Ministro da Guerra", me: "Ministro da Economia", md: "Ministro da Diplomacia" };
 
-export function Galaxy({ view, onChanged }: { view: PlanetView; onChanged: () => void }) {
+export function Galaxy({ view, onChanged, onMessage }: { view: PlanetView; onChanged: () => void; onMessage?: (coords: string) => void }) {
   // Coordenadas do proprio planeta como ponto de partida da navegacao.
   const [g, s] = view.planet.coords.split(":").map(Number);
   const [galaxy, setGalaxy] = useState(g || 1);
@@ -182,7 +182,15 @@ export function Galaxy({ view, onChanged }: { view: PlanetView; onChanged: () =>
                         style={{ padding: "1px 6px", marginRight: 2, fontSize: 12, opacity: agentsIHave[a] ? 1 : 0.3 }}>{a}</button>
                     ))}
                   </td>
-                  <td>{!isSelf && <button onClick={() => pickTarget(sl.slot, sl.name!)}>frota</button>}{isSelf && <span className="roid-count">você</span>}</td>
+                  <td>
+                    {!isSelf && (
+                      <span style={{ display: "inline-flex", gap: 6 }}>
+                        <button onClick={() => pickTarget(sl.slot, sl.name!)}>frota</button>
+                        <button title="Mensagem privada" onClick={() => onMessage?.(`${galaxy}:${system}:${sl.slot}`)}>✉</button>
+                      </span>
+                    )}
+                    {isSelf && <span className="roid-count">você</span>}
+                  </td>
                 </tr>
               );
             })}

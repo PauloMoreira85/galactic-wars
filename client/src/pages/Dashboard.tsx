@@ -195,6 +195,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [unreadMsgs, setUnreadMsgs] = useState(0);
   const countdown = useCountdown(view);
   const roundStatus = useRoundStatus(view);
+  const [pmTo, setPmTo] = useState(""); // coordenada pré-preenchida ao mandar msg pela Galáxia
 
   useEffect(() => {
     if (!zoom) return;
@@ -726,7 +727,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
           </>
         )}
 
-        {section === "galaxia" && <Galaxy view={view} onChanged={refresh} />}
+        {section === "galaxia" && <Galaxy view={view} onChanged={refresh} onMessage={(c) => { setPmTo(c); setSection("mensagens"); }} />}
 
         {section === "frotas" && <Frotas view={view} onChanged={refresh} />}
 
@@ -749,7 +750,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
         {section === "chat" && <Chat />}
 
-        {section === "mensagens" && <Mensagens />}
+        {section === "mensagens" && <Mensagens initialTo={pmTo} />}
 
         {section === "sabotagem" && <Sabotagem />}
 

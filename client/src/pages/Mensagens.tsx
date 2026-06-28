@@ -4,7 +4,7 @@ import { api } from "../api";
 type PM = Awaited<ReturnType<typeof api.pm>>;
 function when(s: string) { return new Date(s).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }); }
 
-export function Mensagens() {
+export function Mensagens({ initialTo }: { initialTo?: string }) {
   const [data, setData] = useState<PM | null>(null);
   const [tab, setTab] = useState<"recebidas" | "enviadas" | "nova">("recebidas");
   const [open, setOpen] = useState<string | null>(null);
@@ -16,6 +16,8 @@ export function Mensagens() {
 
   async function load() { try { setData(await api.pm()); } catch (e: any) { setError(e.message ?? "Falha"); } }
   useEffect(() => { load(); const t = setInterval(load, 15000); return () => clearInterval(t); }, []);
+  // Veio da Galáxia (botão ✉): abre a aba Nova já com a coordenada preenchida.
+  useEffect(() => { if (initialTo) { setTo(initialTo); setTab("nova"); } }, [initialTo]);
 
   async function read(id: string) {
     setOpen(open === id ? null : id);
@@ -96,7 +98,7 @@ export function Mensagens() {
       {tab === "nova" && (
         <div className="panel">
           <h2>Nova mensagem</h2>
-          <input placeholder="Para (nome do jogador)" value={to} onChange={(e) => setTo(e.target.value)} />
+          <input placeholder="Para (coordenada — ex: 2:1:3)" value={to} onChange={(e) => setTo(e.target.value)} />
           <input placeholder="Assunto" value={subject} onChange={(e) => setSubject(e.target.value)} />
           <textarea placeholder="Mensagem" value={body} onChange={(e) => setBody(e.target.value)} rows={8}
             style={{ width: "100%", background: "rgba(2,8,18,0.7)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "9px 11px", fontFamily: "var(--mono)" }} />
