@@ -1,5 +1,5 @@
 import type { Request } from "express";
-import { prisma } from "../db.js";
+import { prisma, withWrite } from "../db.js";
 
 // Mensagem padrão quando uma interação é barrada por multi-conta (mesmo IP).
 export const MULTI_BLOCK_MSG =
@@ -17,11 +17,11 @@ export function clientIp(req: Request): string {
 export async function recordIp(userId: string, ip: string): Promise<void> {
   if (!ip) return;
   try {
-    await prisma.accountIp.upsert({
+    await withWrite(() => prisma.accountIp.upsert({
       where: { userId_ip: { userId, ip } },
       update: { lastSeen: new Date(), hits: { increment: 1 } },
       create: { userId, ip },
-    });
+    }));
   } catch (e) {
     console.error("[ipguard] falha ao registrar IP:", e);
   }

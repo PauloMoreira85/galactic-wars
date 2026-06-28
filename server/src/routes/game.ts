@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { prisma, TX_OPTS } from "../db.js";
+import { prisma, TX_OPTS, withWrite } from "../db.js";
 import { requireAuth, type AuthedRequest } from "../auth.js";
 import { RESOURCES, ROID_PRODUCTION_PER_TICK, nextRoidCost, nextFleetSlotCost, MARKET_FEE, RESOURCE_CAP, NEWBIE_PROTECTION_TICKS, STARTING } from "../game/constants.js";
 import { buildRoid, totalRoids } from "../game/roids.js";
@@ -219,7 +219,7 @@ async function planetView(userId: string) {
 }
 
 gameRouter.get("/me", async (req: AuthedRequest, res) => {
-  await prisma.user.update({ where: { id: req.userId! }, data: { lastSeen: new Date() } }).catch(() => {});
+  await withWrite(() => prisma.user.update({ where: { id: req.userId! }, data: { lastSeen: new Date() } })).catch(() => {});
   trackIp(req.userId!, clientIp(req)); // anti multi-conta (1 escrita por IP/processo)
   const view = await planetView(req.userId!);
   if (!view) return res.status(404).json({ error: "Planeta nao encontrado" });

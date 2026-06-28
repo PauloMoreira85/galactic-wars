@@ -93,15 +93,22 @@ async function processTicks(n: number) {
 async function applyTicks(fromTick: number, toTick: number) {
   const due = toTick - fromTick;
   if (due <= 0) return;
+  // Timing por fase: se algo passar de 1s, loga pra acharmos o gargalo.
+  const t0 = Date.now();
   await processTicks(due);
+  const t1 = Date.now();
   await processTax(due);
+  const t2 = Date.now();
   await processEffects(due, toTick);
-  // Resolve construções/pesquisas até o tick atingido (concluir, pode em lote).
+  const t3 = Date.now();
   await processBuildOrders(toTick);
-  // Frotas/combate: UM tick por vez. Assim o combate avança 1 rodada por tick,
-  // mesmo num catch-up após deploy/downtime — dando chance de reagir entre ticks.
+  const t4 = Date.now();
   for (let t = fromTick + 1; t <= toTick; t++) {
     await processFleets(t);
+  }
+  const t5 = Date.now();
+  if (t5 - t0 >= 1000) {
+    console.log(`[tick-perf] total=${t5 - t0}ms prod=${t1 - t0} tax=${t2 - t1} effects=${t3 - t2} build=${t4 - t3} fleets=${t5 - t4} (due=${due})`);
   }
 }
 
