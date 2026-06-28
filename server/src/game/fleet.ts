@@ -46,7 +46,7 @@ export async function startUpgrade(planetId: string, key: string) {
     const order = await tx.buildOrder.create({
       data: { planetId, kind: "tech", techKey: key, targetLevel: cur + 1, quantity: 1, startTick: tick, completeTick: tick + upgradeTicks(def, cur) },
     });
-    await addNews(planetId, tick, `${def.kind === "research" ? "🔬" : "🛠️"} Iniciado: ${def.name} (nível ${cur + 1})`);
+    await addNews(planetId, tick, `${def.kind === "research" ? "🔬" : "🛠️"} Iniciado: ${def.name} (nível ${cur + 1})`, tx);
     return order;
   }, TX_OPTS));
 }
@@ -76,7 +76,7 @@ export async function buildUnit(planetId: string, unitName: string, quantity: nu
     const order = await tx.buildOrder.create({
       data: { planetId, kind: "ship", shipClass: unitName, quantity, startTick: tick, completeTick: tick + u.ticks },
     });
-    await addNews(planetId, tick, `Construção iniciada: ${quantity}x ${unitName}`);
+    await addNews(planetId, tick, `Construção iniciada: ${quantity}x ${unitName}`, tx);
     return order;
   }, TX_OPTS));
 }
@@ -104,7 +104,7 @@ export async function buildAgent(planetId: string, agentKey: string, quantity: n
     const order = await tx.buildOrder.create({
       data: { planetId, kind: "agent", shipClass: agentKey, quantity, startTick: tick, completeTick: tick + def.ticks },
     });
-    await addNews(planetId, tick, `🕵️ Treino iniciado: ${quantity}x ${def.name}`);
+    await addNews(planetId, tick, `🕵️ Treino iniciado: ${quantity}x ${def.name}`, tx);
     return order;
   }, TX_OPTS));
 }
