@@ -93,7 +93,9 @@ function useRoundStatus(view: PlanetView | null) {
   const end = start + view.game.roundTicks * view.game.tickIntervalSeconds * 1000;
   if (now < start) return { label: "Começa em", time: fmtDur(Math.floor((start - now) / 1000)) };
   if (now < end) return { label: "Termina em", time: fmtDur(Math.floor((end - now) / 1000)) };
-  const next = start + 24 * 3600 * 1000; // próximo 08:00
+  // Round encerrado: conta pro próximo início agendado (o servidor calcula —
+  // respeita 1 ou vários rounds por dia).
+  const next = view.game.nextRoundStartAt ? new Date(view.game.nextRoundStartAt).getTime() : start + 24 * 3600 * 1000;
   return { label: "Próximo round", time: fmtDur(Math.floor((next - now) / 1000)) };
 }
 

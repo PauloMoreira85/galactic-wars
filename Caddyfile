@@ -19,6 +19,21 @@ galacticwar.com.br, www.galacticwar.com.br {
 	}
 }
 
+# RUR — Round Ultra-Rápido (instância separada, banco próprio).
+rur.galacticwar.com.br {
+	encode gzip
+	handle /assets/* {
+		reverse_proxy app-rur:3001 {
+			header_down Cache-Control "public, max-age=31536000, immutable"
+		}
+	}
+	handle {
+		reverse_proxy app-rur:3001 {
+			header_down Cache-Control "no-cache"
+		}
+	}
+}
+
 # Fórum do Universo (phpBB) no subdomínio.
 forum.galacticwar.com.br {
 	reverse_proxy forum:80

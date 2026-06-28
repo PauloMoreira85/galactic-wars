@@ -17,24 +17,45 @@ const DAY_MS = 24 * 3600 * 1000;
 // Deslocamento em ms: somar ao "agora" UTC dá um Date cujos campos UTC são a
 // hora de parede de Brasília.
 function tzMs() { return config.roundTzOffsetHours * 3600 * 1000; }
-// Hora-do-dia de Brasília em horas decimais (ex.: 7.5 = 07:30).
-function brasiliaHourOfDay(nowMs: number): number {
+// Timestamp UTC (ms) da meia-noite de HOJE em Brasília.
+function brasiliaMidnight(nowMs: number): number {
   const d = new Date(nowMs + tzMs());
-  return d.getUTCHours() + d.getUTCMinutes() / 60 + d.getUTCSeconds() / 3600;
-}
-// Timestamp UTC (ms) do horário de parede HH:MM de HOJE em Brasília.
-function brasiliaBoundary(nowMs: number, hour: number, minute: number): number {
-  const d = new Date(nowMs + tzMs());
-  const asUtc = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), hour, minute, 0, 0);
+  const asUtc = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0);
   return asUtc - tzMs();
 }
-// Início (08:00) do round que está/deveria estar carregado AGORA.
-// >= 07:30 → o início é hoje 08:00 (já passou/está no reset); senão (00:00–07:29)
-// o round ativo/congelado começou ONTEM às 08:00.
-function currentRoundStart(nowMs: number): number {
-  const today0800 = brasiliaBoundary(nowMs, config.roundStartHour, config.roundStartMinute);
-  const resetHod = config.roundResetHour + config.roundResetMinute / 60;
-  return brasiliaHourOfDay(nowMs) >= resetHod ? today0800 : today0800 - DAY_MS;
+// Todos os horários de início candidatos (ontem, hoje, amanhã), em ms UTC.
+function candidateStarts(nowMs: number): number[] {
+  const mid = brasiliaMidnight(nowMs);
+  const out: number[] = [];
+  for (const off of [-1, 0, 1]) {
+    for (const m of config.roundStartTimes) out.push(mid + off * DAY_MS + m * 60 * 1000);
+  }
+  return out.sort((a, b) => a - b);
+}
+// Início "armado": o maior horário de início cuja janela de reset já abriu
+// (now >= início − lead). É o round que os dados devem representar AGORA.
+function armedStart(nowMs: number): number {
+  const leadMs = config.roundResetLeadMinutes * 60 * 1000;
+  const starts = candidateStarts(nowMs);
+  let armed = starts[0];
+  for (const s of starts) {
+    if (nowMs >= s - leadMs) armed = s;
+    else break; // ordenado: o primeiro que não passa encerra a busca
+  }
+  return armed;
+}
+
+// Próximo horário de início DEPOIS de um dado início (pro contador "próximo round"
+// no cliente). Respeita a agenda (1 ou N rounds/dia) em vez de assumir +24h.
+export function nextScheduledStart(afterMs: number): number {
+  const mid = brasiliaMidnight(afterMs);
+  const cands: number[] = [];
+  for (const off of [0, 1, 2]) {
+    for (const m of config.roundStartTimes) cands.push(mid + off * DAY_MS + m * 60 * 1000);
+  }
+  cands.sort((a, b) => a - b);
+  for (const c of cands) if (c > afterMs) return c;
+  return cands[cands.length - 1];
 }
 
 // Garante que a linha singleton de GameState existe.
@@ -84,30 +105,29 @@ async function applyTicks(fromTick: number, toTick: number) {
   }
 }
 
-// ===== Modo CICLO DIÁRIO (padrão) =====
-// Round começa 08:00, roda roundTicks (→ 04:00), congela até o reset das 07:30.
+// ===== Modo CICLO AUTOMÁTICO (padrão) =====
+// Cada horário de roundStartTimes inicia um round de roundTicks; antes de cada
+// início (lead) zera (soft) o anterior. Suporta 1 ou N rounds por dia.
 async function advanceScheduled() {
   const state = await ensureGameState();
   if (!state) return;
   const now = Date.now();
   const intervalMs = config.tickIntervalSeconds * 1000;
+  const armed = armedStart(now);
 
   // Bootstrap: alinha ao round atual SEM zerar (preserva dados ao migrar/deployar).
   if (state.roundStartAt == null) {
-    const rs = currentRoundStart(now);
-    await prisma.gameState.update({ where: { id: 1 }, data: { roundStartAt: new Date(rs) } });
+    await prisma.gameState.update({ where: { id: 1 }, data: { roundStartAt: new Date(armed) } });
     return; // próxima checada já processa os ticks
   }
 
   const roundStart = new Date(state.roundStartAt).getTime();
-  const today0730 = brasiliaBoundary(now, config.roundResetHour, config.roundResetMinute);
-  const today0800 = brasiliaBoundary(now, config.roundStartHour, config.roundStartMinute);
 
-  // RESET DIÁRIO (07:30): já passou do horário e o round carregado é de um dia
-  // anterior → zera (soft) e arma o início (08:00 de hoje). Idempotente.
-  if (now >= today0730 && roundStart < today0800) {
-    await softResetRound(new Date(today0800));
-    console.log(`[tick] reset diário (07:30) — novo round armado para ${new Date(today0800).toISOString()}`);
+  // RESET: a janela de reset de um novo início abriu (armed mudou) → zera (soft)
+  // e arma o novo início. Idempotente (só dispara quando o carregado difere).
+  if (roundStart !== armed) {
+    await softResetRound(new Date(armed));
+    console.log(`[tick] reset agendado — novo round armado para ${new Date(armed).toISOString()}`);
     return;
   }
 

@@ -30,6 +30,7 @@ import {
   miningBonus, travelReductionTicks,
 } from "../game/tech.js";
 import { config } from "../config.js";
+import { nextScheduledStart } from "../game/tick.js";
 import { clientIp, trackIp, isLinked, MULTI_BLOCK_MSG } from "../game/ipguard.js";
 import bcrypt from "bcryptjs";
 
@@ -212,6 +213,7 @@ async function planetView(userId: string) {
       tickNumber: tick, lastTickAt: state?.lastTickAt ?? null, tickIntervalSeconds: config.tickIntervalSeconds,
       roundTicks: config.roundTicks, roundEnded: tick >= config.roundTicks,
       roundStartAt: state?.roundStartAt ?? null,
+      nextRoundStartAt: roundStartMs != null ? new Date(nextScheduledStart(roundStartMs)) : null,
     },
   };
 }

@@ -138,6 +138,7 @@ export interface PlanetView {
     roundTicks: number;
     roundEnded: boolean;
     roundStartAt: string | null;
+    nextRoundStartAt: string | null;
   };
 }
 

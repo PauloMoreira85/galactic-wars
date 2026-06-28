@@ -23,10 +23,36 @@ services:
     expose:
       - "3001"
 
+  # ===== RUR — Round Ultra-Rápido (rur.galacticwar.com.br) =====
+  # Mesma imagem do jogo, mas: tick de 5s, 3 rounds/dia (12h, 18h, 22h) e
+  # banco SQLite SEPARADO (universo/contas próprios do RUR).
+  app-rur:
+    build: .
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+      DATABASE_URL: "file:/data/rur.db"
+      TICK_INTERVAL_SECONDS: "5"            # ultra-rápido
+      ROUND_TICKS: "1200"                   # 1200 × 5s = 100 min por round
+      ROUND_START_TIMES: "12:00,18:00,22:00"
+      RESET_LEAD_MINUTES: "10"              # zera (soft) 10 min antes de cada início
+      JWT_SECRET: ${JWT_SECRET}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:-contato@galacticwar.com.br}
+      APP_URL: ${APP_URL_RUR:-https://rur.galacticwar.com.br}
+    volumes:
+      - gw-rur-data:/data         # SQLite do RUR (separado do jogo principal)
+    expose:
+      - "3001"
+
   caddy:
     image: caddy:2
     restart: unless-stopped
-    depends_on: [app]
+    depends_on: [app, app-rur]
     ports:
       - "80:80"
       - "443:443"
@@ -58,6 +84,7 @@ services:
 
 volumes:
   gw-data:
+  gw-rur-data:
   caddy-data:
   caddy-config:
   forum-db:
