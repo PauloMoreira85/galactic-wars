@@ -64,7 +64,7 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
           <source src="/art/logo/logo.mp4" type="video/mp4" />
         </video>
         <div className="landing-tagline">
-          {IS_RUR ? "RUR — Round Ultra-Rápido. A galáxia em 100 minutos." : "Conquiste os roids. Domine a galáxia."}
+          {IS_RUR ? "RUR — Round Ultra-Rápido. O universo em 100 minutos." : "Conquiste os roids. Domine a galáxia."}
         </div>
       </div>
 
