@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, clearToken, type PlanetView, type Resource, type TechItem } from "../api";
+import { api, clearToken, IS_RUR, MAIN_URL, RUR_URL, type PlanetView, type Resource, type TechItem } from "../api";
 import { Galaxy } from "./Galaxy";
 import { Trafego } from "./Trafego";
 import { Frotas } from "./Frotas";
@@ -384,6 +384,10 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
               ))}
             </div>
           ))}
+          <div className="menu-sep" />
+          <a className="menu-link" href={IS_RUR ? MAIN_URL : RUR_URL} style={{ color: "var(--accent)" }}>
+            {IS_RUR ? "🌍 Jogo principal" : "⚡ Jogar RUR (round rápido)"}
+          </a>
           <div className="menu-sep" />
           <button className="menu-link logout" onClick={() => { clearToken(); onLogout(); }}>
             Logout

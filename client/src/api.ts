@@ -28,6 +28,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 export type Resource = "metalium" | "carbonum" | "plutonium";
 
+// Modos do jogo (instâncias separadas). Detecta o RUR pelo subdomínio.
+export const MAIN_URL = "https://galacticwar.com.br";
+export const RUR_URL = "https://rur.galacticwar.com.br";
+export const IS_RUR = typeof window !== "undefined" && window.location.hostname.startsWith("rur.");
+
 export interface RaceInfo {
   key: string;
   name: string;
@@ -173,6 +178,8 @@ export const ROLE_LABEL: Record<string, string> = {
 export const ALLIANCE_ROLES = ["lider", "alto_comando", "dc", "scanner", "porta_voz", "recruta"];
 
 export const api = {
+  meta: () => request<{ tickIntervalSeconds: number; roundTicks: number; roundDurationMinutes: number; startTimes: string[] }>("/meta"),
+
   races: () => request<{ races: RaceInfo[] }>("/auth/races"),
 
   hall: () => request<{ rounds: HallRound[] }>("/auth/hall"),

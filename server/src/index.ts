@@ -29,6 +29,19 @@ app.use((req, res, next) => {
 });
 
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
+
+// Metadados públicos da instância (usado pela landing pra explicar a dinâmica:
+// RUR = tick de 5s, 3 rounds/dia, etc). Reflete a config real (env).
+app.get("/api/meta", (_req, res) => {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  res.json({
+    tickIntervalSeconds: config.tickIntervalSeconds,
+    roundTicks: config.roundTicks,
+    roundDurationMinutes: Math.round((config.roundTicks * config.tickIntervalSeconds) / 60),
+    startTimes: config.roundStartTimes.map((m) => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`),
+  });
+});
+
 app.use("/api/auth", authRouter);
 app.use("/api/game", gameRouter);
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, setToken, type RaceInfo, type HallRound } from "../api";
+import { api, setToken, IS_RUR, MAIN_URL, RUR_URL, type RaceInfo, type HallRound } from "../api";
 
 export function Auth({ onAuthed }: { onAuthed: () => void }) {
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -17,6 +17,7 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
   const [busy, setBusy] = useState(false);
   const [forgot, setForgot] = useState(false);
   const [forgotMsg, setForgotMsg] = useState("");
+  const [meta, setMeta] = useState<{ tickIntervalSeconds: number; roundDurationMinutes: number; startTimes: string[] } | null>(null);
 
   async function doForgot() {
     setForgotMsg(""); setError("");
@@ -32,6 +33,7 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
       setRace((prev) => prev || r.races[0]?.key || "");
     }).catch(() => {});
     api.hall().then((h) => setHall(h.rounds)).catch(() => {});
+    api.meta().then(setMeta).catch(() => {});
   }, []);
 
   async function submit(e: React.FormEvent) {
@@ -61,8 +63,36 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
         <video className="landing-hero-media" autoPlay loop muted playsInline poster="/art/logo/logo.jpg">
           <source src="/art/logo/logo.mp4" type="video/mp4" />
         </video>
-        <div className="landing-tagline">Conquiste os roids. Domine a galáxia.</div>
+        <div className="landing-tagline">
+          {IS_RUR ? "RUR — Round Ultra-Rápido. A galáxia em 100 minutos." : "Conquiste os roids. Domine a galáxia."}
+        </div>
       </div>
+
+      {/* Banner do modo: explica o RUR (quando está no RUR) ou divulga o RUR (no principal). */}
+      {IS_RUR ? (
+        <div className="panel" style={{ maxWidth: 760, margin: "12px auto 0", borderColor: "var(--accent)" }}>
+          <h2 style={{ marginTop: 0 }}>⚡ Round Ultra-Rápido (RUR)</h2>
+          <div className="cost" style={{ lineHeight: 1.7 }}>
+            Esta é a versão <b>turbo</b> do Galactic Wars — universo e contas <b>próprios</b> (separados do jogo principal):
+            <ul style={{ margin: "8px 0 8px 18px", padding: 0 }}>
+              <li><b>Ticks de {meta?.tickIntervalSeconds ?? 5} segundos</b> — produção, frotas e combate acontecem o tempo todo.</li>
+              <li>Round inteiro em <b>~{meta?.roundDurationMinutes ?? 100} minutos</b> ({meta ? meta.startTimes.length : 3}x por dia).</li>
+              <li>Começa às <b>{meta ? meta.startTimes.join(" · ") : "12:00 · 18:00 · 22:00"}</b> (horário de Brasília).</li>
+              <li>A cada round você <b>escolhe a raça</b> e recomeça do zero — partida rápida e intensa.</li>
+            </ul>
+            Dá tempo de uma campanha inteira no almoço ou à noite. 🚀
+          </div>
+          <a className="link" href={MAIN_URL}>🌍 Prefere o jogo clássico? Ir pro Galactic Wars principal →</a>
+        </div>
+      ) : (
+        <div className="panel" style={{ maxWidth: 760, margin: "12px auto 0", borderColor: "var(--accent)" }}>
+          <div className="cost" style={{ lineHeight: 1.6 }}>
+            ⚡ <b>Novidade: RUR — Round Ultra-Rápido!</b> Ticks de <b>5 segundos</b>, round inteiro em <b>~100 min</b>,
+            3 partidas por dia (<b>12:00 · 18:00 · 22:00</b>). Universo próprio, ação na hora.{" "}
+            <a className="link" href={RUR_URL}>Jogar o RUR →</a>
+          </div>
+        </div>
+      )}
 
       <div className={`panel ${wide ? "auth-wide" : "auth-wrap"}`} style={wide ? { maxWidth: 760, margin: "4vh auto 0" } : undefined}>
         <div className="auth-tabs">
