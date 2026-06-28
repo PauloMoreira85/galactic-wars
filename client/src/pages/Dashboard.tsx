@@ -385,8 +385,12 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             </div>
           ))}
           <div className="menu-sep" />
-          <a className="menu-link" href={IS_RUR ? MAIN_URL : RUR_URL} style={{ color: "var(--accent)" }}>
-            {IS_RUR ? "🌍 Jogo principal" : "⚡ Jogar RUR (round rápido)"}
+          <a className="menu-link" href={IS_RUR ? MAIN_URL : RUR_URL} target="_blank" rel="noopener noreferrer"
+            style={{ color: "var(--accent)", fontWeight: 700, lineHeight: 1.25 }}>
+            {IS_RUR ? "🌍 Jogo principal ↗" : "⚡ Jogar o RUR ↗"}
+            <div style={{ fontSize: 11, fontWeight: 400, opacity: 0.75 }}>
+              {IS_RUR ? "modo clássico · nova janela" : "round ultra-rápido · nova janela"}
+            </div>
           </a>
           <div className="menu-sep" />
           <button className="menu-link logout" onClick={() => { clearToken(); onLogout(); }}>

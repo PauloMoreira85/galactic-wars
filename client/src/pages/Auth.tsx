@@ -82,14 +82,14 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
             </ul>
             Dá tempo de uma campanha inteira no almoço ou à noite. 🚀
           </div>
-          <a className="link" href={MAIN_URL}>🌍 Prefere o jogo clássico? Ir pro Galactic Wars principal →</a>
+          <a className="link" href={MAIN_URL} target="_blank" rel="noopener noreferrer">🌍 Prefere o jogo clássico? Abrir o Galactic Wars principal ↗</a>
         </div>
       ) : (
         <div className="panel" style={{ maxWidth: 760, margin: "12px auto 0", borderColor: "var(--accent)" }}>
           <div className="cost" style={{ lineHeight: 1.6 }}>
             ⚡ <b>Novidade: RUR — Round Ultra-Rápido!</b> Ticks de <b>5 segundos</b>, round inteiro em <b>~100 min</b>,
             3 partidas por dia (<b>12:00 · 18:00 · 22:00</b>). Universo próprio, ação na hora.{" "}
-            <a className="link" href={RUR_URL}>Jogar o RUR →</a>
+            <a className="link" href={RUR_URL} target="_blank" rel="noopener noreferrer">Abrir o RUR ↗</a>
           </div>
         </div>
       )}
