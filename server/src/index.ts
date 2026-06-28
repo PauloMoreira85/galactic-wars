@@ -17,6 +17,17 @@ app.set("trust proxy", true);
 app.use(cors());
 app.use(express.json({ limit: "256kb" }));
 
+// Diagnóstico: loga requisições lentas (> limiar) pra achar gargalos no servidor.
+const SLOW_REQ_MS = Number(process.env.SLOW_REQ_MS ?? 800);
+app.use((req, res, next) => {
+  const t0 = Date.now();
+  res.on("finish", () => {
+    const ms = Date.now() - t0;
+    if (ms >= SLOW_REQ_MS) console.log(`[slow] ${req.method} ${req.originalUrl} ${ms}ms -> ${res.statusCode}`);
+  });
+  next();
+});
+
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 app.use("/api/auth", authRouter);
 app.use("/api/game", gameRouter);

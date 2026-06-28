@@ -1,4 +1,4 @@
-import { prisma, TX_OPTS } from "../db.js";
+import { prisma, TX_OPTS, withWrite } from "../db.js";
 import { isRaceKey, type RaceKey } from "./races.js";
 import { unitByName, raceTable, isUnitUnlocked } from "./catalog.js";
 import { parseUnits, stringifyUnits, addUnits } from "./unitmap.js";
@@ -22,7 +22,7 @@ export function parseTech(json: string): TechLevels {
 export async function startUpgrade(planetId: string, key: string) {
   const def = TECH_BY_KEY[key];
   if (!def) throw new Error("Tecnologia desconhecida");
-  return prisma.$transaction(async (tx) => {
+  return withWrite(() => prisma.$transaction(async (tx) => {
     const planet = await tx.planet.findUnique({ where: { id: planetId } });
     if (!planet) throw new Error("Planeta nao encontrado");
     const levels = parseTech(planet.tech);
@@ -48,13 +48,13 @@ export async function startUpgrade(planetId: string, key: string) {
     });
     await addNews(planetId, tick, `${def.kind === "research" ? "🔬" : "🛠️"} Iniciado: ${def.name} (nível ${cur + 1})`);
     return order;
-  }, TX_OPTS);
+  }, TX_OPTS));
 }
 
 // Constroi `quantity` da nave `unitName` (custo/tempo da tabela oficial).
 export async function buildUnit(planetId: string, unitName: string, quantity: number) {
   if (!Number.isInteger(quantity) || quantity < 1) throw new Error("Quantidade invalida");
-  return prisma.$transaction(async (tx) => {
+  return withWrite(() => prisma.$transaction(async (tx) => {
     const planet = await tx.planet.findUnique({ where: { id: planetId }, include: { user: { select: { race: true } } } });
     if (!planet) throw new Error("Planeta nao encontrado");
     const race = raceOf(planet.user.race);
@@ -78,7 +78,7 @@ export async function buildUnit(planetId: string, unitName: string, quantity: nu
     });
     await addNews(planetId, tick, `Construção iniciada: ${quantity}x ${unitName}`);
     return order;
-  }, TX_OPTS);
+  }, TX_OPTS));
 }
 
 // Treina `quantity` agentes do tipo `agentKey` (P/M/T/D/CE). Exige nível de
@@ -87,7 +87,7 @@ export async function buildAgent(planetId: string, agentKey: string, quantity: n
   if (!Number.isInteger(quantity) || quantity < 1) throw new Error("Quantidade invalida");
   if (!isAgentKey(agentKey)) throw new Error("Agente invalido");
   const def = AGENTS[agentKey];
-  return prisma.$transaction(async (tx) => {
+  return withWrite(() => prisma.$transaction(async (tx) => {
     const planet = await tx.planet.findUnique({ where: { id: planetId } });
     if (!planet) throw new Error("Planeta nao encontrado");
     const levels = parseTech(planet.tech);
@@ -106,13 +106,13 @@ export async function buildAgent(planetId: string, agentKey: string, quantity: n
     });
     await addNews(planetId, tick, `🕵️ Treino iniciado: ${quantity}x ${def.name}`);
     return order;
-  }, TX_OPTS);
+  }, TX_OPTS));
 }
 
 // Cancela uma ordem da fila (pesquisa/construção/nave) e reembolsa proporcional
 // ao tempo que FALTAVA (você perde a parte já feita).
 export async function cancelOrder(planetId: string, orderId: string) {
-  return prisma.$transaction(async (tx) => {
+  return withWrite(() => prisma.$transaction(async (tx) => {
     const order = await tx.buildOrder.findUnique({ where: { id: orderId } });
     if (!order || order.planetId !== planetId) throw new Error("Ordem nao encontrada");
     const tick = await currentTick();
@@ -141,7 +141,7 @@ export async function cancelOrder(planetId: string, orderId: string) {
     } });
     await tx.buildOrder.delete({ where: { id: orderId } });
     return refund;
-  }, TX_OPTS);
+  }, TX_OPTS));
 }
 
 // Resolve ordens cujo completeTick <= uptoTick.

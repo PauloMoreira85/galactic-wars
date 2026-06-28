@@ -1,4 +1,4 @@
-import { prisma } from "../db.js";
+import { prisma, withWrite } from "../db.js";
 import { config } from "../config.js";
 import { ROID_PRODUCTION_PER_TICK, RESOURCE_CAP } from "./constants.js";
 import { processBuildOrders, parseTech } from "./fleet.js";
@@ -180,8 +180,9 @@ async function advance() {
   if (running) return;
   running = true;
   try {
-    if (config.dailySchedule) await advanceScheduled();
-    else await advanceFree();
+    // Na MESMA fila de escrita das ações do jogador: o tick e os cliques nunca
+    // disputam o lock do SQLite (sem espera de busy_timeout).
+    await withWrite(() => (config.dailySchedule ? advanceScheduled() : advanceFree()));
   } finally {
     running = false;
   }

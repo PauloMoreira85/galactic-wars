@@ -1,4 +1,4 @@
-import { prisma, TX_OPTS } from "../db.js";
+import { prisma, TX_OPTS, withWrite } from "../db.js";
 import { startEngagement, resolveSiege } from "./combat.js";
 import { parseUnits, stringifyUnits, totalUnits, addUnits, type UnitMap } from "./unitmap.js";
 import { type Coords } from "./geo.js";
@@ -34,7 +34,7 @@ async function currentTick(): Promise<number> {
 
 // Cria uma frota PERSISTENTE vazia (parada na base). Custo ×5 a cada frota, máx 5.
 export async function createFleet(planetId: string) {
-  return prisma.$transaction(async (tx) => {
+  return withWrite(() => prisma.$transaction(async (tx) => {
     const planet = await tx.planet.findUnique({ where: { id: planetId } });
     if (!planet) throw new Error("Planeta nao encontrado");
     const cost = nextFleetSlotCost(planet.fleetSlots);
@@ -55,7 +55,7 @@ export async function createFleet(planetId: string) {
       },
     });
     return fleet;
-  }, TX_OPTS);
+  }, TX_OPTS));
 }
 
 export async function renameFleet(planetId: string, fleetId: string, name: string) {
@@ -66,7 +66,7 @@ export async function renameFleet(planetId: string, fleetId: string, name: strin
 
 // Define a composição de uma frota IDLE (move naves entre a Base e a frota).
 export async function setFleetComposition(planetId: string, fleetId: string, desired: UnitMap) {
-  return prisma.$transaction(async (tx) => {
+  return withWrite(() => prisma.$transaction(async (tx) => {
     const planet = await tx.planet.findUnique({ where: { id: planetId } });
     if (!planet) throw new Error("Planeta nao encontrado");
     const fleet = await tx.fleet.findUnique({ where: { id: fleetId } });
@@ -92,13 +92,13 @@ export async function setFleetComposition(planetId: string, fleetId: string, des
     await tx.planet.update({ where: { id: planetId }, data: { units: stringifyUnits(newHangar) } });
     await tx.fleet.update({ where: { id: fleetId }, data: { units: stringifyUnits(newFleet) } });
     return { ok: true };
-  }, TX_OPTS);
+  }, TX_OPTS));
 }
 
 // Envia uma frota IDLE (já carregada) para um destino.
 export async function dispatchFleet(planetId: string, fleetId: string, target: Coords, mission: "attack" | "transport", ticks = 3, fake = false) {
   const engageTicks = Math.max(1, Math.min(3, Math.floor(ticks)));
-  return prisma.$transaction(async (tx) => {
+  return withWrite(() => prisma.$transaction(async (tx) => {
     const planet = await tx.planet.findUnique({ where: { id: planetId } });
     if (!planet) throw new Error("Planeta nao encontrado");
     const fleet = await tx.fleet.findUnique({ where: { id: fleetId } });
@@ -167,7 +167,7 @@ export async function dispatchFleet(planetId: string, fleetId: string, target: C
     const tipoMsg = fake ? (mission === "attack" ? "ataque falso" : "defesa falsa") : (mission === "attack" ? "ataque" : "defesa");
     await tx.news.create({ data: { planetId, tick, message: `${fleet.name} (${tipoMsg}) enviada para ${target.galaxy}:${target.system}:${target.slot} (chega em ${tt}t)` } });
     return { ok: true, arriveIn: tt };
-  }, TX_OPTS);
+  }, TX_OPTS));
 }
 
 // Frota volta pra base: vira IDLE mantendo as naves; espólio (roids) vai pro planeta.

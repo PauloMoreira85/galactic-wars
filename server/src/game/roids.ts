@@ -1,4 +1,4 @@
-import { prisma, TX_OPTS } from "../db.js";
+import { prisma, TX_OPTS, withWrite } from "../db.js";
 import { ResourceKey, nextRoidCost } from "./constants.js";
 
 export function totalRoids(p: {
@@ -18,7 +18,7 @@ const ROID_FIELD: Record<ResourceKey, "roidMetalium" | "roidCarbonum" | "roidPlu
 // Produz 1 roid focado em `resource`, pagando o custo escalonado.
 // Lanca Error com mensagem amigavel se nao houver recursos.
 export async function buildRoid(planetId: string, resource: ResourceKey) {
-  return prisma.$transaction(async (tx) => {
+  return withWrite(() => prisma.$transaction(async (tx) => {
     const planet = await tx.planet.findUnique({ where: { id: planetId } });
     if (!planet) throw new Error("Planeta nao encontrado");
 
@@ -41,5 +41,5 @@ export async function buildRoid(planetId: string, resource: ResourceKey) {
         [field]: { increment: 1 },
       },
     });
-  }, TX_OPTS);
+  }, TX_OPTS));
 }
