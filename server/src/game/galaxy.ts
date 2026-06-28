@@ -133,18 +133,18 @@ export async function dispatchFleet(planetId: string, fleetId: string, target: C
       const tgt = await tx.planet.findUnique({
         where: { galaxy_system_slot: { galaxy: target.galaxy, system: target.system, slot: target.slot } },
       });
-      if (tgt) {
-        if (nowTick < tgt.createdTick + NEWBIE_PROTECTION_TICKS) {
-          const left = tgt.createdTick + NEWBIE_PROTECTION_TICKS - nowTick;
-          throw new Error(`Alvo sob proteção de novato (${left} tick(s) restante(s))`);
-        }
-        const myFleets = await tx.fleet.findMany({ where: { ownerPlanetId: planetId }, select: { units: true } });
-        const tgtFleets = await tx.fleet.findMany({ where: { ownerPlanetId: tgt.id }, select: { units: true } });
-        const myScore = scoreOfUnits(parseUnits(planet.units)) + myFleets.reduce((s, f) => s + scoreOfUnits(parseUnits(f.units)), 0);
-        const tgtScore = scoreOfUnits(parseUnits(tgt.units)) + tgtFleets.reduce((s, f) => s + scoreOfUnits(parseUnits(f.units)), 0);
-        if (myScore > 0 && tgtScore < (myScore * ATTACK_RANGE_MIN_PCT) / 100) {
-          throw new Error(`Alvo fora do seu alcance: a pontuação dele é menor que ${ATTACK_RANGE_MIN_PCT}% da sua`);
-        }
+      // Slot vazio: não há planeta pra atacar.
+      if (!tgt) throw new Error(`Coordenada ${target.galaxy}:${target.system}:${target.slot} está vazia — não há planeta nesse slot para atacar.`);
+      if (nowTick < tgt.createdTick + NEWBIE_PROTECTION_TICKS) {
+        const left = tgt.createdTick + NEWBIE_PROTECTION_TICKS - nowTick;
+        throw new Error(`Alvo sob proteção de novato (${left} tick(s) restante(s))`);
+      }
+      const myFleets = await tx.fleet.findMany({ where: { ownerPlanetId: planetId }, select: { units: true } });
+      const tgtFleets = await tx.fleet.findMany({ where: { ownerPlanetId: tgt.id }, select: { units: true } });
+      const myScore = scoreOfUnits(parseUnits(planet.units)) + myFleets.reduce((s, f) => s + scoreOfUnits(parseUnits(f.units)), 0);
+      const tgtScore = scoreOfUnits(parseUnits(tgt.units)) + tgtFleets.reduce((s, f) => s + scoreOfUnits(parseUnits(f.units)), 0);
+      if (myScore > 0 && tgtScore < (myScore * ATTACK_RANGE_MIN_PCT) / 100) {
+        throw new Error(`Alvo fora do seu alcance: a pontuação dele é menor que ${ATTACK_RANGE_MIN_PCT}% da sua`);
       }
     }
 

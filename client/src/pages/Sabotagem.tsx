@@ -5,9 +5,10 @@ type Sab = Awaited<ReturnType<typeof api.sabotage>>;
 
 export function Sabotagem() {
   const [data, setData] = useState<Sab | null>(null);
-  const [g, setG] = useState(1);
-  const [s, setS] = useState(1);
-  const [slot, setSlot] = useState(1);
+  // Coordenadas como texto (apagáveis no celular). Validadas no envio.
+  const [g, setG] = useState("");
+  const [s, setS] = useState("");
+  const [slot, setSlot] = useState("");
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
 
@@ -15,8 +16,10 @@ export function Sabotagem() {
 
   async function run(key: string) {
     setError(""); setMsg("");
+    const gg = parseInt(g, 10), ss = parseInt(s, 10), sl = parseInt(slot, 10);
+    if (!(gg >= 1) || !(ss >= 1) || !(sl >= 1)) { setError("Digite a coordenada completa (galáxia:sistema:slot)."); return; }
     try {
-      const r = await api.sabotageRun(g, s, slot, key);
+      const r = await api.sabotageRun(gg, ss, sl, key);
       setMsg(r.message ?? (r.success ? "Sabotagem aplicada!" : "Sabotagem falhou."));
     } catch (e: any) { setError(e.message ?? "Falha"); }
   }
@@ -29,11 +32,11 @@ export function Sabotagem() {
       <div className="cost">Escolha o alvo (outra galáxia) e a sabotagem que você desbloqueou. Pode ser repelida pela contra-espionagem do alvo.</div>
       <div style={{ display: "flex", gap: 6, alignItems: "center", margin: "8px 0", flexWrap: "wrap" }}>
         <span className="roid-count">Alvo</span>
-        <input type="number" min={1} value={g} onChange={(e) => setG(Math.max(1, Number(e.target.value)))} style={{ width: 60, margin: 0, padding: "6px 8px" }} />
+        <input type="text" inputMode="numeric" maxLength={3} placeholder="gal" value={g} onChange={(e) => setG(e.target.value.replace(/\D/g, ""))} style={{ width: 60, margin: 0, padding: "6px 8px" }} />
         <span className="roid-count">:</span>
-        <input type="number" min={1} value={s} onChange={(e) => setS(Math.max(1, Number(e.target.value)))} style={{ width: 60, margin: 0, padding: "6px 8px" }} />
+        <input type="text" inputMode="numeric" maxLength={3} placeholder="sis" value={s} onChange={(e) => setS(e.target.value.replace(/\D/g, ""))} style={{ width: 60, margin: 0, padding: "6px 8px" }} />
         <span className="roid-count">:</span>
-        <input type="number" min={1} max={15} value={slot} onChange={(e) => setSlot(Math.max(1, Number(e.target.value)))} style={{ width: 60, margin: 0, padding: "6px 8px" }} />
+        <input type="text" inputMode="numeric" maxLength={2} placeholder="slot" value={slot} onChange={(e) => setSlot(e.target.value.replace(/\D/g, ""))} style={{ width: 60, margin: 0, padding: "6px 8px" }} />
       </div>
       {msg && <div className="cost" style={{ color: "var(--carbonum)" }}>{msg}</div>}
       {error && <div className="error">{error}</div>}

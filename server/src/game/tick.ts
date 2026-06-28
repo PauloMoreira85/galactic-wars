@@ -51,9 +51,12 @@ async function ensureGameState() {
 async function processTicks(n: number) {
   if (n <= 0) return;
   const planets = await prisma.planet.findMany();
-  for (const p of planets) {
+  // Uma ÚNICA transação com todos os updates: o motor pega o lock de escrita 1x
+  // (não 1x por planeta). Isso reduz drasticamente a disputa pelo lock com as
+  // ações do jogador (build/pesquisa), que antes esperavam até o busy_timeout (5s).
+  const updates = planets.map((p) => {
     const b = miningBonus(parseTech(p.tech));
-    await prisma.planet.update({
+    return prisma.planet.update({
       where: { id: p.id },
       data: {
         metalium: Math.min(RESOURCE_CAP, p.metalium + (p.roidMetalium * ROID_PRODUCTION_PER_TICK + b.metalium) * n),
@@ -61,7 +64,8 @@ async function processTicks(n: number) {
         plutonium: Math.min(RESOURCE_CAP, p.plutonium + (p.roidPlutonium * ROID_PRODUCTION_PER_TICK + b.plutonium) * n),
       },
     });
-  }
+  });
+  if (updates.length) await prisma.$transaction(updates);
 }
 
 // Aplica os ticks de `fromTick` até `toTick` (produção em lote + combate 1 a 1).

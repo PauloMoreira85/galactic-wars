@@ -8,9 +8,10 @@ type AgentCat = Awaited<ReturnType<typeof api.agents>>["catalog"][number];
 type AgentsData = Awaited<ReturnType<typeof api.agents>>;
 
 export function Inteligencia() {
-  const [g, setG] = useState(1);
-  const [s, setS] = useState(1);
-  const [slot, setSlot] = useState(1);
+  // Coordenadas como texto (apagáveis no celular). Validadas no envio.
+  const [g, setG] = useState("");
+  const [s, setS] = useState("");
+  const [slot, setSlot] = useState("");
   const [spy, setSpy] = useState<any | null>(null);
   const [error, setError] = useState("");
   const [data, setData] = useState<AgentsData | null>(null);
@@ -36,8 +37,10 @@ export function Inteligencia() {
 
   async function doSpy(agent: "P" | "M" | "T" | "D") {
     setError(""); setSpy(null); setMsg("");
+    const gg = parseInt(g, 10), ss = parseInt(s, 10), sl = parseInt(slot, 10);
+    if (!(gg >= 1) || !(ss >= 1) || !(sl >= 1)) { setError("Digite a coordenada completa (galáxia:sistema:slot)."); return; }
     try {
-      const r = await api.spy(g, s, slot, agent);
+      const r = await api.spy(gg, ss, sl, agent);
       if (r.failed || !r.intel) setError(r.error ?? "Espionagem falhou");
       else setSpy(r.intel);
       await loadAgents(); // atualiza a contagem (gastou 1 agente)
@@ -113,11 +116,11 @@ export function Inteligencia() {
         </div>
         <div style={{ display: "flex", gap: 6, alignItems: "center", margin: "8px 0", flexWrap: "wrap" }}>
           <span className="roid-count">Alvo</span>
-          <input type="number" min={1} value={g} onChange={(e) => setG(Math.max(1, Number(e.target.value)))} style={{ width: 60, margin: 0, padding: "6px 8px" }} />
+          <input type="text" inputMode="numeric" maxLength={3} placeholder="gal" value={g} onChange={(e) => setG(e.target.value.replace(/\D/g, ""))} style={{ width: 60, margin: 0, padding: "6px 8px" }} />
           <span className="roid-count">:</span>
-          <input type="number" min={1} value={s} onChange={(e) => setS(Math.max(1, Number(e.target.value)))} style={{ width: 60, margin: 0, padding: "6px 8px" }} />
+          <input type="text" inputMode="numeric" maxLength={3} placeholder="sis" value={s} onChange={(e) => setS(e.target.value.replace(/\D/g, ""))} style={{ width: 60, margin: 0, padding: "6px 8px" }} />
           <span className="roid-count">:</span>
-          <input type="number" min={1} max={15} value={slot} onChange={(e) => setSlot(Math.max(1, Number(e.target.value)))} style={{ width: 60, margin: 0, padding: "6px 8px" }} />
+          <input type="text" inputMode="numeric" maxLength={2} placeholder="slot" value={slot} onChange={(e) => setSlot(e.target.value.replace(/\D/g, ""))} style={{ width: 60, margin: 0, padding: "6px 8px" }} />
           {(["P", "M", "T", "D"] as const).map((a) => (
             <button key={a} disabled={count(a) < 1} onClick={() => doSpy(a)} title={count(a) < 1 ? "Sem agentes desse tipo" : ""}>
               {a} ({fmt(count(a))})

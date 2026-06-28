@@ -17,9 +17,11 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   // Envio direto daqui: coordenadas + ação + ticks + frota.
-  const [dGalaxy, setDGalaxy] = useState(Number(view.planet.coords.split(":")[0]) || 1);
-  const [dSystem, setDSystem] = useState(1);
-  const [dSlot, setDSlot] = useState(1);
+  // Coordenadas como TEXTO: assim dá pra apagar o campo no celular (antes ficava
+  // travado em "1" e digitar 2 virava "12:1:1"). São validadas no envio.
+  const [dGalaxy, setDGalaxy] = useState(String(Number(view.planet.coords.split(":")[0]) || ""));
+  const [dSystem, setDSystem] = useState("");
+  const [dSlot, setDSlot] = useState("");
   const [dMission, setDMission] = useState<"attack" | "transport">("attack");
   const [dTicks, setDTicks] = useState(3);
   const [dFake, setDFake] = useState(false);
@@ -27,9 +29,11 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
 
   async function dispatch() {
     if (!dFleet) { setError("Escolha uma frota carregada."); return; }
+    const g = parseInt(dGalaxy, 10), s = parseInt(dSystem, 10), sl = parseInt(dSlot, 10);
+    if (!(g >= 1) || !(s >= 1) || !(sl >= 1)) { setError("Digite a coordenada completa (galáxia:sistema:slot)."); return; }
     setBusy(true); setError("");
     try {
-      await api.dispatchFleet(dFleet, { galaxy: dGalaxy, system: dSystem, slot: dSlot, mission: dMission, ticks: dTicks, fake: dFake });
+      await api.dispatchFleet(dFleet, { galaxy: g, system: s, slot: sl, mission: dMission, ticks: dTicks, fake: dFake });
       setDFleet("");
       await load(); onChanged();
     } catch (e: any) { setError(e.message ?? "Falha ao enviar"); }
@@ -161,11 +165,11 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
         ) : (
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
             <span className="roid-count">Coords:</span>
-            <input type="number" min={1} title="Galáxia" value={dGalaxy} onChange={(e) => setDGalaxy(Math.max(1, Number(e.target.value)))} style={{ width: 60, margin: 0, padding: "6px 6px", textAlign: "center" }} />
+            <input type="text" inputMode="numeric" maxLength={3} placeholder="gal" title="Galáxia" value={dGalaxy} onChange={(e) => setDGalaxy(e.target.value.replace(/\D/g, ""))} style={{ width: 60, margin: 0, padding: "6px 6px", textAlign: "center" }} />
             <span>:</span>
-            <input type="number" min={1} title="Sistema" value={dSystem} onChange={(e) => setDSystem(Math.max(1, Number(e.target.value)))} style={{ width: 60, margin: 0, padding: "6px 6px", textAlign: "center" }} />
+            <input type="text" inputMode="numeric" maxLength={3} placeholder="sis" title="Sistema" value={dSystem} onChange={(e) => setDSystem(e.target.value.replace(/\D/g, ""))} style={{ width: 60, margin: 0, padding: "6px 6px", textAlign: "center" }} />
             <span>:</span>
-            <input type="number" min={1} title="Slot" value={dSlot} onChange={(e) => setDSlot(Math.max(1, Number(e.target.value)))} style={{ width: 60, margin: 0, padding: "6px 6px", textAlign: "center" }} />
+            <input type="text" inputMode="numeric" maxLength={3} placeholder="slot" title="Slot" value={dSlot} onChange={(e) => setDSlot(e.target.value.replace(/\D/g, ""))} style={{ width: 60, margin: 0, padding: "6px 6px", textAlign: "center" }} />
             <select
               value={dFake ? `${dMission}_fake` : dMission}
               onChange={(e) => { const v = e.target.value; setDFake(v.endsWith("_fake")); setDMission(v.replace("_fake", "") as "attack" | "transport"); }}
