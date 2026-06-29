@@ -213,6 +213,7 @@ async function planetView(userId: string) {
       };
     })(),
     onlineCount,
+    admin: config.adminUsers.includes(planet.user.username.toLowerCase()),
     tech: techCatalog,
     units,
     queue,

@@ -6,6 +6,7 @@ import { config, isProd } from "./config.js";
 import { prisma } from "./db.js";
 import { authRouter } from "./routes/auth.js";
 import { gameRouter } from "./routes/game.js";
+import { adsRouter } from "./routes/ads.js";
 import { startTickEngine } from "./game/tick.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -44,6 +45,7 @@ app.get("/api/meta", (_req, res) => {
 
 app.use("/api/auth", authRouter);
 app.use("/api/game", gameRouter);
+app.use("/api/ads", adsRouter);
 
 // Em produção, o mesmo processo serve o client buildado (client/dist).
 // server/dist/index.js -> ../../client/dist

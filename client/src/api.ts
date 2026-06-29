@@ -134,6 +134,7 @@ export interface PlanetView {
   };
   mustChooseRace: boolean;
   onlineCount: number;
+  admin: boolean;
   tech: TechItem[];
   effects: { espionage: number };
   units: UnitItem[];
@@ -481,7 +482,20 @@ export const api = {
     request<PrivateView>("/game/private/invite", { method: "POST", body: JSON.stringify({ username }) }),
   privateJoin: (galaxy: number) =>
     request<PrivateView>("/game/private/join", { method: "POST", body: JSON.stringify({ galaxy }) }),
+
+  // ===== Anúncios =====
+  ads: () => request<{ ads: Ad[] }>("/ads"),
+  adClick: (id: string) => request<{ ok: boolean }>(`/ads/${id}/click`, { method: "POST" }).catch(() => {}),
+  // Admin
+  adminAds: () => request<{ ads: AdminAd[] }>("/ads/admin/all"),
+  adminAdCreate: (body: AdInput) => request<{ ad: AdminAd }>("/ads/admin", { method: "POST", body: JSON.stringify(body) }),
+  adminAdUpdate: (id: string, body: Partial<AdInput>) => request<{ ad: AdminAd }>(`/ads/admin/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  adminAdDelete: (id: string) => request<{ ok: boolean }>(`/ads/admin/${id}`, { method: "DELETE" }),
 };
+
+export interface Ad { id: string; title: string; imageUrl: string; linkUrl: string; caption: string | null }
+export interface AdminAd extends Ad { active: boolean; sortOrder: number; clicks: number; createdAt: string }
+export interface AdInput { title: string; imageUrl: string; linkUrl: string; caption?: string | null; active?: boolean; sortOrder?: number }
 
 export interface PrivateView {
   owned: { galaxy: number; name: string | null; members: { name: string; commander: string; coords: string }[] } | null;

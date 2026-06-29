@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, setToken, IS_RUR, MAIN_URL, RUR_URL, type RaceInfo, type HallRound } from "../api";
+import { AdBanner } from "../components/AdBanner";
 
 export function Auth({ onAuthed }: { onAuthed: () => void }) {
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -257,13 +258,8 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
         </div>
       )}
 
-      {/* Espaço de patrocínio (vendável). */}
-      <div className="landing-sponsors">
-        <div className="sponsor-label">Patrocínio</div>
-        <a className="sponsor-slot" href="mailto:contato@galacticwar.com.br?subject=Patroc%C3%ADnio%20Galactic%20Wars">
-          📣 Seu anúncio aqui — fale com a gente: contato@galacticwar.com.br
-        </a>
-      </div>
+      {/* Anunciantes (gerenciados no admin) — ou convite "seu anúncio aqui". */}
+      <AdBanner variant="stack" />
 
       <div className="landing-foot">Galactic Wars · {new Date().getFullYear()}</div>
     </div>

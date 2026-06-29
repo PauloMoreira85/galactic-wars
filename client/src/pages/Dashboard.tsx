@@ -15,6 +15,7 @@ import { Sabotagem } from "./Sabotagem";
 import { Inteligencia } from "./Inteligencia";
 import { Preferencias } from "./Preferencias";
 import { RaceChoiceScreen } from "../components/RaceChoiceScreen";
+import { AdBanner } from "../components/AdBanner";
 
 const RES_META: { key: Resource; label: string }[] = [
   { key: "metalium", label: "Metalium" },
@@ -397,6 +398,11 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
               {IS_RUR ? "modo clássico · nova janela" : "round ultra-rápido · nova janela"}
             </div>
           </a>
+          {view.admin && (
+            <a className="menu-link" href="/admin" target="_blank" rel="noopener noreferrer" style={{ color: "#ffb020", fontWeight: 700 }}>
+              🛠️ Admin (anúncios) ↗
+            </a>
+          )}
           <div className="menu-sep" />
           <button className="menu-link logout" onClick={() => { clearToken(); onLogout(); }}>
             Logout
@@ -744,6 +750,8 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         {section === "sabotagem" && <Sabotagem />}
 
         {section === "intel" && <Inteligencia />}
+
+        <AdBanner variant="strip" />
       </main>
 
       {/* Lightbox: clique na arte amplia; clique em qualquer lugar (ou Esc/X) fecha */}

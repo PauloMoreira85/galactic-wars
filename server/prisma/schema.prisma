@@ -438,6 +438,23 @@ model HallOfFame {
   @@index([round])
 }
 
+// Anunciante: banner exibido na landing, no jogo e na tela de round. Gerenciado
+// no painel de admin (criar/editar/remover). imageUrl = data URL base64 (limitado)
+// ou URL http. linkUrl = destino ao clicar.
+model Advertiser {
+  id        String   @id @default(cuid())
+  title     String   // nome do anunciante (alt/title da imagem)
+  imageUrl  String   // banner (data URL base64 limitado, ou URL http)
+  linkUrl   String   // destino do clique
+  caption   String?  // texto curto opcional sob o banner
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0)
+  clicks    Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([active])
+}
+
 // Estado global do universo (linha unica) - controla o relogio de ticks
 model GameState {
   id           Int       @id @default(1)

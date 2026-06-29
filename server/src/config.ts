@@ -53,4 +53,8 @@ export const config = {
   roundTzOffsetHours: Number(process.env.ROUND_TZ_OFFSET_HOURS ?? -3),
   // Pasta do client buildado a servir em produção (sobrescrevível por env).
   clientDist: process.env.CLIENT_DIST ?? "",
+  // Usuários admin (gerenciam anunciantes etc.). ADMIN_USERS="nome1,nome2" — nomes
+  // de líder, case-insensitive. Ex.: ADMIN_USERS="Paulo".
+  adminUsers: (process.env.ADMIN_USERS ?? "")
+    .split(",").map((s) => s.trim().toLowerCase()).filter(Boolean),
 };
