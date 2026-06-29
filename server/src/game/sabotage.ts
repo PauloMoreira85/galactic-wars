@@ -3,8 +3,8 @@ import { ROID_PRODUCTION_PER_TICK, ATTACK_RANGE_MIN_PCT } from "./constants.js";
 import { parseTech } from "./fleet.js";
 import { levelOf, TECH_BY_KEY, miningBonus } from "./tech.js";
 import { isRaceKey } from "./races.js";
-import { parseUnits } from "./unitmap.js";
-import { scoreOfUnits } from "./score.js";
+import { parseUnits, addUnits } from "./unitmap.js";
+import { planetScore } from "./score.js";
 import { addNews } from "./news.js";
 import { finalize } from "./combat.js";
 import { parseAgents, blockChance, ceNeeded } from "./agents.js";
@@ -73,8 +73,8 @@ export async function executeSabotage(saboteurPlanetId: string, target: { galaxy
   // (Espionagem NÃO tem essa restrição — pode em qualquer um.)
   const myFleets = await prisma.fleet.findMany({ where: { ownerPlanetId: me.id }, select: { units: true } });
   const tgtFleets = await prisma.fleet.findMany({ where: { ownerPlanetId: tgt.id }, select: { units: true } });
-  const myScore = scoreOfUnits(parseUnits(me.units)) + myFleets.reduce((s, f) => s + scoreOfUnits(parseUnits(f.units)), 0);
-  const tgtScore = scoreOfUnits(parseUnits(tgt.units)) + tgtFleets.reduce((s, f) => s + scoreOfUnits(parseUnits(f.units)), 0);
+  const myScore = planetScore(me, myFleets.reduce((acc, f) => addUnits(acc, parseUnits(f.units)), parseUnits(me.units)));
+  const tgtScore = planetScore(tgt, tgtFleets.reduce((acc, f) => addUnits(acc, parseUnits(f.units)), parseUnits(tgt.units)));
   if (myScore > 0 && tgtScore < (myScore * ATTACK_RANGE_MIN_PCT) / 100) {
     throw new Error(`Alvo fora do seu alcance: a pontuação dele é menor que ${ATTACK_RANGE_MIN_PCT}% da sua`);
   }

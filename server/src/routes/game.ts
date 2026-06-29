@@ -17,7 +17,7 @@ import { randomBytes } from "node:crypto";
 import { createPrivateGalaxy, invitePrivate, joinPrivate, privateView } from "../game/privategalaxy.js";
 import { effectiveTec, galaxyPenalty, travelTime } from "../game/travel.js";
 import { vote, appoint, setTax, donate, govView, mgFleets, setGalaxyName, setGalaxyFlag, proposeTreaty, acceptTreaty, cancelTreaty } from "../game/governance.js";
-import { scoreOfUnits } from "../game/score.js";
+import { planetScore } from "../game/score.js";
 import { addNews, recentNews } from "../game/news.js";
 import { createAlliance, invitePlayer, acceptInvite, leaveAlliance, kickMember, setMemberRole, allianceView } from "../game/alliance.js";
 import { forumIndex, listTopics, createTopic, getTopic, reply as forumReply, isForum } from "../game/forum.js";
@@ -79,15 +79,20 @@ async function planetView(userId: string) {
     const fu = parseUnits(f.units);
     for (const n of Object.keys(fu)) shipTotals[n] = (shipTotals[n] || 0) + fu[n];
   }
-  const score = scoreOfUnits(hangar) + myFleets.reduce((s, f) => s + scoreOfUnits(parseUnits(f.units)), 0);
+  const score = planetScore(planet, shipTotals); // pontuação canônica
 
-  // Rank global por pontuação + usuários online + cargo na galáxia.
-  const allP = await prisma.planet.findMany({ select: { id: true, units: true } });
+  // Rank global por pontuação canônica (naves + estoque + roids + agentes + evoluções).
+  const allP = await prisma.planet.findMany({ select: { id: true, units: true, metalium: true, carbonum: true, plutonium: true, roidMetalium: true, roidCarbonum: true, roidPlutonium: true, agents: true, tech: true } });
   const allF = await prisma.fleet.findMany({ select: { ownerPlanetId: true, units: true } });
-  const fscore: Record<string, number> = {};
-  for (const f of allF) fscore[f.ownerPlanetId] = (fscore[f.ownerPlanetId] || 0) + scoreOfUnits(parseUnits(f.units));
+  const fleetUnitsBy: Record<string, Record<string, number>> = {};
+  for (const f of allF) { const fu = parseUnits(f.units); const m = (fleetUnitsBy[f.ownerPlanetId] ??= {}); for (const n of Object.keys(fu)) m[n] = (m[n] || 0) + fu[n]; }
+  const fullScore = (p: typeof allP[number]) => {
+    const u: Record<string, number> = { ...parseUnits(p.units) };
+    const fl = fleetUnitsBy[p.id] ?? {}; for (const n of Object.keys(fl)) u[n] = (u[n] || 0) + fl[n];
+    return planetScore(p, u);
+  };
   let rank = 1;
-  for (const p of allP) { if (scoreOfUnits(parseUnits(p.units)) + (fscore[p.id] || 0) > score) rank++; }
+  for (const p of allP) { if (fullScore(p) > score) rank++; }
   const onlineCount = await prisma.user.count({ where: { lastSeen: { gt: new Date(Date.now() - 5 * 60 * 1000) } } });
   const gstate = await prisma.galaxyState.findUnique({ where: { galaxy: planet.galaxy } });
   const cargo = gstate?.cgPlanetId === planet.id ? "Comandante de Galáxia"
@@ -468,7 +473,7 @@ gameRouter.post("/spy", async (req: AuthedRequest, res) => {
 
   if (agent === "P") {
     // Padrão: raça, pontuação, recursos em estoque, roids e qtd TOTAL de naves.
-    intel.score = scoreOfUnits(units);
+    intel.score = planetScore(target, units);
     intel.resources = { metalium: target.metalium, carbonum: target.carbonum, plutonium: target.plutonium };
     intel.roids = { metalium: target.roidMetalium, carbonum: target.roidCarbonum, plutonium: target.roidPlutonium };
     // Rakshasa: invisíveis não contam — só roiders. Demais raças: total normal.
@@ -1047,23 +1052,19 @@ gameRouter.get("/tools/units", async (_req, res) => {
 
 // Ranking das galáxias por pontuação (Top 25).
 gameRouter.get("/tools/galaxy-ranking", async (_req, res) => {
-  const planets = await prisma.planet.findMany({ select: { galaxy: true, units: true } });
+  const planets = await prisma.planet.findMany({ select: { id: true, galaxy: true, units: true, metalium: true, carbonum: true, plutonium: true, roidMetalium: true, roidCarbonum: true, roidPlutonium: true, agents: true, tech: true } });
   const fleets = await prisma.fleet.findMany({ select: { ownerPlanetId: true, units: true } });
   const states = await prisma.galaxyState.findMany();
   const nameOf = new Map(states.map((s) => [s.galaxy, s.name]));
-  const fscore: Record<string, number> = {};
-  for (const f of fleets) fscore[f.ownerPlanetId] = (fscore[f.ownerPlanetId] || 0) + scoreOfUnits(parseUnits(f.units));
+  const fleetUnitsBy: Record<string, Record<string, number>> = {};
+  for (const f of fleets) { const fu = parseUnits(f.units); const m = (fleetUnitsBy[f.ownerPlanetId] ??= {}); for (const n of Object.keys(fu)) m[n] = (m[n] || 0) + fu[n]; }
   const byGalaxy: Record<number, { score: number; planets: number }> = {};
   for (const p of planets) {
+    const u: Record<string, number> = { ...parseUnits(p.units) };
+    const fl = fleetUnitsBy[p.id] ?? {}; for (const n of Object.keys(fl)) u[n] = (u[n] || 0) + fl[n];
     const g = (byGalaxy[p.galaxy] ??= { score: 0, planets: 0 });
-    g.score += scoreOfUnits(parseUnits(p.units));
+    g.score += planetScore(p, u);
     g.planets++;
-  }
-  // soma das frotas por galáxia (via dono)
-  const ownerGalaxy = new Map((await prisma.planet.findMany({ select: { id: true, galaxy: true } })).map((p) => [p.id, p.galaxy]));
-  for (const [pid, s] of Object.entries(fscore)) {
-    const g = ownerGalaxy.get(pid);
-    if (g != null && byGalaxy[g]) byGalaxy[g].score += s;
   }
   const ranking = Object.entries(byGalaxy)
     .map(([g, v]) => ({ galaxy: Number(g), name: nameOf.get(Number(g)) ?? null, score: v.score, planets: v.planets, morale: null as number | null }))
@@ -1123,17 +1124,21 @@ gameRouter.post("/tools/sabotage-sim", async (req: AuthedRequest, res) => {
 gameRouter.get("/tools/planets", async (_req, res) => {
   const planets = await prisma.planet.findMany({ include: { user: { select: { username: true, race: true, lastSeen: true } } } });
   const fleets = await prisma.fleet.findMany({ select: { ownerPlanetId: true, units: true } });
-  const fscore: Record<string, number> = {};
-  for (const f of fleets) fscore[f.ownerPlanetId] = (fscore[f.ownerPlanetId] || 0) + scoreOfUnits(parseUnits(f.units));
+  const fleetUnitsBy: Record<string, Record<string, number>> = {};
+  for (const f of fleets) { const fu = parseUnits(f.units); const m = (fleetUnitsBy[f.ownerPlanetId] ??= {}); for (const n of Object.keys(fu)) m[n] = (m[n] || 0) + fu[n]; }
   const state = await prisma.gameState.findUnique({ where: { id: 1 } });
   const nowTick = state?.tickNumber ?? 0;
-  const list = planets.map((p) => ({
-    name: p.name, commander: p.user.username, coords: `${p.galaxy}:${p.system}:${p.slot}`,
-    galaxy: p.galaxy,
-    roids: totalRoids(p),
-    score: scoreOfUnits(parseUnits(p.units)) + (fscore[p.id] || 0),
-    protected: nowTick < p.createdTick + 72,
-  })).sort((a, b) => b.score - a.score);
+  const list = planets.map((p) => {
+    const u: Record<string, number> = { ...parseUnits(p.units) };
+    const fl = fleetUnitsBy[p.id] ?? {}; for (const n of Object.keys(fl)) u[n] = (u[n] || 0) + fl[n];
+    return {
+      name: p.name, commander: p.user.username, coords: `${p.galaxy}:${p.system}:${p.slot}`,
+      galaxy: p.galaxy,
+      roids: totalRoids(p),
+      score: planetScore(p, u),
+      protected: nowTick < p.createdTick + 72,
+    };
+  }).sort((a, b) => b.score - a.score);
   res.json({ planets: list, totalUsers: await prisma.user.count() });
 });
 

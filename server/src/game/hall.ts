@@ -1,7 +1,7 @@
 import { prisma } from "../db.js";
 import { totalRoids } from "./roids.js";
-import { scoreOfUnits } from "./score.js";
-import { parseUnits } from "./unitmap.js";
+import { planetScore } from "./score.js";
+import { parseUnits, addUnits } from "./unitmap.js";
 import { STARTING } from "./constants.js";
 
 const STARTING_ROIDS = STARTING.roidMetalium + STARTING.roidCarbonum + STARTING.roidPlutonium;
@@ -12,14 +12,14 @@ export async function snapshotHallOfFame() {
   const planets = await prisma.planet.findMany({ include: { user: { select: { username: true, race: true } } } });
   if (!planets.length) return;
   const fleets = await prisma.fleet.findMany({ select: { ownerPlanetId: true, units: true } });
-  const fleetScore: Record<string, number> = {};
-  for (const f of fleets) fleetScore[f.ownerPlanetId] = (fleetScore[f.ownerPlanetId] || 0) + scoreOfUnits(parseUnits(f.units));
+  const fleetUnitsBy: Record<string, Record<string, number>> = {};
+  for (const f of fleets) { const fu = parseUnits(f.units); fleetUnitsBy[f.ownerPlanetId] = addUnits(fleetUnitsBy[f.ownerPlanetId] ?? {}, fu); }
 
   const ranked = planets
     .map((p) => ({
       commander: p.user.username, planet: p.name, coords: `${p.galaxy}:${p.system}:${p.slot}`,
       race: p.user.race, roids: totalRoids(p),
-      score: scoreOfUnits(parseUnits(p.units)) + (fleetScore[p.id] || 0),
+      score: planetScore(p, addUnits(parseUnits(p.units), fleetUnitsBy[p.id] ?? {})),
     }))
     .sort((a, b) => b.roids - a.roids)
     .slice(0, 3);

@@ -5,7 +5,7 @@ import { type Coords } from "./geo.js";
 import { travelTime } from "./travel.js";
 import { travelReductionTicks } from "./tech.js";
 import { unitByName, radarVisibleCount } from "./catalog.js";
-import { scoreOfUnits } from "./score.js";
+import { planetScore } from "./score.js";
 import { allianceTags } from "./alliance.js";
 import { hasActiveTreaty } from "./governance.js";
 import { nextFleetSlotCost, NEWBIE_PROTECTION_TICKS, ATTACK_RANGE_MIN_PCT, SLOTS_PER_SYSTEM } from "./constants.js";
@@ -141,8 +141,10 @@ export async function dispatchFleet(planetId: string, fleetId: string, target: C
       }
       const myFleets = await tx.fleet.findMany({ where: { ownerPlanetId: planetId }, select: { units: true } });
       const tgtFleets = await tx.fleet.findMany({ where: { ownerPlanetId: tgt.id }, select: { units: true } });
-      const myScore = scoreOfUnits(parseUnits(planet.units)) + myFleets.reduce((s, f) => s + scoreOfUnits(parseUnits(f.units)), 0);
-      const tgtScore = scoreOfUnits(parseUnits(tgt.units)) + tgtFleets.reduce((s, f) => s + scoreOfUnits(parseUnits(f.units)), 0);
+      const myTotal = myFleets.reduce((acc, f) => addUnits(acc, parseUnits(f.units)), parseUnits(planet.units));
+      const tgtTotal = tgtFleets.reduce((acc, f) => addUnits(acc, parseUnits(f.units)), parseUnits(tgt.units));
+      const myScore = planetScore(planet, myTotal);
+      const tgtScore = planetScore(tgt, tgtTotal);
       if (myScore > 0 && tgtScore < (myScore * ATTACK_RANGE_MIN_PCT) / 100) {
         throw new Error(`Alvo fora do seu alcance: a pontuação dele é menor que ${ATTACK_RANGE_MIN_PCT}% da sua`);
       }
@@ -265,9 +267,9 @@ export async function viewSystem(galaxy: number, system: number, viewer: { id: s
   const nowMs = Date.now();
   const all = await prisma.planet.findMany({ include: { user: { select: { username: true, race: true, lastSeen: true } } } });
   const fleets = await prisma.fleet.findMany();
-  const fleetScore: Record<string, number> = {};
-  for (const f of fleets) fleetScore[f.ownerPlanetId] = (fleetScore[f.ownerPlanetId] || 0) + scoreOfUnits(parseUnits(f.units));
-  const scoreOf = (p: any) => scoreOfUnits(parseUnits(p.units)) + (fleetScore[p.id] || 0);
+  const fleetUnitsBy: Record<string, UnitMap> = {};
+  for (const f of fleets) { const fu = parseUnits(f.units); fleetUnitsBy[f.ownerPlanetId] = addUnits(fleetUnitsBy[f.ownerPlanetId] ?? {}, fu); }
+  const scoreOf = (p: any) => planetScore(p, addUnits(parseUnits(p.units), fleetUnitsBy[p.id] ?? {}));
 
   // Rank global por pontuação.
   const ranked = all.map((p) => ({ id: p.id, score: scoreOf(p) })).sort((a, b) => b.score - a.score);
