@@ -52,7 +52,7 @@ export function Galaxy({ view, onChanged, onMessage }: { view: PlanetView; onCha
     return () => clearInterval(t);
   }, []);
 
-  // Mesma galáxia (= mesmo setor E sistema) = aliados: só transporte (não pode atacar).
+  // Mesma galáxia (= mesmo setor E paralelo) = aliados: só transporte (não pode atacar).
   const myGalaxy = g || 1;
   const mySystem = s || 1;
   const sameGalaxy = galaxy === myGalaxy && system === mySystem;
@@ -132,17 +132,17 @@ export function Galaxy({ view, onChanged, onMessage }: { view: PlanetView; onCha
             </div>
           </div>
           <div className="galnav">
-            <button className="galnav-vert" title="Sistema +1" onClick={() => setSystem((v) => Math.min(6, v + 1))}>∧</button>
+            <button className="galnav-vert" title="Paralelo +1" onClick={() => setSystem((v) => Math.min(6, v + 1))}>∧</button>
             <div className="galnav-coords">
               <input type="number" min={1} max={5} value={galaxy} title="Setor (1-5)" onChange={(e) => setGalaxy(Math.max(1, Math.min(5, Number(e.target.value))))} />
-              <input type="number" min={1} max={6} value={system} title="Sistema (1-6)" onChange={(e) => setSystem(Math.max(1, Math.min(6, Number(e.target.value))))} />
+              <input type="number" min={1} max={6} value={system} title="Paralelo (1-6)" onChange={(e) => setSystem(Math.max(1, Math.min(6, Number(e.target.value))))} />
             </div>
             <div className="galnav-row">
               <button title="Setor anterior" onClick={() => setGalaxy((v) => Math.max(1, v - 1))}>‹</button>
               <button className="galnav-go" onClick={() => loadSystem()}>Visualizar</button>
               <button title="Próximo setor" onClick={() => setGalaxy((v) => Math.min(5, v + 1))}>›</button>
             </div>
-            <button className="galnav-vert" title="Sistema -1" onClick={() => setSystem((v) => Math.max(1, v - 1))}>∨</button>
+            <button className="galnav-vert" title="Paralelo -1" onClick={() => setSystem((v) => Math.max(1, v - 1))}>∨</button>
           </div>
         </div>
         <div className="roid-count" style={{ margin: "8px 0" }}>seu planeta: {myCoords} · agentes que você tem: {(["P","M","T","D"] as const).filter(a=>agentsIHave[a]).join(" ") || "nenhum"}</div>

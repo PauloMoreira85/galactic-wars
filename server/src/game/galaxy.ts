@@ -262,7 +262,7 @@ export async function processFleets(uptoTick: number) {
 const RACE_TAG: Record<string, string> = { humanos: "Hum", daharan: "Dah", rakshasa: "Rak", mech: "c-M", insecta: "Ins" };
 const ONLINE_MS = 5 * 60 * 1000;
 
-// Visão rica de um sistema: cabeçalho da galáxia + 15 slots com pontuação/rank/status.
+// Visão rica de uma galáxia (setor:paralelo): cabeçalho + slots com pontuação/rank/status.
 export async function viewSystem(galaxy: number, system: number, viewer: { id: string; galaxy: number; system: number } | null = null) {
   const thisGalId = galaxyId(galaxy, system);
   const nowMs = Date.now();

@@ -30,7 +30,7 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
   async function dispatch() {
     if (!dFleet) { setError("Escolha uma frota carregada."); return; }
     const g = parseInt(dGalaxy, 10), s = parseInt(dSystem, 10), sl = parseInt(dSlot, 10);
-    if (!(g >= 1) || !(s >= 1) || !(sl >= 1)) { setError("Digite a coordenada completa (galáxia:sistema:slot)."); return; }
+    if (!(g >= 1) || !(s >= 1) || !(sl >= 1)) { setError("Digite a coordenada completa (setor:paralelo:slot)."); return; }
     setBusy(true); setError("");
     try {
       await api.dispatchFleet(dFleet, { galaxy: g, system: s, slot: sl, mission: dMission, ticks: dTicks, fake: dFake });
@@ -121,7 +121,7 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
                   ))}
                 </tr>
                 <tr className="fg-meta">
-                  <td title="Galáxia (mesma) / mesmo Setor ou Sistema / resto do Universo">Viagem (G/S/U)</td><td>—</td>
+                  <td title="Galáxia (mesma) / mesmo Setor ou Paralelo / resto do Universo">Viagem (G/S/U)</td><td>—</td>
                   {fleets.map((f) => (
                     <td key={f.id} className="roid-count">{f.travel.galaxia}/{f.travel.setor}/{f.travel.universo}t<div>⛽{fmt(f.travel.fuel)}</div></td>
                   ))}
@@ -165,9 +165,9 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
         ) : (
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
             <span className="roid-count">Coords:</span>
-            <input type="text" inputMode="numeric" maxLength={3} placeholder="gal" title="Galáxia" value={dGalaxy} onChange={(e) => setDGalaxy(e.target.value.replace(/\D/g, ""))} style={{ width: 60, margin: 0, padding: "6px 6px", textAlign: "center" }} />
+            <input type="text" inputMode="numeric" maxLength={3} placeholder="set" title="Setor" value={dGalaxy} onChange={(e) => setDGalaxy(e.target.value.replace(/\D/g, ""))} style={{ width: 60, margin: 0, padding: "6px 6px", textAlign: "center" }} />
             <span>:</span>
-            <input type="text" inputMode="numeric" maxLength={3} placeholder="sis" title="Sistema" value={dSystem} onChange={(e) => setDSystem(e.target.value.replace(/\D/g, ""))} style={{ width: 60, margin: 0, padding: "6px 6px", textAlign: "center" }} />
+            <input type="text" inputMode="numeric" maxLength={3} placeholder="par" title="Paralelo" value={dSystem} onChange={(e) => setDSystem(e.target.value.replace(/\D/g, ""))} style={{ width: 60, margin: 0, padding: "6px 6px", textAlign: "center" }} />
             <span>:</span>
             <input type="text" inputMode="numeric" maxLength={3} placeholder="slot" title="Slot" value={dSlot} onChange={(e) => setDSlot(e.target.value.replace(/\D/g, ""))} style={{ width: 60, margin: 0, padding: "6px 6px", textAlign: "center" }} />
             <select

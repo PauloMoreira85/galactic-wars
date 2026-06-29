@@ -17,7 +17,7 @@ export function Sabotagem() {
   async function run(key: string) {
     setError(""); setMsg("");
     const gg = parseInt(g, 10), ss = parseInt(s, 10), sl = parseInt(slot, 10);
-    if (!(gg >= 1) || !(ss >= 1) || !(sl >= 1)) { setError("Digite a coordenada completa (galáxia:sistema:slot)."); return; }
+    if (!(gg >= 1) || !(ss >= 1) || !(sl >= 1)) { setError("Digite a coordenada completa (setor:paralelo:slot)."); return; }
     try {
       const r = await api.sabotageRun(gg, ss, sl, key);
       setMsg(r.message ?? (r.success ? "Sabotagem aplicada!" : "Sabotagem falhou."));
@@ -32,9 +32,9 @@ export function Sabotagem() {
       <div className="cost">Escolha o alvo (outra galáxia) e a sabotagem que você desbloqueou. Pode ser repelida pela contra-espionagem do alvo.</div>
       <div style={{ display: "flex", gap: 6, alignItems: "center", margin: "8px 0", flexWrap: "wrap" }}>
         <span className="roid-count">Alvo</span>
-        <input type="text" inputMode="numeric" maxLength={3} placeholder="gal" value={g} onChange={(e) => setG(e.target.value.replace(/\D/g, ""))} style={{ width: 60, margin: 0, padding: "6px 8px" }} />
+        <input type="text" inputMode="numeric" maxLength={3} placeholder="set" title="Setor" value={g} onChange={(e) => setG(e.target.value.replace(/\D/g, ""))} style={{ width: 60, margin: 0, padding: "6px 8px" }} />
         <span className="roid-count">:</span>
-        <input type="text" inputMode="numeric" maxLength={3} placeholder="sis" value={s} onChange={(e) => setS(e.target.value.replace(/\D/g, ""))} style={{ width: 60, margin: 0, padding: "6px 8px" }} />
+        <input type="text" inputMode="numeric" maxLength={3} placeholder="par" title="Paralelo" value={s} onChange={(e) => setS(e.target.value.replace(/\D/g, ""))} style={{ width: 60, margin: 0, padding: "6px 8px" }} />
         <span className="roid-count">:</span>
         <input type="text" inputMode="numeric" maxLength={2} placeholder="slot" value={slot} onChange={(e) => setSlot(e.target.value.replace(/\D/g, ""))} style={{ width: 60, margin: 0, padding: "6px 8px" }} />
       </div>

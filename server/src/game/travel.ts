@@ -16,12 +16,12 @@ export function effectiveTec(classe: ClasseCode, propulsaoLevel: number): number
 }
 
 // Penalidade de distância entre duas galáxias (recebe os IDS de galaxyId()):
-// mesma galáxia = 0 · mesmo setor OU mesmo sistema (mesma linha/coluna da grade) = +2
+// mesma galáxia = 0 · mesmo setor OU mesmo paralelo (mesma linha/coluna da grade) = +2
 // · resto do universo = +4.
 export function galaxyPenalty(a: number, b: number): number {
   if (a === b) return 0; // mesma galáxia
   const A = galaxyDecompose(a), B = galaxyDecompose(b);
-  if (A.setor === B.setor || A.sistema === B.sistema) return 2; // mesmo setor ou sistema
+  if (A.setor === B.setor || A.paralelo === B.paralelo) return 2; // mesmo setor ou paralelo
   return 4;
 }
 

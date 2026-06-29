@@ -47,7 +47,7 @@ export async function softResetRound(roundStartAt?: Date) {
     },
   });
 
-  // Re-acomoda TODOS os planetas no universo compacto (setor:sistema:slot).
+  // Re-acomoda TODOS os planetas no universo compacto (setor:paralelo:slot).
   // Distribui em ~N/SLOTS galáxias (mínimo 2) de forma equilibrada — galáxias
   // enchem juntas, sempre há ≥2 pra ter inimigo. Mantém contas; muda só coordenadas.
   const all = await prisma.planet.findMany({ orderBy: { createdAt: "asc" }, select: { id: true } });
@@ -55,8 +55,8 @@ export async function softResetRound(roundStartAt?: Date) {
   for (let i = 0; i < all.length; i++) {
     const galId = (i % open) + 1;
     const slot = Math.floor(i / open) + 1;
-    const { setor, sistema } = galaxyDecompose(galId);
-    await prisma.planet.update({ where: { id: all[i].id }, data: { galaxy: setor, system: sistema, slot } });
+    const { setor, paralelo } = galaxyDecompose(galId);
+    await prisma.planet.update({ where: { id: all[i].id }, data: { galaxy: setor, system: paralelo, slot } });
   }
 
   // Reinicia o relógio do round (tick #0) e arma o início do novo round.

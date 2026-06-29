@@ -178,10 +178,10 @@ export function Governo() {
           <h2>🕊️ Diplomacia (MD)</h2>
           <div className="cost">Tratados de não-agressão entre galáxias (ambas precisam aceitar). Com tratado ativo, ninguém ataca a outra galáxia.</div>
           <div style={{ display: "flex", gap: 6, alignItems: "center", margin: "8px 0" }}>
-            <span className="roid-count">Galáxia (setor:sistema)</span>
+            <span className="roid-count">Galáxia (setor:paralelo)</span>
             <input type="number" min={1} max={5} value={treatySetor} title="Setor (1-5)" onChange={(e) => setTreatySetor(Math.max(1, Math.min(5, Number(e.target.value))))} style={{ width: 56, margin: 0, padding: "4px 8px" }} />
             <span>:</span>
-            <input type="number" min={1} max={6} value={treatySistema} title="Sistema (1-6)" onChange={(e) => setTreatySistema(Math.max(1, Math.min(6, Number(e.target.value))))} style={{ width: 56, margin: 0, padding: "4px 8px" }} />
+            <input type="number" min={1} max={6} value={treatySistema} title="Paralelo (1-6)" onChange={(e) => setTreatySistema(Math.max(1, Math.min(6, Number(e.target.value))))} style={{ width: 56, margin: 0, padding: "4px 8px" }} />
             <button onClick={() => act(() => api.treatyAction("propose", treatyGalId))}>propor tratado</button>
           </div>
           {(gov.treaties?.length ?? 0) === 0 ? <div className="roid-count">Nenhum tratado.</div> : (

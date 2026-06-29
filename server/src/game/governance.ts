@@ -4,10 +4,10 @@ import { addNews } from "./news.js";
 import { addMorale } from "./morale.js";
 import { galaxyId, galaxyWhere, galaxyDecompose } from "./geo.js";
 
-// "setor:sistema" para exibir uma galáxia (a partir do id interno).
+// "setor:paralelo" para exibir uma galáxia (a partir do id interno).
 function coordLabel(id: number): string {
-  const { setor, sistema } = galaxyDecompose(id);
-  return `${setor}:${sistema}`;
+  const { setor, paralelo } = galaxyDecompose(id);
+  return `${setor}:${paralelo}`;
 }
 
 export const MAX_TAX = 50;            // teto do imposto (%)

@@ -1074,7 +1074,7 @@ gameRouter.get("/tools/galaxy-ranking", async (_req, res) => {
     g.planets++;
   }
   const ranking = Object.entries(byGalaxy)
-    .map(([g, v]) => { const { setor, sistema } = galaxyDecompose(Number(g)); return { galaxy: Number(g), coord: `${setor}:${sistema}`, name: nameOf.get(Number(g)) ?? null, score: v.score, planets: v.planets, morale: null as number | null }; })
+    .map(([g, v]) => { const { setor, paralelo } = galaxyDecompose(Number(g)); return { galaxy: Number(g), coord: `${setor}:${paralelo}`, name: nameOf.get(Number(g)) ?? null, score: v.score, planets: v.planets, morale: null as number | null }; })
     .sort((a, b) => b.score - a.score).slice(0, 25);
   res.json({ ranking });
 });

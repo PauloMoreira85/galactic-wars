@@ -76,9 +76,9 @@ export async function allocateSlot() {
       if (best === -1 || count[id] < count[best]) best = id;
     }
     if (best === -1) continue;
-    const { setor, sistema } = galaxyDecompose(best);
+    const { setor, paralelo } = galaxyDecompose(best);
     for (let slot = 1; slot <= SLOTS_PER_SYSTEM; slot++) {
-      if (!taken.has(`${setor}:${sistema}:${slot}`)) return { galaxy: setor, system: sistema, slot };
+      if (!taken.has(`${setor}:${paralelo}:${slot}`)) return { galaxy: setor, system: paralelo, slot };
     }
   }
   throw new Error("Universo cheio (todas as galáxias lotadas)");
