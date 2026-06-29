@@ -634,7 +634,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
               </div>
             )}
             <div className="cost" style={{ marginBottom: 12 }}>
-              🔬 <b>Pesquisa</b> libera a 🛠️ <b>Construção</b> seguinte (as 1ªs de Mineração e Naves já vêm livres). Roda 1 pesquisa + 1 construção ao mesmo tempo.
+              Cada item libera o <b>próximo</b> (alternando 🔬 Pesquisa ↔ 🛠️ Construção). A 1ª de <b>Mineração</b> e <b>Naves</b> já vem livre (começam construindo); as outras começam pesquisando. Você não pula etapas.
               <br />Minas: <span>+{fmt(view.planet.miningBonus.metalium)} M</span> · <span>+{fmt(view.planet.miningBonus.carbonum)} C</span> · <span>+{fmt(view.planet.miningBonus.plutonium)} P</span> por tick · viagem: <span>−{view.planet.travelReduction} tick(s)</span>.
             </div>
             {renderTechTree()}

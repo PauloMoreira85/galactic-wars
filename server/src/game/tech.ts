@@ -29,26 +29,22 @@ export const SHIP_FACTORY: Record<ShipClass, string> = {
   destroyer: "fabricaDestroyers", cruzador: "industriaCruzadores", navemae: "estaleirosOrbitais",
 };
 
-// Árvore CANÔNICA (recuperada do site original, snapshot 2007). Duas trilhas
-// paralelas por categoria (2 slots: 1 pesquisa + 1 construção):
-//  - Pesquisa flui sozinha: cada pesquisa exige só a PESQUISA anterior.
-//  - Cada construção exige a pesquisa imediatamente ANTES dela. Se NÃO houver
-//    pesquisa antes (categoria que começa construindo: Mineração e Naves), a
-//    1ª construção é LIVRE.
-// Custo (M = C) e ticks são explícitos por item (valores do canon). Plutonium é
-// só combustível — upgradeCost zera o plutonium dos custos de tecnologia.
+// Árvore CANÔNICA (recuperada do site original, snapshot 2007). Cadeia
+// ESTRITAMENTE SEQUENCIAL por categoria: cada item exige o item IMEDIATAMENTE
+// ANTERIOR (construção ↔ pesquisa, alternando). O 1º item é LIVRE — e define se a
+// categoria "começa construindo" (Mineração, Naves) ou "começa pesquisando"
+// (Deslocamento, Inteligência, Sabotagem). Assim não dá pra pular a fábrica de
+// caça pesquisando à frente: você constrói a fábrica → pesquisa → constrói a
+// próxima → e assim por diante. Custo (M = C) e ticks explícitos por item;
+// plutonium é só combustível (upgradeCost zera o plutonium das techs).
 interface TItem { key: string; name: string; kind: TechKind; desc: string; cost: number; ticks: number }
 function track(category: TechCategory, items: TItem[]): TechDef[] {
-  let lastResearch: string | null = null;
-  return items.map((it) => {
-    const requires: Req[] = lastResearch ? [{ key: lastResearch, level: 1 }] : [];
-    if (it.kind === "research") lastResearch = it.key;
-    return {
-      key: it.key, name: it.name, category, kind: it.kind, max: 1, desc: it.desc,
-      requires, baseCost: { metalium: it.cost, carbonum: it.cost, plutonium: 0 },
-      costGrowth: 1, baseTicks: it.ticks,
-    };
-  });
+  return items.map((it, i) => ({
+    key: it.key, name: it.name, category, kind: it.kind, max: 1, desc: it.desc,
+    requires: i > 0 ? [{ key: items[i - 1].key, level: 1 }] : [],
+    baseCost: { metalium: it.cost, carbonum: it.cost, plutonium: 0 },
+    costGrowth: 1, baseTicks: it.ticks,
+  }));
 }
 
 // Tiers sequenciais de Inteligencia (definem o nível de espionagem).
