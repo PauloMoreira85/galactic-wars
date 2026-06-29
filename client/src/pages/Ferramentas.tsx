@@ -129,48 +129,130 @@ function RankingGalaxias() {
   );
 }
 
-function Calculadora() {
-  const [varm, setVarm] = useState(32);
-  const [agi, setAgi] = useState(20);
-  const [qarm, setQarm] = useState(2);
-  const [pfog, setPfog] = useState(1);
-  const [fusel, setFusel] = useState(15);
-  const [alvos, setAlvos] = useState(200);
+type SimResult = Awaited<ReturnType<typeof api.combatSim>>;
 
-  const cma = Math.max(0, Math.min(100, 25 + (varm - agi)));
-  // X naves p/ destruir `alvos` naves de fusel F: (Qarm*Pfog)*X*CMA = Fusel*alvos
-  const dano1 = qarm * pfog * (cma / 100);
-  const naves = dano1 > 0 ? Math.ceil((fusel * alvos) / dano1) : 0;
+function Calculadora() {
+  const [units, setUnits] = useState<Awaited<ReturnType<typeof api.toolUnits>>["units"]>([]);
+  const [race, setRace] = useState<string>("Humana");
+  const [atk, setAtk] = useState<Record<string, number>>({});
+  const [def, setDef] = useState<Record<string, number>>({});
+  const [result, setResult] = useState<SimResult | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  useEffect(() => { api.toolUnits().then((d) => setUnits(d.units)).catch(() => {}); }, []);
+  const races = Array.from(new Set(units.map((u) => u.race)));
+  const shown = units.filter((u) => u.race === race);
+  const nameToRace = Object.fromEntries(units.map((u) => [u.name, u.race]));
+
+  function setQty(side: "a" | "d", name: string, raw: string) {
+    const n = Math.max(0, Math.floor(Number(raw) || 0));
+    const setter = side === "a" ? setAtk : setDef;
+    setter((p) => { const c = { ...p }; if (n > 0) c[name] = n; else delete c[name]; return c; });
+  }
+  const totA = Object.values(atk).reduce((a, b) => a + b, 0);
+  const totD = Object.values(def).reduce((a, b) => a + b, 0);
+
+  async function run() {
+    setErr(""); setBusy(true); setResult(null);
+    try { setResult(await api.combatSim(atk, def, 3)); }
+    catch (e: any) { setErr(e.message ?? "Falha na simulação"); }
+    finally { setBusy(false); }
+  }
+
+  const VERDICT: Record<SimResult["winner"], string> = {
+    atacante: "⚔️ Atacante VENCE — defesa aniquilada",
+    defesa: "🛡️ Defesa SEGURA — atacante aniquilado",
+    ambos_destruidos: "💥 Aniquilação mútua — ninguém sobra",
+    indefinido: "⏳ Sem decisão em 3 ticks — os dois lados sobrevivem",
+  };
+
+  const Fleet = ({ side, map }: { side: "a" | "d"; map: Record<string, number> }) => (
+    <div className="cost" style={{ lineHeight: 1.7 }}>
+      <b>{side === "a" ? "⚔️ Ataque" : "🛡️ Defesa"}: {fmt(side === "a" ? totA : totD)} nave(s)</b>
+      {Object.keys(map).length === 0 ? <span className="roid-count"> — vazio</span> : (
+        <div className="roid-count">{Object.entries(map).map(([n, q]) => `${fmt(q)}× ${n}`).join(" · ")}</div>
+      )}
+    </div>
+  );
 
   return (
     <div className="panel">
       <h2>Calculadora de Combate</h2>
-      <div className="cost" style={{ marginBottom: 12 }}>
-        CMA = 25 + (Varm atacante − Agi defensor). Naves necessárias: (Qarm×Pfog)×X×CMA = Fusel×Nº_inimigas.
+      <div className="cost" style={{ marginBottom: 10 }}>
+        Monte a frota de <b>ataque</b> e a de <b>defesa</b> (qualquer raça) e simule o combate por <b>3 ticks</b> com o motor real do jogo
+        (iniciativa, alvos por classe, CMA, PEM, assimilação). Use pra decidir: <b>mandar mais defesa</b> ou <b>recuar o ataque</b>.
       </div>
-      <div className="grid3" style={{ marginBottom: 12 }}>
-        {([
-          ["Varm (atacante)", varm, setVarm],
-          ["Agi (defensor)", agi, setAgi],
-          ["Qarm (atacante)", qarm, setQarm],
-          ["Pfog (atacante)", pfog, setPfog],
-          ["Fusel (alvo)", fusel, setFusel],
-          ["Nº naves inimigas", alvos, setAlvos],
-        ] as [string, number, (n: number) => void][]).map(([label, val, set]) => (
-          <label key={label} className="roid-count" style={{ display: "block" }}>
-            {label}
-            <input type="number" value={val} onChange={(e) => set(Math.max(0, Number(e.target.value)))} style={{ width: "100%", marginTop: 4, padding: "6px 8px" }} />
-          </label>
+
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
+        {races.map((r) => (
+          <button key={r} className={`action-tab ${race === r ? "active" : ""}`} style={{ padding: "4px 10px" }} onClick={() => setRace(r)}>
+            {RACE_LABEL[r] ?? r}
+          </button>
         ))}
       </div>
-      <div className="res-card">
-        <div className="name">Chance Média de Acerto</div>
-        <div className="amount">{cma}%</div>
+
+      <div style={{ overflowX: "auto" }}>
+        <table>
+          <thead><tr><th>Nave</th><th>Classe</th><th>⚔️ Ataque</th><th>🛡️ Defesa</th></tr></thead>
+          <tbody>
+            {shown.map((u) => (
+              <tr key={u.name}>
+                <td><b>{u.name}</b>{u.roider && " ⛏️"}</td>
+                <td className="roid-count">{u.classe}</td>
+                <td><input type="text" inputMode="numeric" value={atk[u.name] ?? ""} placeholder="0" onChange={(e) => setQty("a", u.name, e.target.value.replace(/\D/g, ""))} style={{ width: 90, margin: 0, padding: "4px 6px" }} /></td>
+                <td><input type="text" inputMode="numeric" value={def[u.name] ?? ""} placeholder="0" onChange={(e) => setQty("d", u.name, e.target.value.replace(/\D/g, ""))} style={{ width: 90, margin: 0, padding: "4px 6px" }} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-      <div className="res-card" style={{ marginTop: 10 }}>
-        <div className="name">Naves necessárias p/ zerar {fmt(alvos)} inimigas no 1º tick</div>
-        <div className="amount">{fmt(naves)}</div>
+
+      <div style={{ display: "flex", gap: 20, flexWrap: "wrap", margin: "12px 0" }}>
+        <Fleet side="a" map={atk} />
+        <Fleet side="d" map={def} />
       </div>
+
+      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        <button disabled={busy || (totA === 0 && totD === 0)} onClick={run}>{busy ? "simulando…" : "🎯 Simular combate (3 ticks)"}</button>
+        <button className="link" onClick={() => { setAtk({}); setDef({}); setResult(null); }}>limpar</button>
+      </div>
+      {err && <div className="error" style={{ marginTop: 8 }}>{err}</div>}
+
+      {result && (
+        <div style={{ marginTop: 16 }}>
+          <div className="combat-ini" style={{ fontSize: 16 }}>{VERDICT[result.winner]}</div>
+          {result.ticks.map((tk) => (
+            <div key={tk.tick} style={{ marginTop: 12, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+              <div className="cost" style={{ marginBottom: 6 }}>
+                <b>Tick {tk.tick}</b> — Ataque {fmt(tk.aBefore)}→<b>{fmt(tk.aAfter)}</b> · Defesa {fmt(tk.dBefore)}→<b>{fmt(tk.dAfter)}</b>
+                {tk.raidCapacity > 0 && <span className="roid-count"> · roids saqueáveis: {fmt(tk.raidCapacity)}</span>}
+              </div>
+              <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                {([["⚔️ Ataque", tk.attacker], ["🛡️ Defesa", tk.defender]] as const).map(([label, rows]) => (
+                  <div key={label} style={{ flex: 1, minWidth: 280, overflowX: "auto" }}>
+                    <div className="roid-count" style={{ marginBottom: 4 }}>{label}</div>
+                    <table>
+                      <thead><tr><th>Nave</th><th>Início</th><th>Perdas</th><th>PEM</th><th>Sobrev.</th></tr></thead>
+                      <tbody>
+                        {rows.map((r) => (
+                          <tr key={r.name}>
+                            <td>{r.name}{r.assim > 0 && <span className="roid-count" title="assimiladas"> +{fmt(r.assim)}🔧</span>}</td>
+                            <td className="roid-count">{fmt(r.before)}</td>
+                            <td style={{ color: "var(--danger)" }}>{r.lost > 0 ? `−${fmt(r.lost)}` : "—"}</td>
+                            <td className="roid-count">{r.pem > 0 ? fmt(r.pem) : "—"}</td>
+                            <td><b>{fmt(r.survivors)}</b></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

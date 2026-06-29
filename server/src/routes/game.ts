@@ -8,7 +8,7 @@ import { RACES, isRaceKey, RACE_KEYS } from "../game/races.js";
 import { startUpgrade, buildUnit, buildAgent, parseTech, cancelOrder } from "../game/fleet.js";
 import { AGENTS, AGENT_KEYS, AGENT_FULL_NAME, isAgentKey, parseAgents, stringifyAgents, isShielded, ceNeeded, blockChance, ROIDS_POR_CE } from "../game/agents.js";
 import { createFleet, setFleetComposition, renameFleet, dispatchFleet, fuelCost, viewSystem, galaxyTraffic, type ShipCounts } from "../game/galaxy.js";
-import { recallFleet, BATTLE_TICKS } from "../game/combat.js";
+import { recallFleet, BATTLE_TICKS, simulateCombat } from "../game/combat.js";
 import { unitsOfRace, isUnitUnlocked, CLASS_LABEL, unitByName, shipImage, radarVisibleCount } from "../game/catalog.js";
 import { UNIT_TABLE } from "../game/unitTable.js";
 import { associadoView, becomeAssociado, changeName } from "../game/associados.js";
@@ -1080,6 +1080,26 @@ gameRouter.get("/tools/techtree", async (_req, res) => {
       requires: t.requires.map((r) => ({ name: TECH_BY_KEY[r.key]?.name ?? r.key, level: r.level })),
     })),
   });
+});
+
+// Calculadora de Combate: simula ataque × defesa por até 3 ticks (motor real,
+// sem tocar no banco). Recebe { attacker:{nave:qtd}, defender:{nave:qtd}, ticks }.
+gameRouter.post("/tools/combat-sim", async (req: AuthedRequest, res) => {
+  const fleetSchema = z.record(z.string(), z.number().int().min(0).max(100_000_000));
+  const parsed = z.object({ attacker: fleetSchema, defender: fleetSchema, ticks: z.number().int().min(1).max(BATTLE_TICKS).optional() }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "Dados inválidos" });
+  // Sanitiza: só naves válidas, qtd > 0.
+  const clean = (m: Record<string, number>) => {
+    const out: Record<string, number> = {};
+    for (const [name, qty] of Object.entries(m)) if (qty > 0 && unitByName(name)) out[name] = Math.floor(qty);
+    return out;
+  };
+  const attacker = clean(parsed.data.attacker);
+  const defender = clean(parsed.data.defender);
+  if (Object.keys(attacker).length === 0 && Object.keys(defender).length === 0) {
+    return res.status(400).json({ error: "Adicione naves no ataque e/ou na defesa." });
+  }
+  res.json(simulateCombat(attacker, defender, parsed.data.ticks ?? BATTLE_TICKS));
 });
 
 // Lista de planetas com pontuação (Procura de Planetas / Universo / Gráficos).

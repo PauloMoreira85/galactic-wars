@@ -166,6 +166,58 @@ function raidCapacity(active: UnitMap): number {
   return cap;
 }
 
+// ===== Simulador (Calculadora de Combate) =====
+// Roda o MESMO motor do combate real (oneRound) por até `ticks` rodadas, SEM
+// tocar no banco. Cada tick parte dos sobreviventes do anterior (PEM dura 1 tick;
+// assimiladas entram no fim da rodada). Usado pela ferramenta pra prever o resultado.
+export interface SimRow { name: string; before: number; lost: number; pem: number; assim: number; survivors: number }
+export interface SimTick {
+  tick: number;
+  attacker: SimRow[]; defender: SimRow[];
+  aBefore: number; dBefore: number; aAfter: number; dAfter: number;
+  raidCapacity: number; // roids que os roiders atacantes vivos carregariam neste tick
+}
+export interface SimResult {
+  ticks: SimTick[];
+  winner: "atacante" | "defesa" | "ambos_destruidos" | "indefinido";
+  finalAttacker: UnitMap; finalDefender: UnitMap;
+}
+export function simulateCombat(attacker0: UnitMap, defender0: UnitMap, ticks = BATTLE_TICKS): SimResult {
+  let aCur: UnitMap = { ...attacker0 };
+  let dCur: UnitMap = { ...defender0 };
+  const N = Math.max(1, Math.min(BATTLE_TICKS, Math.floor(ticks)));
+  const out: SimTick[] = [];
+  for (let t = 1; t <= N; t++) {
+    if (totalUnits(aCur) <= 0 || totalUnits(dCur) <= 0) break;
+    const ratio = fleetScore(aCur) / Math.max(1, fleetScore(dCur));
+    const rate = Math.max(CAP_MIN, Math.min(CAP_MAX, CAP_MAX - CAP_MIN * (ratio - 1)));
+    const st: BattleState = { atkInit: { ...aCur }, defInit: { ...dCur }, aActive: { ...aCur }, dActive: { ...dCur }, aLost: {}, dLost: {}, aPem: {}, dPem: {}, rate };
+    const { aAssim, dAssim } = oneRound(st); // aAssim = atacantes assimilados pela DEFESA; dAssim = defensores assimilados pelo ATACANTE
+    const aSurv = survivors(st.aActive, st.aPem);
+    const dSurv = survivors(st.dActive, st.dPem);
+    const keys = (init: UnitMap, assim: UnitMap, surv: UnitMap) =>
+      Array.from(new Set([...Object.keys(init), ...Object.keys(assim), ...Object.keys(surv)]));
+    const rowsOf = (init: UnitMap, lost: UnitMap, pem: UnitMap, assim: UnitMap, surv: UnitMap): SimRow[] =>
+      keys(init, assim, surv).map((n) => ({ name: n, before: init[n] || 0, lost: lost[n] || 0, pem: pem[n] || 0, assim: assim[n] || 0, survivors: surv[n] || 0 }))
+        .filter((r) => r.before > 0 || r.lost > 0 || r.pem > 0 || r.assim > 0 || r.survivors > 0);
+    out.push({
+      tick: t,
+      attacker: rowsOf(st.atkInit, st.aLost, st.aPem, dAssim, aSurv),
+      defender: rowsOf(st.defInit, st.dLost, st.dPem, aAssim, dSurv),
+      aBefore: totalUnits(st.atkInit), dBefore: totalUnits(st.defInit),
+      aAfter: totalUnits(aSurv), dAfter: totalUnits(dSurv),
+      raidCapacity: raidCapacity(st.aActive),
+    });
+    aCur = aSurv; dCur = dSurv;
+  }
+  const aLeft = totalUnits(aCur), dLeft = totalUnits(dCur);
+  const winner: SimResult["winner"] =
+    aLeft <= 0 && dLeft <= 0 ? "ambos_destruidos" :
+    dLeft <= 0 ? "atacante" :
+    aLeft <= 0 ? "defesa" : "indefinido";
+  return { ticks: out, winner, finalAttacker: aCur, finalDefender: dCur };
+}
+
 // Marca uma frota como ENGAJADA no alvo. A batalha em si é resolvida POR PLANETA
 // em resolveSiege (todas as frotas atacantes + a defesa, 1 rodada por tick).
 export async function startEngagement(fleetId: string, _defenderPlanetId: string, arriveTick: number) {

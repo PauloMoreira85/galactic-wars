@@ -445,6 +445,15 @@ export const api = {
     request<{ ranking: { galaxy: number; name: string | null; score: number; planets: number; morale: number | null }[] }>("/game/tools/galaxy-ranking"),
   toolTechtree: () =>
     request<{ techs: { key: string; name: string; category: string; kind: string; desc: string; max: number; cost: number; ticks: number; requires: { name: string; level: number }[] }[] }>("/game/tools/techtree"),
+  combatSim: (attacker: Record<string, number>, defender: Record<string, number>, ticks = 3) =>
+    request<{
+      ticks: { tick: number; aBefore: number; dBefore: number; aAfter: number; dAfter: number; raidCapacity: number;
+        attacker: { name: string; before: number; lost: number; pem: number; assim: number; survivors: number }[];
+        defender: { name: string; before: number; lost: number; pem: number; assim: number; survivors: number }[];
+      }[];
+      winner: "atacante" | "defesa" | "ambos_destruidos" | "indefinido";
+      finalAttacker: Record<string, number>; finalDefender: Record<string, number>;
+    }>("/game/tools/combat-sim", { method: "POST", body: JSON.stringify({ attacker, defender, ticks }) }),
   toolPlanets: () =>
     request<{ planets: { name: string; commander: string; coords: string; galaxy: number; roids: number; score: number; protected: boolean }[]; totalUsers: number }>("/game/tools/planets"),
   spyReports: () =>
