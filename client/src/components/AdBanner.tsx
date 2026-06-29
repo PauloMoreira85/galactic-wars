@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
-import { api, type Ad } from "../api";
+import { api, type Ad, type AdPlacement } from "../api";
 
 const CONTACT = "mailto:contato@galacticwar.com.br?subject=Patroc%C3%ADnio%20Galactic%20Wars";
 
 // Banner de anunciantes. variant "stack" (landing, vertical) ou "strip" (faixa no jogo).
-// Sem anúncios ativos: na landing mostra o convite "seu anúncio aqui"; no jogo some.
-export function AdBanner({ variant = "strip", label = true }: { variant?: "stack" | "strip"; label?: boolean }) {
+// placement filtra os anúncios pelo local. Sem anúncios: na landing mostra o
+// convite "seu anúncio aqui"; nos demais lugares some.
+export function AdBanner({ variant = "strip", label = true, placement }: { variant?: "stack" | "strip"; label?: boolean; placement?: AdPlacement }) {
   const [ads, setAds] = useState<Ad[]>([]);
-  useEffect(() => { api.ads().then((d) => setAds(d.ads)).catch(() => {}); }, []);
+  useEffect(() => { api.ads(placement).then((d) => setAds(d.ads)).catch(() => {}); }, [placement]);
 
   if (ads.length === 0) {
     if (variant !== "stack") return null;

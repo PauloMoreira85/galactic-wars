@@ -258,8 +258,9 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
         </div>
       )}
 
-      {/* Anunciantes (gerenciados no admin) — ou convite "seu anúncio aqui". */}
-      <AdBanner variant="stack" />
+      {/* Anunciantes (gerenciados no admin) — login mostra os de "landing", a aba
+          Criar conta mostra os de "cadastro". Ou convite "seu anúncio aqui". */}
+      <AdBanner variant="stack" placement={mode === "register" ? "cadastro" : "landing"} />
 
       <div className="landing-foot">Galactic Wars · {new Date().getFullYear()}</div>
     </div>

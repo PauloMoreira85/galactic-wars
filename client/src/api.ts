@@ -484,7 +484,7 @@ export const api = {
     request<PrivateView>("/game/private/join", { method: "POST", body: JSON.stringify({ galaxy }) }),
 
   // ===== Anúncios =====
-  ads: () => request<{ ads: Ad[] }>("/ads"),
+  ads: (placement?: AdPlacement) => request<{ ads: Ad[] }>(`/ads${placement ? `?placement=${placement}` : ""}`),
   adClick: (id: string) => request<{ ok: boolean }>(`/ads/${id}/click`, { method: "POST" }).catch(() => {}),
   // Admin
   adminAds: () => request<{ ads: AdminAd[] }>("/ads/admin/all"),
@@ -493,9 +493,10 @@ export const api = {
   adminAdDelete: (id: string) => request<{ ok: boolean }>(`/ads/admin/${id}`, { method: "DELETE" }),
 };
 
+export type AdPlacement = "landing" | "cadastro" | "game" | "round" | "todas";
 export interface Ad { id: string; title: string; imageUrl: string; linkUrl: string; caption: string | null }
-export interface AdminAd extends Ad { active: boolean; sortOrder: number; clicks: number; createdAt: string }
-export interface AdInput { title: string; imageUrl: string; linkUrl: string; caption?: string | null; active?: boolean; sortOrder?: number }
+export interface AdminAd extends Ad { placement: AdPlacement; active: boolean; sortOrder: number; clicks: number; createdAt: string }
+export interface AdInput { title: string; imageUrl: string; linkUrl: string; caption?: string | null; placement?: AdPlacement; active?: boolean; sortOrder?: number }
 
 export interface PrivateView {
   owned: { galaxy: number; name: string | null; members: { name: string; commander: string; coords: string }[] } | null;

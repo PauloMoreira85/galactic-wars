@@ -65,7 +65,7 @@ export function RaceChoiceScreen({ view, onChosen, onLogout }: {
           <button type="button" className="link" onClick={() => { clearToken(); onLogout(); }}>sair</button>
         </div>
       </div>
-      <AdBanner variant="strip" />
+      <AdBanner variant="strip" placement="round" />
     </div>
   );
 }

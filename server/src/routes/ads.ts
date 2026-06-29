@@ -11,11 +11,14 @@ const MAX_IMG = 200_000; // ~200KB (data URL base64) — banner
 const isImage = (s: string) => /^data:image\/(png|jpe?g|gif|webp|svg\+xml);base64,/.test(s) || /^https?:\/\//.test(s);
 const isLink = (s: string) => /^https?:\/\//.test(s);
 
+export const PLACEMENTS = ["landing", "cadastro", "game", "round", "todas"] as const;
+
 const adSchema = z.object({
   title: z.string().min(1).max(80),
   imageUrl: z.string().min(1).max(MAX_IMG).refine(isImage, "Imagem inválida (use upload ou URL http)"),
   linkUrl: z.string().min(1).max(2000).refine(isLink, "Link deve começar com http(s)://"),
   caption: z.string().max(200).optional().nullable(),
+  placement: z.enum(PLACEMENTS).optional(),
   active: z.boolean().optional(),
   sortOrder: z.number().int().min(0).max(9999).optional(),
 });
@@ -49,10 +52,14 @@ adsRouter.delete("/admin/:id", requireAuth, requireAdmin, async (req, res) => {
 });
 
 // ===== Público =====
-// Anúncios ativos para exibir (landing / jogo / tela de round).
-adsRouter.get("/", async (_req, res) => {
+// Anúncios ativos para exibir. ?placement=landing|cadastro|game|round filtra pelo
+// local (incluindo os marcados como "todas"). Sem o parâmetro, devolve todos ativos.
+adsRouter.get("/", async (req, res) => {
+  const where: any = { active: true };
+  const pl = String(req.query.placement || "");
+  if ((PLACEMENTS as readonly string[]).includes(pl)) where.OR = [{ placement: pl }, { placement: "todas" }];
   const ads = await prisma.advertiser.findMany({
-    where: { active: true },
+    where,
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     select: { id: true, title: true, imageUrl: true, linkUrl: true, caption: true },
   });

@@ -751,7 +751,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
         {section === "intel" && <Inteligencia />}
 
-        <AdBanner variant="strip" />
+        <AdBanner variant="strip" placement="game" />
       </main>
 
       {/* Lightbox: clique na arte amplia; clique em qualquer lugar (ou Esc/X) fecha */}

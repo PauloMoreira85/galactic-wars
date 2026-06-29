@@ -447,6 +447,7 @@ model Advertiser {
   imageUrl  String   // banner (data URL base64 limitado, ou URL http)
   linkUrl   String   // destino do clique
   caption   String?  // texto curto opcional sob o banner
+  placement String   @default("game") // onde aparece: landing | cadastro | game | round | todas
   active    Boolean  @default(true)
   sortOrder Int      @default(0)
   clicks    Int      @default(0)
