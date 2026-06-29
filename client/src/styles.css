@@ -229,6 +229,10 @@ body::after {
 .menu-link.active { color: var(--accent); font-weight: 700; background: linear-gradient(90deg, rgba(37,211,255,0.18), transparent); border-left-color: var(--accent); text-shadow: 0 0 8px var(--glow); }
 .menu-link.soon { color: var(--muted); opacity: 0.5; cursor: not-allowed; }
 .menu-link.logout { color: var(--danger); }
+/* Notícias com novidade: amarelo BEM chamativo (fundo sólido + pisca). Vence .active por vir depois. */
+.menu-link.alert-news { color: #16100a; font-weight: 800; background: #ffd23f; border-left-color: #ffae00; text-shadow: none; box-shadow: 0 0 14px rgba(255,210,63,0.85); animation: msg-pulse 1.2s ease-in-out infinite; }
+.menu-link.alert-news:hover:not(:disabled) { color: #16100a; background: #ffdf6b; }
+.action-tab.alert-news { color: #16100a; font-weight: 800; background: #ffd23f; border-color: #ffae00; text-shadow: none; box-shadow: 0 0 14px rgba(255,210,63,0.85); animation: msg-pulse 1.2s ease-in-out infinite; }
 
 .content { flex: 1; min-width: 0; padding: 20px 28px 64px; max-width: 980px; }
 .section-title { font-family: "Orbitron", sans-serif; font-size: 20px; letter-spacing: 2px; text-transform: uppercase; margin: 4px 0 18px; color: #eaffff; text-shadow: 0 0 10px var(--glow); }

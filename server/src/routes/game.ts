@@ -213,7 +213,12 @@ async function planetView(userId: string) {
       };
     })(),
     onlineCount,
+    newsUnread: await prisma.news.count({ where: { planetId: planet.id, createdAt: { gt: planet.newsSeenAt ?? new Date(0) } } }),
     admin: config.adminUsers.includes(planet.user.username.toLowerCase()),
+    galaxyFund: {
+      metalium: gstate?.fundMetalium ?? 0, carbonum: gstate?.fundCarbonum ?? 0, plutonium: gstate?.fundPlutonium ?? 0,
+      taxRate: gstate?.taxRate ?? 0, marketFee: (gstate as any)?.marketFee ?? MARKET_FEE * 100,
+    },
     tech: techCatalog,
     units,
     queue,
@@ -563,6 +568,14 @@ gameRouter.get("/news", async (req: AuthedRequest, res) => {
   const planet = await myPlanet(req.userId!);
   if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
   res.json({ news: await recentNews(planet.id) });
+});
+
+// Marca as notícias como lidas (apaga o aviso amarelo até chegar algo novo).
+gameRouter.post("/news/seen", async (req: AuthedRequest, res) => {
+  const planet = await myPlanet(req.userId!);
+  if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
+  await prisma.planet.update({ where: { id: planet.id }, data: { newsSeenAt: new Date() } }).catch(() => {});
+  res.json({ ok: true });
 });
 
 // ===== Governo da galáxia (CG, ministros, imposto, fundo) =====

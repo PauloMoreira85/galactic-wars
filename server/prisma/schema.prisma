@@ -89,6 +89,9 @@ model Planet {
   // Tick em que o planeta foi criado (proteção de novato = createdTick + 72).
   createdTick Int @default(0)
 
+  // Última vez que o jogador abriu as Notícias (pra contar quantas são novas).
+  newsSeenAt DateTime?
+
   // Auto-exílios restantes (cai em galáxia aleatória não-privada). Máx 3 por planeta.
   autoExiles Int @default(3)
 

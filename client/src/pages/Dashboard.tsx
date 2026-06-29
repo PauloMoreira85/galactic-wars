@@ -192,6 +192,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [zoom, setZoom] = useState<{ src: string; alt: string } | null>(null);
   const [alerts, setAlerts] = useState({ underAttack: false, incomingDefense: false, galaxyUnderAttack: false });
   const [unreadMsgs, setUnreadMsgs] = useState(0);
+  const [newsUnread, setNewsUnread] = useState(0);
   const countdown = useCountdown(view);
   const roundStatus = useRoundStatus(view);
   const [pmTo, setPmTo] = useState(""); // coordenada pré-preenchida ao mandar msg pela Galáxia
@@ -208,6 +209,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
       const [v, r] = await Promise.all([api.me(), api.ranking()]);
       setView(v);
       setRanking(r.ranking);
+      setNewsUnread(v.newsUnread ?? 0);
       try {
         const t = await api.traffic();
         setAlerts({
@@ -233,6 +235,11 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     const t = setInterval(refresh, 15000);
     return () => clearInterval(t);
   }, []);
+
+  // Ao abrir as Notícias, marca como lidas e apaga o aviso amarelo.
+  useEffect(() => {
+    if (section === "noticias") { setNewsUnread(0); api.newsSeen(); }
+  }, [section]);
 
   async function build(resource: Resource) {
     setError("");
@@ -380,12 +387,12 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
               {group.map((it) => (
                 <button
                   key={it.key}
-                  className={`menu-link ${section === it.key ? "active" : ""} ${it.soon ? "soon" : ""} ${it.key === "mensagens" && unreadMsgs > 0 ? "alert-msg" : ""}`}
+                  className={`menu-link ${section === it.key ? "active" : ""} ${it.soon ? "soon" : ""} ${it.key === "mensagens" && unreadMsgs > 0 ? "alert-msg" : ""} ${it.key === "noticias" && newsUnread > 0 ? "alert-news" : ""}`}
                   disabled={it.soon}
                   title={it.soon ? "Em breve" : ""}
                   onClick={() => go(it)}
                 >
-                  {it.label}{it.key === "mensagens" && unreadMsgs > 0 ? ` ✉️ (${unreadMsgs})` : ""}
+                  {it.label}{it.key === "mensagens" && unreadMsgs > 0 ? ` ✉️ (${unreadMsgs})` : ""}{it.key === "noticias" && newsUnread > 0 ? ` 🔔 (${newsUnread})` : ""}
                 </button>
               ))}
             </div>
@@ -455,8 +462,8 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             ["forumgalaxia", "💬 Fórum"],
             ["noticias", "📰 Notícias"],
           ] as [Section, string][]).map(([key, label]) => (
-            <button key={key} className={`action-tab ${section === key ? "active" : ""} ${key === "mensagens" && unreadMsgs > 0 ? "alert-msg" : ""}`} onClick={() => setSection(key)}>
-              {label}{key === "mensagens" && unreadMsgs > 0 ? ` (${unreadMsgs})` : ""}
+            <button key={key} className={`action-tab ${section === key ? "active" : ""} ${key === "mensagens" && unreadMsgs > 0 ? "alert-msg" : ""} ${key === "noticias" && newsUnread > 0 ? "alert-news" : ""}`} onClick={() => setSection(key)}>
+              {label}{key === "mensagens" && unreadMsgs > 0 ? ` (${unreadMsgs})` : ""}{key === "noticias" && newsUnread > 0 ? ` 🔔 (${newsUnread})` : ""}
             </button>
           ))}
           {/* Radar: acende quando ALGUÉM da sua galáxia está sob ataque */}
@@ -568,7 +575,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
           <div className="panel">
             <h2>Asteroides (roids) — {planet.roids.total} no total</h2>
             <div className="cost">
-              Inicie a mineração de um roid pagando <b>só o recurso dele</b>. O custo sobe +250 a cada roid daquele recurso. Cada roid produz <b>{fmt(450)}</b>/tick. Teto: <b>{fmt(30000000)}</b> por recurso (o que passar é perdido).
+              Inicie a mineração de um roid (pago em <b>Metalium</b>). O custo sobe <b>+1.000</b> a cada roid daquele recurso. Cada roid produz <b>250</b>/tick. Teto: <b>{fmt(30000000)}</b> por recurso (o que passar é perdido).
             </div>
             {RES_META.map(({ key, label }) => (
               <div className="roid-row" key={key}>
@@ -588,6 +595,18 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
               </div>
             ))}
             {error && <div className="error" style={{ marginTop: 12 }}>{error}</div>}
+          </div>
+
+          <div className="panel">
+            <h2>🏦 Fundo da Galáxia</h2>
+            <div className="cost" style={{ marginBottom: 10 }}>
+              O <b>imposto</b> da galáxia ({view.galaxyFund.taxRate}% da produção) e as trocas no mercado abastecem este fundo — o <b>Ministro da Economia</b> usa pra doar recursos aos planetas e define a taxa do mercado.
+            </div>
+            <div style={{ display: "flex", gap: 22, flexWrap: "wrap" }}>
+              <div><span className="dot metalium" /> Metalium: <b>{fmt(view.galaxyFund.metalium)}</b></div>
+              <div><span className="dot carbonum" /> Carbonum: <b>{fmt(view.galaxyFund.carbonum)}</b></div>
+              <div><span className="dot plutonium" /> Plutonium: <b>{fmt(view.galaxyFund.plutonium)}</b></div>
+            </div>
           </div>
 
           <div className="panel">
