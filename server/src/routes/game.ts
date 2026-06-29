@@ -23,7 +23,7 @@ import { createAlliance, invitePlayer, acceptInvite, leaveAlliance, kickMember, 
 import { forumIndex, listTopics, createTopic, getTopic, reply as forumReply, isForum } from "../game/forum.js";
 import { sendChat, recentChat, resolveRoom } from "../game/chat.js";
 import { sendPM, inbox, sentbox, markRead, unreadCount } from "../game/pm.js";
-import { SABOTAGES, availableSabotages, executeSabotage } from "../game/sabotage.js";
+import { SABOTAGES, availableSabotages, executeSabotage, sabotageOdds, sabotageCatalog } from "../game/sabotage.js";
 import { parseUnits, totalUnits } from "../game/unitmap.js";
 import {
   TECHS, TECH_BY_KEY, levelOf, upgradeCost, upgradeTicks, reqsMet, espionageLevel,
@@ -1100,6 +1100,23 @@ gameRouter.post("/tools/combat-sim", async (req: AuthedRequest, res) => {
     return res.status(400).json({ error: "Adicione naves no ataque e/ou na defesa." });
   }
   res.json(simulateCombat(attacker, defender, parsed.data.ticks ?? BATTLE_TICKS));
+});
+
+// Calculadora de Sabotagem: prevê chance/custo no jogo atual (catálogo + odds).
+gameRouter.get("/tools/sabotage", (_req, res) => res.json({ sabotages: sabotageCatalog() }));
+gameRouter.post("/tools/sabotage-sim", async (req: AuthedRequest, res) => {
+  const parsed = z.object({
+    key: z.string(),
+    myRoids: z.number().int().min(0).max(1_000_000),
+    targetRoids: z.number().int().min(0).max(1_000_000),
+    targetRace: z.string(),
+    targetCE: z.number().int().min(0).max(1_000_000),
+  }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "Dados inválidos" });
+  const { key, myRoids, targetRoids, targetRace, targetCE } = parsed.data;
+  const odds = sabotageOdds(key, myRoids, targetRoids, targetRace, targetCE);
+  if (!odds) return res.status(400).json({ error: "Sabotagem desconhecida" });
+  res.json(odds);
 });
 
 // Lista de planetas com pontuação (Procura de Planetas / Universo / Gráficos).

@@ -6,7 +6,7 @@ function fmt(n: number) {
   return n.toLocaleString("pt-BR");
 }
 
-type Tool = "universo" | "unidades" | "techtree" | "calculadora" | "procura" | "rankings" | "graficos" | "espionagem";
+type Tool = "universo" | "unidades" | "techtree" | "calculadora" | "sabocalc" | "procura" | "rankings" | "graficos" | "espionagem";
 
 const RACE_LABEL: Record<string, string> = {
   Humana: "Humanos", Daharan: "Daharan", Rakshasa: "Rakshasa", "c-Mech": "c-Mech", Insecta: "Insecta",
@@ -22,6 +22,7 @@ export function Ferramentas({ onClose }: { onClose: () => void }) {
     { key: "unidades", label: "Tabela de Unidades" },
     { key: "techtree", label: "Árvore Tecnológica" },
     { key: "calculadora", label: "Calculadora de Combate" },
+    { key: "sabocalc", label: "Calculadora de Sabotagem" },
     { key: "procura", label: "Procura de Planetas" },
     { key: "rankings", label: "Rankings (Galáxias)" },
     { key: "graficos", label: "Gráficos Comparativos" },
@@ -47,6 +48,7 @@ export function Ferramentas({ onClose }: { onClose: () => void }) {
         {tool === "unidades" && <TabelaUnidades />}
         {tool === "techtree" && <ArvoreTec />}
         {tool === "calculadora" && <Calculadora />}
+        {tool === "sabocalc" && <SabotagemCalc />}
         {tool === "procura" && <ProcuraPlanetas />}
         {tool === "rankings" && <RankingGalaxias />}
         {tool === "graficos" && <Graficos />}
@@ -257,6 +259,76 @@ function Calculadora() {
   );
 }
 
+const SAB_RACES: [string, string][] = [["humanos", "Humanos"], ["daharan", "Daharan"], ["rakshasa", "Rakshasa"], ["mech", "c-Mech"], ["insecta", "Insecta"]];
+
+function SabotagemCalc() {
+  const [sabos, setSabos] = useState<Awaited<ReturnType<typeof api.toolSabotages>>["sabotages"]>([]);
+  const [key, setKey] = useState("");
+  const [myRoids, setMyRoids] = useState(6);
+  const [tgtRoids, setTgtRoids] = useState(6);
+  const [tgtRace, setTgtRace] = useState("humanos");
+  const [tgtCE, setTgtCE] = useState(0);
+  const [res, setRes] = useState<Awaited<ReturnType<typeof api.sabotageSim>> | null>(null);
+  const [err, setErr] = useState("");
+
+  useEffect(() => { api.toolSabotages().then((d) => { setSabos(d.sabotages); setKey(d.sabotages[0]?.key ?? ""); }).catch(() => {}); }, []);
+  async function run() {
+    setErr(""); setRes(null);
+    try { setRes(await api.sabotageSim({ key, myRoids, targetRoids: tgtRoids, targetRace: tgtRace, targetCE: tgtCE })); }
+    catch (e: any) { setErr(e.message ?? "Falha"); }
+  }
+  const pct = (n: number) => `${Math.round(n * 100)}%`;
+  const num = (label: string, val: number, set: (n: number) => void) => (
+    <label key={label} className="roid-count" style={{ display: "block" }}>
+      {label}
+      <input type="text" inputMode="numeric" value={val} onChange={(e) => set(Math.max(0, Math.floor(Number(e.target.value.replace(/\D/g, "")) || 0)))} style={{ width: "100%", marginTop: 4, padding: "6px 8px" }} />
+    </label>
+  );
+
+  return (
+    <div className="panel">
+      <h2>Calculadora de Sabotagem</h2>
+      <div className="cost" style={{ marginBottom: 12 }}>
+        Prevê as chances no jogo atual: a contra-espionagem (CE) do alvo pode <b>bloquear</b>, e mesmo sem CE a <b>infiltração</b> pode falhar.
+        Vantagem de roids ajuda; Rakshasa é mais difícil. Custo é só em <b>plutônio</b> e é pago mesmo se falhar.
+      </div>
+      <div className="grid3" style={{ marginBottom: 12 }}>
+        <label className="roid-count" style={{ display: "block" }}>
+          Sabotagem
+          <select value={key} onChange={(e) => setKey(e.target.value)} style={{ width: "100%", marginTop: 4, padding: "6px 8px", background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6 }}>
+            {sabos.map((s) => <option key={s.key} value={s.key}>{s.name}</option>)}
+          </select>
+        </label>
+        <label className="roid-count" style={{ display: "block" }}>
+          Raça do alvo
+          <select value={tgtRace} onChange={(e) => setTgtRace(e.target.value)} style={{ width: "100%", marginTop: 4, padding: "6px 8px", background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6 }}>
+            {SAB_RACES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+          </select>
+        </label>
+        {num("Seus roids (total)", myRoids, setMyRoids)}
+        {num("Roids do alvo (total)", tgtRoids, setTgtRoids)}
+        {num("Agentes CE do alvo", tgtCE, setTgtCE)}
+      </div>
+      <button onClick={run}>🎯 Calcular</button>
+      {err && <div className="error" style={{ marginTop: 8 }}>{err}</div>}
+      {res && (
+        <div style={{ marginTop: 14 }}>
+          <div className="combat-ini">{res.name}</div>
+          <div className="grid3" style={{ marginTop: 8 }}>
+            <div className="res-card"><div className="name">Chance de SUCESSO</div><div className="amount">{pct(res.success)}</div></div>
+            <div className="res-card"><div className="name">Custo (plutônio)</div><div className="amount">{fmt(res.plut)}</div></div>
+            <div className="res-card"><div className="name">Tempo</div><div className="amount">{res.ticks}t</div></div>
+          </div>
+          <div className="cost" style={{ marginTop: 10 }}>
+            Bloqueio por contra-espionagem: <b>{pct(res.block)}</b> · Infiltração (se não bloqueada): <b>{pct(res.infil)}</b>
+            <br />Sucesso líquido = (1 − bloqueio) × infiltração = <b>{pct(res.success)}</b>. O plutônio é gasto mesmo numa falha.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Universo() {
   const [data, setData] = useState<Awaited<ReturnType<typeof api.toolPlanets>> | null>(null);
   const [gal, setGal] = useState<Awaited<ReturnType<typeof api.galaxyRanking>>["ranking"]>([]);
@@ -384,33 +456,41 @@ function Espionagem() {
   const [reports, setReports] = useState<Awaited<ReturnType<typeof api.spyReports>>["reports"]>([]);
   const [open, setOpen] = useState<string | null>(null);
   const [code, setCode] = useState("");
-  const [looked, setLooked] = useState<Awaited<ReturnType<typeof api.spyLookup>> | null>(null);
+  const [looked, setLooked] = useState<Awaited<ReturnType<typeof api.spyLookup>>[]>([]);
   const [err, setErr] = useState("");
   useEffect(() => { api.spyReports().then((d) => setReports(d.reports)).catch(() => {}); }, []);
   const AGENT: Record<string, string> = { P: "Padrão", M: "Militar", T: "Transmissão", D: "Duplo" };
 
   async function lookup() {
-    setErr(""); setLooked(null);
-    try { setLooked(await api.spyLookup(code.trim())); }
-    catch (e: any) { setErr(e.message ?? "Código não encontrado"); }
+    setErr(""); setLooked([]);
+    // Vários códigos de uma vez, separados por ";" (igual ao toolkit original).
+    const codes = code.split(";").map((c) => c.trim()).filter(Boolean);
+    if (codes.length === 0) return;
+    const out: Awaited<ReturnType<typeof api.spyLookup>>[] = [];
+    const bad: string[] = [];
+    for (const c of codes) {
+      try { out.push(await api.spyLookup(c)); } catch { bad.push(c); }
+    }
+    setLooked(out);
+    if (bad.length) setErr(`Não encontrado: ${bad.join(", ")}`);
   }
 
   return (
     <>
       <div className="panel">
         <h2>Visualizar Espionagem</h2>
-        <div className="cost" style={{ marginBottom: 10 }}>Cole um <b>código</b> de espionagem que alguém te passou para ver o relatório.</div>
+        <div className="cost" style={{ marginBottom: 10 }}>Cole um <b>código</b> de espionagem (ou vários, separados por <b>;</b>) para ver os relatórios.</div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="código (ex.: A1B2C3D4)" style={{ width: 200, margin: 0, padding: "6px 10px", letterSpacing: 1 }} />
+          <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="código(s): A1B2C3D4; E5F6G7H8" style={{ width: 280, margin: 0, padding: "6px 10px", letterSpacing: 1 }} />
           <button disabled={!code.trim()} onClick={lookup}>abrir</button>
         </div>
         {err && <div className="error" style={{ marginTop: 8 }}>{err}</div>}
-        {looked && (
-          <div style={{ marginTop: 12 }}>
-            <div className="combat-ini">{looked.targetName} ({looked.targetCoords}) · agente {AGENT[looked.agent] ?? looked.agent} · tick #{looked.tick}</div>
-            <div style={{ marginTop: 6 }}><IntelReport intel={looked.intel} /></div>
+        {looked.map((lk, i) => (
+          <div key={i} style={{ marginTop: 12 }}>
+            <div className="combat-ini">{lk.targetName} ({lk.targetCoords}) · agente {AGENT[lk.agent] ?? lk.agent} · tick #{lk.tick}</div>
+            <div style={{ marginTop: 6 }}><IntelReport intel={lk.intel} /></div>
           </div>
-        )}
+        ))}
       </div>
 
       <div className="panel">

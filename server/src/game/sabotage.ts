@@ -37,6 +37,20 @@ export function infiltrationChance(myRoids: number, targetRoids: number, targetR
   return Math.max(0.2, Math.min(0.9, c)); // teto 90% → sempre há risco
 }
 
+// Calculadora de Sabotagem: prevê o resultado no jogo ATUAL (mesmas fórmulas do
+// executeSabotage). block = chance da contra-espionagem do alvo barrar;
+// infil = chance da infiltração dar certo (se não barrada); success = líquida.
+export function sabotageOdds(key: string, myRoids: number, targetRoids: number, targetRace: string, targetCE: number) {
+  const def = SAB_BY_KEY[key];
+  if (!def) return null;
+  const block = blockChance(targetCE, targetRoids, targetRace);
+  const infil = infiltrationChance(myRoids, targetRoids, targetRace);
+  return { key, name: def.name, plut: def.plut, ticks: def.ticks, block, infil, success: (1 - block) * infil };
+}
+export function sabotageCatalog() {
+  return SABOTAGES.map((s) => ({ key: s.key, name: s.name, plut: s.plut, ticks: s.ticks }));
+}
+
 // Sabotagens que o sabotador pode usar (com base nas construções).
 export function availableSabotages(techJson: string): string[] {
   const levels = parseTech(techJson);
