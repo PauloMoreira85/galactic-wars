@@ -2,6 +2,13 @@ import { prisma } from "../db.js";
 import { ROID_PRODUCTION_PER_TICK } from "./constants.js";
 import { addNews } from "./news.js";
 import { addMorale } from "./morale.js";
+import { galaxyId, galaxyWhere, galaxyDecompose } from "./geo.js";
+
+// "setor:sistema" para exibir uma galáxia (a partir do id interno).
+function coordLabel(id: number): string {
+  const { setor, sistema } = galaxyDecompose(id);
+  return `${setor}:${sistema}`;
+}
 
 export const MAX_TAX = 50;            // teto do imposto (%)
 export const DONATION_MAX_PCT = 20;   // máximo do fundo por doação a 1 planeta
@@ -11,9 +18,10 @@ async function ensureGalaxy(galaxy: number) {
   return prisma.galaxyState.upsert({ where: { galaxy }, update: {}, create: { galaxy } });
 }
 
+// Retorna o ID da galáxia (= par setor:sistema, via galaxyId) do planeta.
 async function planetGalaxy(planetId: string): Promise<number | null> {
-  const p = await prisma.planet.findUnique({ where: { id: planetId }, select: { galaxy: true } });
-  return p?.galaxy ?? null;
+  const p = await prisma.planet.findUnique({ where: { id: planetId }, select: { galaxy: true, system: true } });
+  return p ? galaxyId(p.galaxy, p.system) : null;
 }
 
 // Recalcula o CG (mais votado) da galáxia. Se mudar, zera os ministros.
@@ -98,7 +106,10 @@ export async function cancelTreaty(mdPlanetId: string, otherGalaxy: number) {
 
 export async function listTreaties(galaxy: number) {
   const ts = await prisma.galaxyTreaty.findMany({ where: { OR: [{ galaxyA: galaxy }, { galaxyB: galaxy }] } });
-  return ts.map((t) => ({ other: t.galaxyA === galaxy ? t.galaxyB : t.galaxyA, status: t.status, proposedByMe: t.proposedBy === galaxy }));
+  return ts.map((t) => {
+    const other = t.galaxyA === galaxy ? t.galaxyB : t.galaxyA;
+    return { other, otherCoord: coordLabel(other), status: t.status, proposedByMe: t.proposedBy === galaxy };
+  });
 }
 
 // Existe tratado ATIVO entre as duas galáxias? (bloqueia ataque)
@@ -181,7 +192,7 @@ export async function processTax(n: number) {
   if (n <= 0) return;
   const states = await prisma.galaxyState.findMany({ where: { taxRate: { gt: 0 } } });
   for (const st of states) {
-    const planets = await prisma.planet.findMany({ where: { galaxy: st.galaxy } });
+    const planets = await prisma.planet.findMany({ where: galaxyWhere(st.galaxy) });
     let fm = 0, fc = 0, fp = 0;
     for (const pl of planets) {
       const prodM = Math.floor(pl.roidMetalium * ROID_PRODUCTION_PER_TICK * pl.prodMul / 100) * n;
@@ -205,7 +216,7 @@ export async function govView(planetId: string) {
   const g = await planetGalaxy(planetId);
   if (g == null) return null;
   const st = await ensureGalaxy(g);
-  const planets = await prisma.planet.findMany({ where: { galaxy: g }, include: { user: { select: { username: true } } } });
+  const planets = await prisma.planet.findMany({ where: galaxyWhere(g), include: { user: { select: { username: true } } } });
   const votes = await prisma.galaxyVote.findMany({ where: { galaxy: g } });
   const tally: Record<string, number> = {};
   for (const v of votes) tally[v.candidatePlanetId] = (tally[v.candidatePlanetId] || 0) + 1;
@@ -213,7 +224,7 @@ export async function govView(planetId: string) {
   const myVote = votes.find((v) => v.voterPlanetId === planetId)?.candidatePlanetId ?? null;
 
   return {
-    galaxy: g,
+    galaxy: g, galaxyCoord: coordLabel(g),
     galaxyName: st.name, flag: st.flag,
     cg: nameOf(st.cgPlanetId), cgId: st.cgPlanetId,
     me: nameOf(st.mePlanetId), meId: st.mePlanetId,
@@ -234,7 +245,7 @@ export async function mgFleets(mgPlanetId: string) {
   if (g == null) throw new Error("Planeta nao encontrado");
   const st = await ensureGalaxy(g);
   if (st.mgPlanetId !== mgPlanetId) throw new Error("Apenas o Ministro da Guerra pode ver isto");
-  const planets = await prisma.planet.findMany({ where: { galaxy: g }, select: { id: true, name: true } });
+  const planets = await prisma.planet.findMany({ where: galaxyWhere(g), select: { id: true, name: true } });
   const byId = new Map(planets.map((p) => [p.id, p.name]));
   const fleets = await prisma.fleet.findMany({ where: { ownerPlanetId: { in: planets.map((p) => p.id) } } });
   return fleets.map((f) => ({

@@ -5,6 +5,7 @@
 import type { ClasseCode } from "./unitTable.js";
 import { unitByName } from "./catalog.js";
 import type { UnitMap } from "./unitmap.js";
+import { galaxyDecompose } from "./geo.js";
 
 const BASE_TEC: Record<ClasseCode, number> = { Ca: 6, Co: 7, Fr: 8, De: 9, Cr: 9, Na: 10, Ro: 6 };
 const MAX_PROPULSAO_REDUCTION = 4;
@@ -14,12 +15,11 @@ export function effectiveTec(classe: ClasseCode, propulsaoLevel: number): number
   return Math.max(1, BASE_TEC[classe] - red);
 }
 
-// Galáxias 1..9 num grid 3x3: setor = linha, paralelo = coluna.
-function sector(g: number) { return Math.floor((g - 1) / 3); }
-function parallel(g: number) { return (g - 1) % 3; }
+// Penalidade de distância entre duas galáxias (recebe os IDS de galaxyId()):
+// mesma galáxia = 0 · mesmo setor (galáxia vizinha) = +2 · outro setor = +4.
 export function galaxyPenalty(a: number, b: number): number {
   if (a === b) return 0; // mesma galáxia
-  if (sector(a) === sector(b) || parallel(a) === parallel(b)) return 2; // mesmo setor ou paralelo
+  if (galaxyDecompose(a).setor === galaxyDecompose(b).setor) return 2; // mesmo setor
   return 4;
 }
 

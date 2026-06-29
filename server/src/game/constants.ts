@@ -30,12 +30,13 @@ export const STARTING = {
   roidPlutonium: 1,
 };
 
-// Slots (planetas) por galáxia. Galáxias pequenas = melhor jogabilidade com
-// poucos jogadores. Configurável por env (RUR usa 3).
+// Slots (planetas) por galáxia (= por par setor:sistema). Galáxias pequenas =
+// melhor competitividade. Configurável por env (RUR usa 3).
 export const SLOTS_PER_SYSTEM = Number(process.env.SLOTS_PER_SYSTEM ?? 5);
 
-// Número de galáxias no universo.
-export const GALAXIES = 6;
+// Número de galáxias PÚBLICAS no universo = setores (5) × sistemas (6) = 30.
+// Cada galáxia é o par (setor, sistema); os ids 1..30 vêm de galaxyId().
+export const GALAXIES = 30;
 
 // Auto-exílios por planeta.
 export const MAX_AUTO_EXILES = 3;

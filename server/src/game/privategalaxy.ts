@@ -1,8 +1,11 @@
 import { prisma } from "../db.js";
 import { GALAXIES } from "./constants.js";
 import { relocate } from "./relocation.js";
+import { galaxyId, galaxyWhere } from "./geo.js";
 
-const PRIVATE_BASE = 100; // galáxias privadas usam números a partir de 100
+// Galáxias privadas ocupam SETORES a partir de 100 (sistema 1), fora do universo
+// público (setores 1..5). O id interno vem de galaxyId(setor, 1).
+const PRIVATE_SETOR_BASE = 100;
 
 async function userOf(planetId: string) {
   return prisma.planet.findUnique({ where: { id: planetId }, include: { user: true } });
@@ -16,15 +19,17 @@ export async function createPrivateGalaxy(planetId: string, name: string) {
   const already = await prisma.galaxyState.findFirst({ where: { ownerPlanetId: planetId } });
   if (already) throw new Error("Você já tem uma galáxia privada");
 
-  // Acha o primeiro número livre a partir de 100 (sem GalaxyState e sem planetas).
-  let g = PRIVATE_BASE;
-  for (; g < PRIVATE_BASE + 1000; g++) {
-    const st = await prisma.galaxyState.findUnique({ where: { galaxy: g } });
-    const occupied = await prisma.planet.count({ where: { galaxy: g } });
-    if (!st && occupied === 0) break;
+  // Acha o primeiro setor privado livre (sem GalaxyState e sem planetas).
+  let g = 0;
+  for (let setor = PRIVATE_SETOR_BASE; setor < PRIVATE_SETOR_BASE + 1000; setor++) {
+    const id = galaxyId(setor, 1);
+    const st = await prisma.galaxyState.findUnique({ where: { galaxy: id } });
+    const occupied = await prisma.planet.count({ where: { galaxy: setor, system: 1 } });
+    if (!st && occupied === 0) { g = id; break; }
   }
+  if (!g) throw new Error("Sem espaço para galáxia privada");
   await prisma.galaxyState.create({
-    data: { galaxy: g, isPrivate: true, ownerPlanetId: planetId, name: name.trim().slice(0, 40) || `Galáxia Privada ${g}` },
+    data: { galaxy: g, isPrivate: true, ownerPlanetId: planetId, name: name.trim().slice(0, 40) || `Galáxia Privada` },
   });
   await relocate(planetId, g); // dono entra na própria galáxia
   return { galaxy: g };
@@ -36,7 +41,7 @@ export async function invitePrivate(ownerPlanetId: string, username: string) {
   if (!st) throw new Error("Você não tem uma galáxia privada");
   const user = await prisma.user.findUnique({ where: { username: username.trim() }, include: { planet: true } });
   if (!user?.planet) throw new Error("Jogador não encontrado");
-  if (user.planet.galaxy === st.galaxy) throw new Error("Esse jogador já está na sua galáxia");
+  if (galaxyId(user.planet.galaxy, user.planet.system) === st.galaxy) throw new Error("Esse jogador já está na sua galáxia");
   await prisma.galaxyInvite.upsert({
     where: { galaxy_planetId: { galaxy: st.galaxy, planetId: user.planet.id } },
     update: {}, create: { galaxy: st.galaxy, planetId: user.planet.id },
@@ -60,7 +65,7 @@ export async function privateView(planetId: string) {
   const owned = await prisma.galaxyState.findFirst({ where: { ownerPlanetId: planetId, isPrivate: true } });
   let members: { name: string; commander: string; coords: string }[] = [];
   if (owned) {
-    const ps = await prisma.planet.findMany({ where: { galaxy: owned.galaxy }, include: { user: { select: { username: true } } } });
+    const ps = await prisma.planet.findMany({ where: galaxyWhere(owned.galaxy), include: { user: { select: { username: true } } } });
     members = ps.map((p) => ({ name: p.name, commander: p.user.username, coords: `${p.galaxy}:${p.system}:${p.slot}` }));
   }
   const invites = await prisma.galaxyInvite.findMany({ where: { planetId } });

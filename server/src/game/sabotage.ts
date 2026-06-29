@@ -57,7 +57,7 @@ export async function executeSabotage(saboteurPlanetId: string, target: { galaxy
   const tgt = await prisma.planet.findUnique({ where: { galaxy_system_slot: target }, include: { user: { select: { race: true } } } });
   if (!tgt) throw new Error("Nenhum planeta nessas coordenadas");
   if (tgt.id === me.id) throw new Error("Você não pode sabotar a si mesmo");
-  if (tgt.galaxy === me.galaxy) throw new Error("Não dá pra sabotar planetas da sua galáxia (aliados)");
+  if (tgt.galaxy === me.galaxy && tgt.system === me.system) throw new Error("Não dá pra sabotar planetas da sua galáxia (aliados)");
 
   // Restrição de pontuação (mesma do ataque): só sabota alvos dentro do range.
   // (Espionagem NÃO tem essa restrição — pode em qualquer um.)

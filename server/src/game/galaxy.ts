@@ -1,7 +1,7 @@
 import { prisma, TX_OPTS, withWrite } from "../db.js";
 import { startEngagement, resolveSiege } from "./combat.js";
 import { parseUnits, stringifyUnits, totalUnits, addUnits, type UnitMap } from "./unitmap.js";
-import { type Coords } from "./geo.js";
+import { type Coords, galaxyId, galaxyWhere } from "./geo.js";
 import { travelTime } from "./travel.js";
 import { travelReductionTicks } from "./tech.js";
 import { unitByName, radarVisibleCount } from "./catalog.js";
@@ -119,10 +119,10 @@ export async function dispatchFleet(planetId: string, fleetId: string, target: C
     const opposite = mission === "attack" ? "transport" : "attack";
     const conflict = await tx.fleet.count({ where: { ownerPlanetId: planetId, mission: opposite, status: { in: ["outbound", "engaged", "garrison"] }, targetGalaxy: target.galaxy, targetSystem: target.system, targetSlot: target.slot } });
     if (conflict > 0) throw new Error(mission === "attack" ? "Você já tem uma frota DEFENDENDO esse planeta — não dá pra atacar e defender o mesmo ao mesmo tempo" : "Você já tem uma frota ATACANDO esse planeta — não dá pra defender e atacar o mesmo ao mesmo tempo");
-    if (mission === "attack" && target.galaxy === origin.galaxy) {
+    if (mission === "attack" && target.galaxy === origin.galaxy && target.system === origin.system) {
       throw new Error("Nao e possivel atacar planetas da mesma galaxia (sao aliados)");
     }
-    if (mission === "attack" && await hasActiveTreaty(origin.galaxy, target.galaxy)) {
+    if (mission === "attack" && await hasActiveTreaty(galaxyId(origin.galaxy, origin.system), galaxyId(target.galaxy, target.system))) {
       throw new Error("Há um tratado de não-agressão com essa galáxia");
     }
     if (mission === "attack") {
@@ -155,7 +155,7 @@ export async function dispatchFleet(planetId: string, fleetId: string, target: C
     await tx.planet.update({ where: { id: planetId }, data: { plutonium: { decrement: fuel } } });
 
     const tick = await currentTick();
-    const tt = travelTime(origin.galaxy, target.galaxy, fleetUnits, propLevelOf(planet.tech));
+    const tt = travelTime(galaxyId(origin.galaxy, origin.system), galaxyId(target.galaxy, target.system), fleetUnits, propLevelOf(planet.tech));
     await tx.fleet.update({
       where: { id: fleetId },
       data: {
@@ -192,9 +192,9 @@ export async function returnFleetToBase(fleetId: string) {
   });
 }
 
-async function scheduleReturn(fleetId: string, fleet: { ownerPlanetId: string; arriveTick: number; targetGalaxy: number; originGalaxy: number }, units: UnitMap) {
+async function scheduleReturn(fleetId: string, fleet: { ownerPlanetId: string; arriveTick: number; targetGalaxy: number; targetSystem: number; originGalaxy: number; originSystem: number }, units: UnitMap) {
   const owner = await prisma.planet.findUnique({ where: { id: fleet.ownerPlanetId } });
-  const back = travelTime(fleet.targetGalaxy, fleet.originGalaxy, units, propLevelOf(owner?.tech ?? "{}"));
+  const back = travelTime(galaxyId(fleet.targetGalaxy, fleet.targetSystem), galaxyId(fleet.originGalaxy, fleet.originSystem), units, propLevelOf(owner?.tech ?? "{}"));
   await prisma.fleet.update({
     where: { id: fleetId },
     data: { status: "returning", departTick: fleet.arriveTick, arriveTick: fleet.arriveTick + back, units: stringifyUnits(units) },
@@ -263,7 +263,8 @@ const RACE_TAG: Record<string, string> = { humanos: "Hum", daharan: "Dah", raksh
 const ONLINE_MS = 5 * 60 * 1000;
 
 // Visão rica de um sistema: cabeçalho da galáxia + 15 slots com pontuação/rank/status.
-export async function viewSystem(galaxy: number, system: number, viewer: { id: string; galaxy: number } | null = null) {
+export async function viewSystem(galaxy: number, system: number, viewer: { id: string; galaxy: number; system: number } | null = null) {
+  const thisGalId = galaxyId(galaxy, system);
   const nowMs = Date.now();
   const all = await prisma.planet.findMany({ include: { user: { select: { username: true, race: true, lastSeen: true } } } });
   const fleets = await prisma.fleet.findMany();
@@ -276,13 +277,13 @@ export async function viewSystem(galaxy: number, system: number, viewer: { id: s
   const rankById: Record<string, number> = {};
   ranked.forEach((r, i) => { rankById[r.id] = i + 1; });
 
-  // Pontuação e rank por galáxia.
+  // Pontuação e rank por galáxia (= par setor:sistema, via galaxyId).
   const galScore: Record<number, number> = {};
-  for (const p of all) galScore[p.galaxy] = (galScore[p.galaxy] || 0) + scoreOf(p);
+  for (const p of all) { const id = galaxyId(p.galaxy, p.system); galScore[id] = (galScore[id] || 0) + scoreOf(p); }
   const galRank: Record<number, number> = {};
   Object.entries(galScore).sort((a, b) => b[1] - a[1]).forEach(([g], i) => { galRank[Number(g)] = i + 1; });
 
-  const gst = await prisma.galaxyState.findUnique({ where: { galaxy } });
+  const gst = await prisma.galaxyState.findUnique({ where: { galaxy: thisGalId } });
   const nowTick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
   const inSystem = all.filter((p) => p.galaxy === galaxy && p.system === system);
   const byslot = new Map(inSystem.map((p) => [p.slot, p]));
@@ -294,7 +295,7 @@ export async function viewSystem(galaxy: number, system: number, viewer: { id: s
 
   // Raça é SEGREDO: só aparece pro próprio planeta, pro MG desta galáxia, ou
   // pra quem já espionou o alvo (fica salvo). Resto vê "?".
-  const viewerGalaxy = viewer?.galaxy ?? null;
+  const viewerGalId = viewer ? galaxyId(viewer.galaxy, viewer.system) : null;
   const isMG = !!viewer && gst?.mgPlanetId === viewer.id;
   const spiedRace = new Set<string>();
   if (viewer) {
@@ -308,7 +309,7 @@ export async function viewSystem(galaxy: number, system: number, viewer: { id: s
     if (!p) { slots.push({ slot, occupied: false }); continue; }
     const idleMs = nowMs - new Date(p.user.lastSeen).getTime();
     // Online/inatividade só visível na própria galáxia; fora dela vem null.
-    const sameGalaxy = viewerGalaxy == null || galaxy === viewerGalaxy;
+    const sameGalaxy = viewerGalId == null || thisGalId === viewerGalId;
     const showRace = viewer?.id === p.id || isMG || spiedRace.has(`${galaxy}:${system}:${slot}|${p.name}`);
     slots.push({
       slot, occupied: true, planetId: p.id, name: p.name, preposition: p.preposition,
@@ -328,8 +329,8 @@ export async function viewSystem(galaxy: number, system: number, viewer: { id: s
     galaxy, system,
     name: gst?.name ?? null,
     flag: gst?.flag ?? null,
-    score: galScore[galaxy] ?? 0,
-    rank: galRank[galaxy] ?? null,
+    score: galScore[thisGalId] ?? 0,
+    rank: galRank[thisGalId] ?? null,
     morale: null, // a definir
     slots,
   };
@@ -342,11 +343,11 @@ export async function galaxyTraffic(planetId: string) {
   if (!me) throw new Error("Planeta nao encontrado");
   const nowTick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
 
-  const fleets = await prisma.fleet.findMany({ where: { targetGalaxy: me.galaxy, status: { in: ["outbound", "engaged"] } } });
+  const fleets = await prisma.fleet.findMany({ where: { targetGalaxy: me.galaxy, targetSystem: me.system, status: { in: ["outbound", "engaged"] } } });
   const ownerIds = [...new Set(fleets.map((f) => f.ownerPlanetId))];
   const owners = await prisma.planet.findMany({ where: { id: { in: ownerIds } }, include: { user: { select: { username: true } } } });
   const ownerMap = new Map(owners.map((o) => [o.id, o]));
-  const targets = await prisma.planet.findMany({ where: { galaxy: me.galaxy }, select: { system: true, slot: true, name: true } });
+  const targets = await prisma.planet.findMany({ where: { galaxy: me.galaxy, system: me.system }, select: { system: true, slot: true, name: true } });
   const targetMap = new Map(targets.map((t) => [`${t.system}:${t.slot}`, t.name]));
 
   const list = fleets.map((f) => {
@@ -368,7 +369,7 @@ export async function galaxyTraffic(planetId: string) {
 
   // Movimentação da galáxia: TODAS as frotas em movimento dos planetas da MINHA
   // galáxia (ataque/defesa), agrupadas por planeta dono.
-  const galaxyPlanets = await prisma.planet.findMany({ where: { galaxy: me.galaxy }, include: { user: { select: { username: true } } } });
+  const galaxyPlanets = await prisma.planet.findMany({ where: { galaxy: me.galaxy, system: me.system }, include: { user: { select: { username: true } } } });
   const pById = new Map(galaxyPlanets.map((p) => [p.id, p]));
   const moving = await prisma.fleet.findMany({
     where: { ownerPlanetId: { in: galaxyPlanets.map((p) => p.id) }, status: { in: ["outbound", "engaged", "returning", "garrison"] } },

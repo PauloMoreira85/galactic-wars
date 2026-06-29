@@ -1,4 +1,5 @@
 import { prisma } from "../db.js";
+import { galaxyId } from "./geo.js";
 
 // Envia uma mensagem numa sala.
 export async function sendChat(room: string, authorName: string, body: string) {
@@ -24,7 +25,7 @@ export async function resolveRoom(userId: string, logical: string): Promise<{ ke
   if (logical === "universo") return { key: "universo", label: "Universal" };
   const planet = await prisma.planet.findUnique({ where: { userId } });
   if (!planet) return null;
-  if (logical === "galaxia") return { key: `gal-${planet.galaxy}`, label: `Galáxia ${planet.galaxy}` };
+  if (logical === "galaxia") return { key: `gal-${galaxyId(planet.galaxy, planet.system)}`, label: `Galáxia ${planet.galaxy}:${planet.system}` };
   if (logical === "alianca") {
     const mem = await prisma.allianceMember.findUnique({ where: { planetId: planet.id }, include: { alliance: true } });
     if (!mem) return null;

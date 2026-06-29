@@ -52,9 +52,10 @@ export function Galaxy({ view, onChanged, onMessage }: { view: PlanetView; onCha
     return () => clearInterval(t);
   }, []);
 
-  // Mesma galáxia = aliados: só transporte (não pode atacar).
+  // Mesma galáxia (= mesmo setor E sistema) = aliados: só transporte (não pode atacar).
   const myGalaxy = g || 1;
-  const sameGalaxy = galaxy === myGalaxy;
+  const mySystem = s || 1;
+  const sameGalaxy = galaxy === myGalaxy && system === mySystem;
 
   async function pickTarget(slot: number, name: string) {
     setTarget({ slot, name });
@@ -123,7 +124,7 @@ export function Galaxy({ view, onChanged, onMessage }: { view: PlanetView; onCha
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 10 }}>
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             <div>
-            <h2 style={{ marginBottom: 2 }}>{data?.name ? data.name : `Galáxia ${galaxy}`}</h2>
+            <h2 style={{ marginBottom: 2 }}>{data?.name ? data.name : `Galáxia ${galaxy}:${system}`}</h2>
             <div className="roid-count">
               Pontuação: <b style={{ color: "var(--text)" }}>{fmt(data?.score ?? 0)}</b> · Rank: <b style={{ color: "var(--text)" }}>{data?.rank ?? "—"}º</b>
               {data?.morale != null && <> · Moral: <b style={{ color: "var(--text)" }}>{data.morale}</b></>}
@@ -131,19 +132,17 @@ export function Galaxy({ view, onChanged, onMessage }: { view: PlanetView; onCha
             </div>
           </div>
           <div className="galnav">
-            <button className="galnav-vert" title="Setor +1" onClick={() => setSystem((v) => v + 1)}>∧</button>
+            <button className="galnav-vert" title="Sistema +1" onClick={() => setSystem((v) => Math.min(6, v + 1))}>∧</button>
             <div className="galnav-coords">
-              <input type="number" min={1} value={galaxy} title="Galáxia" onChange={(e) => setGalaxy(Math.max(1, Number(e.target.value)))} />
-              <input type="number" min={1} value={system} title="Setor/Sistema" onChange={(e) => setSystem(Math.max(1, Number(e.target.value)))} />
+              <input type="number" min={1} max={5} value={galaxy} title="Setor (1-5)" onChange={(e) => setGalaxy(Math.max(1, Math.min(5, Number(e.target.value))))} />
+              <input type="number" min={1} max={6} value={system} title="Sistema (1-6)" onChange={(e) => setSystem(Math.max(1, Math.min(6, Number(e.target.value))))} />
             </div>
             <div className="galnav-row">
-              <button title="-3 galáxias" onClick={() => setGalaxy((v) => Math.max(1, v - 3))}>«</button>
-              <button title="Galáxia anterior" onClick={() => setGalaxy((v) => Math.max(1, v - 1))}>‹</button>
+              <button title="Setor anterior" onClick={() => setGalaxy((v) => Math.max(1, v - 1))}>‹</button>
               <button className="galnav-go" onClick={() => loadSystem()}>Visualizar</button>
-              <button title="Próxima galáxia" onClick={() => setGalaxy((v) => v + 1)}>›</button>
-              <button title="+3 galáxias" onClick={() => setGalaxy((v) => v + 3)}>»</button>
+              <button title="Próximo setor" onClick={() => setGalaxy((v) => Math.min(5, v + 1))}>›</button>
             </div>
-            <button className="galnav-vert" title="Setor -1" onClick={() => setSystem((v) => Math.max(1, v - 1))}>∨</button>
+            <button className="galnav-vert" title="Sistema -1" onClick={() => setSystem((v) => Math.max(1, v - 1))}>∨</button>
           </div>
         </div>
         <div className="roid-count" style={{ margin: "8px 0" }}>seu planeta: {myCoords} · agentes que você tem: {(["P","M","T","D"] as const).filter(a=>agentsIHave[a]).join(" ") || "nenhum"}</div>
@@ -249,7 +248,7 @@ export function Galaxy({ view, onChanged, onMessage }: { view: PlanetView; onCha
           </div>
           {sameGalaxy && (
             <div className="cost" style={{ color: "var(--carbonum)" }}>
-              🤝 Planetas da sua galáxia ({myGalaxy}) são aliados — só é possível <b>defender</b>. Para atacar, mire em outra galáxia.
+              🤝 Planetas da sua galáxia ({myGalaxy}:{mySystem}) são aliados — só é possível <b>defender</b>. Para atacar, mire em outra galáxia.
             </div>
           )}
           <div className="cost" style={{ margin: "8px 0" }}>Escolha uma frota pronta na base para enviar:</div>

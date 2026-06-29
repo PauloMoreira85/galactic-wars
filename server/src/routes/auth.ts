@@ -7,6 +7,7 @@ import { signToken } from "../auth.js";
 import { sendMail } from "../email.js";
 import { clientIp, recordIp } from "../game/ipguard.js";
 import { STARTING, SLOTS_PER_SYSTEM, GALAXIES } from "../game/constants.js";
+import { galaxyId, galaxyDecompose } from "../game/geo.js";
 import { RACE_KEYS, publicRaces, type RaceKey } from "../game/races.js";
 import { unitsOfRace, CLASS_LABEL } from "../game/catalog.js";
 
@@ -46,21 +47,41 @@ const registerSchema = z.object({
   whatsapp: z.string().max(30).optional(),
 });
 
-// Acha um slot livre no mapa. Distribui os jogadores entre galaxias (round-robin)
-// para que jogadores proximos fiquem em galaxias DIFERENTES (e portanto possam
-// guerrear entre si — mesma galaxia = aliados). GALAXIES vem de constants (=6).
-async function allocateSlot() {
-  // Coordenadas ja ocupadas (evita colisao com a constraint unica).
-  const planets = await prisma.planet.findMany({ select: { galaxy: true, system: true, slot: true } });
-  const taken = new Set(planets.map((p) => `${p.galaxy}:${p.system}:${p.slot}`));
-  for (let i = 0; i < 1_000_000; i++) {
-    const galaxy = (i % GALAXIES) + 1;
-    const idx = Math.floor(i / GALAXIES); // posicao dentro da galaxia
-    const system = Math.floor(idx / SLOTS_PER_SYSTEM) + 1;
-    const slot = (idx % SLOTS_PER_SYSTEM) + 1;
-    if (!taken.has(`${galaxy}:${system}:${slot}`)) return { galaxy, system, slot };
+// Acha um slot livre no mapa. ESTRATÉGIA EQUILIBRADA: abre só o número de galáxias
+// necessário (~total/SLOTS, mínimo 2 pra sempre haver inimigo) e coloca o novato
+// na galáxia mais VAZIA entre as abertas. Assim as galáxias enchem juntas (evita
+// dezenas de galáxias com 1-2 planetas) sem deixar todo mundo aliado no começo.
+export async function allocateSlot() {
+  const planets = await prisma.planet.findMany({
+    where: { galaxy: { lte: GALAXIES } }, // só públicas (privadas usam setor >= 100)
+    select: { galaxy: true, system: true, slot: true },
+  });
+  // Quantos planetas em cada galáxia (id 1..GALAXIES).
+  const count = new Array(GALAXIES + 1).fill(0);
+  const taken = new Set<string>();
+  for (const p of planets) {
+    taken.add(`${p.galaxy}:${p.system}:${p.slot}`);
+    const id = galaxyId(p.galaxy, p.system);
+    if (id >= 1 && id <= GALAXIES) count[id]++;
   }
-  throw new Error("Sem slots livres no universo");
+  const total = planets.length;
+  const open = Math.min(GALAXIES, Math.max(2, Math.ceil((total + 1) / SLOTS_PER_SYSTEM)));
+
+  // Procura a galáxia mais vazia com vaga. 1ª passada nas `open`; se todas cheias,
+  // libera as demais até GALAXIES.
+  for (const limit of [open, GALAXIES]) {
+    let best = -1;
+    for (let id = 1; id <= limit; id++) {
+      if (count[id] >= SLOTS_PER_SYSTEM) continue;
+      if (best === -1 || count[id] < count[best]) best = id;
+    }
+    if (best === -1) continue;
+    const { setor, sistema } = galaxyDecompose(best);
+    for (let slot = 1; slot <= SLOTS_PER_SYSTEM; slot++) {
+      if (!taken.has(`${setor}:${sistema}:${slot}`)) return { galaxy: setor, system: sistema, slot };
+    }
+  }
+  throw new Error("Universo cheio (todas as galáxias lotadas)");
 }
 
 authRouter.post("/register", async (req, res) => {

@@ -8,6 +8,7 @@ import { RACES, isRaceKey, RACE_KEYS } from "../game/races.js";
 import { startUpgrade, buildUnit, buildAgent, parseTech, cancelOrder } from "../game/fleet.js";
 import { AGENTS, AGENT_KEYS, AGENT_FULL_NAME, isAgentKey, parseAgents, stringifyAgents, isShielded, ceNeeded, spySuccessChance, ROIDS_POR_CE } from "../game/agents.js";
 import { createFleet, setFleetComposition, renameFleet, dispatchFleet, fuelCost, viewSystem, galaxyTraffic, type ShipCounts } from "../game/galaxy.js";
+import { galaxyId, galaxyDecompose } from "../game/geo.js";
 import { recallFleet, BATTLE_TICKS, simulateCombat } from "../game/combat.js";
 import { unitsOfRace, isUnitUnlocked, CLASS_LABEL, unitByName, shipImage, radarVisibleCount } from "../game/catalog.js";
 import { UNIT_TABLE } from "../game/unitTable.js";
@@ -95,7 +96,7 @@ async function planetView(userId: string) {
   let rank = 1;
   for (const p of allP) { if (fullScore(p) > score) rank++; }
   const onlineCount = await prisma.user.count({ where: { lastSeen: { gt: new Date(Date.now() - 5 * 60 * 1000) } } });
-  const gstate = await prisma.galaxyState.findUnique({ where: { galaxy: planet.galaxy } });
+  const gstate = await prisma.galaxyState.findUnique({ where: { galaxy: galaxyId(planet.galaxy, planet.system) } });
   const cargo = gstate?.cgPlanetId === planet.id ? "Comandante de Galáxia"
     : gstate?.mePlanetId === planet.id ? "Ministro da Economia"
     : gstate?.mgPlanetId === planet.id ? "Ministro de Guerra"
@@ -284,7 +285,7 @@ gameRouter.get("/galaxy/:galaxy/:system", async (req: AuthedRequest, res) => {
   }
   const me = await prisma.planet.findUnique({ where: { userId: req.userId! } });
   // Online/inatividade só na própria galáxia; raça é segredo (própria/MG/espionada).
-  const view: any = await viewSystem(galaxy, system, me ? { id: me.id, galaxy: me.galaxy } : null);
+  const view: any = await viewSystem(galaxy, system, me ? { id: me.id, galaxy: me.galaxy, system: me.system } : null);
   // Agentes que EU posso USAR aqui: precisa ter PESQUISADO o tipo E ter pelo menos
   // 1 TREINADO (espionar gasta 1). Sem treinar, o botão fica desabilitado.
   const lvl = me ? espionageLevel(parseTech(me.tech)) : 0;
@@ -303,7 +304,8 @@ gameRouter.get("/fleets", async (req: AuthedRequest, res) => {
   const fleets = await prisma.fleet.findMany({ where: { ownerPlanetId: planet.id }, orderBy: { name: "asc" } });
   const out = fleets.map((f) => {
     const units = parseUnits(f.units);
-    const tecBase = travelTime(planet.galaxy, planet.galaxy, units, prop); // TEC da frota (penalidade 0)
+    const myGalId = galaxyId(planet.galaxy, planet.system);
+    const tecBase = travelTime(myGalId, myGalId, units, prop); // TEC da frota (penalidade 0)
     return {
       id: f.id, name: f.name, mission: f.mission, status: f.status, idle: f.status === "idle",
       origin: `${f.originGalaxy}:${f.originSystem}:${f.originSlot}`,
@@ -392,7 +394,7 @@ gameRouter.post("/fleets/:id/dispatch", async (req: AuthedRequest, res) => {
 gameRouter.get("/travel/:galaxy/:system/:slot", async (req: AuthedRequest, res) => {
   const planet = await prisma.planet.findUnique({ where: { userId: req.userId! } });
   if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
-  res.json({ penalty: galaxyPenalty(planet.galaxy, Number(req.params.galaxy)) });
+  res.json({ penalty: galaxyPenalty(galaxyId(planet.galaxy, planet.system), galaxyId(Number(req.params.galaxy), Number(req.params.system))) });
 });
 
 // ===== Treino de agentes de inteligência =====
@@ -756,7 +758,7 @@ async function galaxyForumOk(userId: string, key: string): Promise<boolean> {
   const m = key.match(/^gal-(\d+)$/);
   if (!m) return true; // fórum universal
   const planet = await prisma.planet.findUnique({ where: { userId } });
-  return !!planet && planet.galaxy === Number(m[1]);
+  return !!planet && galaxyId(planet.galaxy, planet.system) === Number(m[1]);
 }
 
 gameRouter.get("/forum/topics/:key", async (req: AuthedRequest, res) => {
@@ -1057,7 +1059,7 @@ gameRouter.get("/tools/units", async (_req, res) => {
 
 // Ranking das galáxias por pontuação (Top 25).
 gameRouter.get("/tools/galaxy-ranking", async (_req, res) => {
-  const planets = await prisma.planet.findMany({ select: { id: true, galaxy: true, units: true, metalium: true, carbonum: true, plutonium: true, roidMetalium: true, roidCarbonum: true, roidPlutonium: true, agents: true, tech: true } });
+  const planets = await prisma.planet.findMany({ select: { id: true, galaxy: true, system: true, units: true, metalium: true, carbonum: true, plutonium: true, roidMetalium: true, roidCarbonum: true, roidPlutonium: true, agents: true, tech: true } });
   const fleets = await prisma.fleet.findMany({ select: { ownerPlanetId: true, units: true } });
   const states = await prisma.galaxyState.findMany();
   const nameOf = new Map(states.map((s) => [s.galaxy, s.name]));
@@ -1067,12 +1069,12 @@ gameRouter.get("/tools/galaxy-ranking", async (_req, res) => {
   for (const p of planets) {
     const u: Record<string, number> = { ...parseUnits(p.units) };
     const fl = fleetUnitsBy[p.id] ?? {}; for (const n of Object.keys(fl)) u[n] = (u[n] || 0) + fl[n];
-    const g = (byGalaxy[p.galaxy] ??= { score: 0, planets: 0 });
+    const g = (byGalaxy[galaxyId(p.galaxy, p.system)] ??= { score: 0, planets: 0 });
     g.score += planetScore(p, u);
     g.planets++;
   }
   const ranking = Object.entries(byGalaxy)
-    .map(([g, v]) => ({ galaxy: Number(g), name: nameOf.get(Number(g)) ?? null, score: v.score, planets: v.planets, morale: null as number | null }))
+    .map(([g, v]) => { const { setor, sistema } = galaxyDecompose(Number(g)); return { galaxy: Number(g), coord: `${setor}:${sistema}`, name: nameOf.get(Number(g)) ?? null, score: v.score, planets: v.planets, morale: null as number | null }; })
     .sort((a, b) => b.score - a.score).slice(0, 25);
   res.json({ ranking });
 });

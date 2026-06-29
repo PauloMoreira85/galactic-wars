@@ -3,6 +3,7 @@ import { isRaceKey, type RaceKey } from "./races.js";
 import { unitByName, raceTable } from "./catalog.js";
 import { parseUnits, stringifyUnits, totalUnits, addUnits, type UnitMap } from "./unitmap.js";
 import { travelTime } from "./travel.js";
+import { galaxyId } from "./geo.js";
 import { travelReductionTicks } from "./tech.js";
 import { addNews } from "./news.js";
 import { addMorale } from "./morale.js";
@@ -347,7 +348,7 @@ export async function finalize(fleetId: string, tick: number) {
   try { propLevel = atkP ? travelReductionTicks(JSON.parse(atkP.tech)) : 0; } catch {}
   const arrived = fleet.status === "engaged" || tick >= fleet.arriveTick;
   const back = arrived
-    ? travelTime(fleet.targetGalaxy, fleet.originGalaxy, atkSurv, propLevel)
+    ? travelTime(galaxyId(fleet.targetGalaxy, fleet.targetSystem), galaxyId(fleet.originGalaxy, fleet.originSystem), atkSurv, propLevel)
     : Math.max(1, tick - fleet.departTick);
   if (totalUnits(atkSurv) <= 0) {
     await prisma.fleet.update({ where: { id: fleetId }, data: { status: "idle", units: "{}", battleState: null, departTick: 0, arriveTick: 0, capMetalium: 0, capCarbonum: 0, capPlutonium: 0 } });

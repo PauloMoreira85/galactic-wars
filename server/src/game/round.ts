@@ -1,5 +1,6 @@
 import { prisma } from "../db.js";
-import { STARTING } from "./constants.js";
+import { STARTING, SLOTS_PER_SYSTEM, GALAXIES } from "./constants.js";
+import { galaxyDecompose } from "./geo.js";
 import { snapshotHallOfFame } from "./hall.js";
 
 // SOFT RESET (compartilhado): novo round MANTENDO contas e planetas (mesmas
@@ -45,6 +46,18 @@ export async function softResetRound(roundStartAt?: Date) {
       prodMul: 100, travelMul: 100, morale: 100, fleetSlots: 0, createdTick: 0, autoExiles: 3,
     },
   });
+
+  // Re-acomoda TODOS os planetas no universo compacto (setor:sistema:slot).
+  // Distribui em ~N/SLOTS galáxias (mínimo 2) de forma equilibrada — galáxias
+  // enchem juntas, sempre há ≥2 pra ter inimigo. Mantém contas; muda só coordenadas.
+  const all = await prisma.planet.findMany({ orderBy: { createdAt: "asc" }, select: { id: true } });
+  const open = Math.min(GALAXIES, Math.max(2, Math.ceil(all.length / SLOTS_PER_SYSTEM)));
+  for (let i = 0; i < all.length; i++) {
+    const galId = (i % open) + 1;
+    const slot = Math.floor(i / open) + 1;
+    const { setor, sistema } = galaxyDecompose(galId);
+    await prisma.planet.update({ where: { id: all[i].id }, data: { galaxy: setor, system: sistema, slot } });
+  }
 
   // Reinicia o relógio do round (tick #0) e arma o início do novo round.
   const start = roundStartAt ?? new Date();

@@ -10,7 +10,9 @@ export function Governo() {
   const [error, setError] = useState("");
   const [taxInput, setTaxInput] = useState(0);
   const [galName, setGalName] = useState("");
-  const [treatyG, setTreatyG] = useState(1);
+  const [treatySetor, setTreatySetor] = useState(1);
+  const [treatySistema, setTreatySistema] = useState(1);
+  const treatyGalId = (treatySetor - 1) * 6 + treatySistema; // = galaxyId(setor, sistema)
   const [donTo, setDonTo] = useState("");
   const [don, setDon] = useState({ metalium: 0, carbonum: 0, plutonium: 0 });
   const [mgFleets, setMgFleets] = useState<{ owner: string; mission: string; status: string; target: string }[]>([]);
@@ -73,7 +75,7 @@ export function Governo() {
   return (
     <>
       <div className="panel">
-        <h2>Governo da Galáxia {gov.galaxy}</h2>
+        <h2>Governo da Galáxia {gov.galaxyCoord ?? gov.galaxy}</h2>
         <div className="status-row"><span>👑 Comandante (CG)</span><b>{gov.cg ?? "— vago —"}</b></div>
         <div className="status-row"><span>💰 Min. da Economia</span><b>{gov.me ?? "— vago —"}</b></div>
         <div className="status-row"><span>⚔️ Min. da Guerra</span><b>{gov.mg ?? "— vago —"}</b></div>
@@ -176,9 +178,11 @@ export function Governo() {
           <h2>🕊️ Diplomacia (MD)</h2>
           <div className="cost">Tratados de não-agressão entre galáxias (ambas precisam aceitar). Com tratado ativo, ninguém ataca a outra galáxia.</div>
           <div style={{ display: "flex", gap: 6, alignItems: "center", margin: "8px 0" }}>
-            <span className="roid-count">Galáxia</span>
-            <input type="number" min={1} value={treatyG} onChange={(e) => setTreatyG(Math.max(1, Number(e.target.value)))} style={{ width: 70, margin: 0, padding: "4px 8px" }} />
-            <button onClick={() => act(() => api.treatyAction("propose", treatyG))}>propor tratado</button>
+            <span className="roid-count">Galáxia (setor:sistema)</span>
+            <input type="number" min={1} max={5} value={treatySetor} title="Setor (1-5)" onChange={(e) => setTreatySetor(Math.max(1, Math.min(5, Number(e.target.value))))} style={{ width: 56, margin: 0, padding: "4px 8px" }} />
+            <span>:</span>
+            <input type="number" min={1} max={6} value={treatySistema} title="Sistema (1-6)" onChange={(e) => setTreatySistema(Math.max(1, Math.min(6, Number(e.target.value))))} style={{ width: 56, margin: 0, padding: "4px 8px" }} />
+            <button onClick={() => act(() => api.treatyAction("propose", treatyGalId))}>propor tratado</button>
           </div>
           {(gov.treaties?.length ?? 0) === 0 ? <div className="roid-count">Nenhum tratado.</div> : (
             <table>
@@ -186,7 +190,7 @@ export function Governo() {
               <tbody>
                 {gov.treaties!.map((t) => (
                   <tr key={t.other}>
-                    <td>Galáxia {t.other}</td>
+                    <td>Galáxia {t.otherCoord ?? t.other}</td>
                     <td className="roid-count">{t.status === "active" ? "✅ ativo" : t.proposedByMe ? "⏳ aguardando aceite deles" : "📨 proposta recebida"}</td>
                     <td>
                       {t.status === "proposed" && !t.proposedByMe && <button onClick={() => act(() => api.treatyAction("accept", t.other))}>aceitar</button>}{" "}

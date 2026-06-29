@@ -115,7 +115,7 @@ function RankingGalaxias() {
           {ranking.map((g, i) => (
             <tr key={g.galaxy}>
               <td className="rank-num">{i + 1}º</td>
-              <td><b>{g.name ?? `Galáxia ${g.galaxy}`}</b> <span className="roid-count">({g.galaxy})</span></td>
+              <td><b>{g.name ?? `Galáxia ${g.coord}`}</b> <span className="roid-count">({g.coord})</span></td>
               <td>{g.planets}</td>
               <td>
                 {fmt(g.score)}
@@ -337,7 +337,7 @@ function Universo() {
   }, []);
   if (!data) return <div className="panel"><div className="roid-count">Carregando...</div></div>;
   const totalScore = data.planets.reduce((s, p) => s + p.score, 0);
-  const populated = new Set(data.planets.map((p) => p.galaxy)).size;
+  const populated = new Set(data.planets.map((p) => p.coords.split(":").slice(0, 2).join(":"))).size;
   return (
     <div className="panel">
       <h2>Universo</h2>
@@ -356,7 +356,7 @@ function Universo() {
           ))}
         </tbody>
       </table>
-      {gal.length > 0 && <div className="cost" style={{ marginTop: 10 }}>Maior galáxia: <b>{gal[0].name ?? `Galáxia ${gal[0].galaxy}`}</b> ({fmt(gal[0].score)} pts)</div>}
+      {gal.length > 0 && <div className="cost" style={{ marginTop: 10 }}>Maior galáxia: <b>{gal[0].name ?? `Galáxia ${gal[0].coord}`}</b> ({fmt(gal[0].score)} pts)</div>}
     </div>
   );
 }
