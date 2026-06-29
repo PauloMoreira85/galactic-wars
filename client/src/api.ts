@@ -444,7 +444,7 @@ export const api = {
   galaxyRanking: () =>
     request<{ ranking: { galaxy: number; name: string | null; score: number; planets: number; morale: number | null }[] }>("/game/tools/galaxy-ranking"),
   toolTechtree: () =>
-    request<{ techs: { key: string; name: string; category: string; kind: string; desc: string; max: number; requires: { name: string; level: number }[] }[] }>("/game/tools/techtree"),
+    request<{ techs: { key: string; name: string; category: string; kind: string; desc: string; max: number; cost: number; ticks: number; requires: { name: string; level: number }[] }[] }>("/game/tools/techtree"),
   toolPlanets: () =>
     request<{ planets: { name: string; commander: string; coords: string; galaxy: number; roids: number; score: number; protected: boolean }[]; totalUsers: number }>("/game/tools/planets"),
   spyReports: () =>

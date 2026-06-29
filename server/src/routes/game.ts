@@ -1076,6 +1076,7 @@ gameRouter.get("/tools/techtree", async (_req, res) => {
   res.json({
     techs: TECHS.map((t) => ({
       key: t.key, name: t.name, category: t.category, kind: t.kind, desc: t.desc, max: t.max,
+      cost: t.baseCost.metalium, ticks: t.baseTicks,
       requires: t.requires.map((r) => ({ name: TECH_BY_KEY[r.key]?.name ?? r.key, level: r.level })),
     })),
   });

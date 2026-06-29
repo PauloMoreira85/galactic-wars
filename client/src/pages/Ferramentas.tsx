@@ -228,6 +228,10 @@ function ArvoreTec() {
                 <div className="roid-count">{t.desc}</div>
                 {t.requires.length > 0 && <div className="roid-count" style={{ color: "var(--danger)" }}>requer: {t.requires.map((r) => `${r.name} nv${r.level}`).join(", ")}</div>}
               </div></div>
+              <div style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                <div className="roid-count">{fmt(t.cost)} M · {fmt(t.cost)} C</div>
+                <div className="roid-count" style={{ color: "var(--accent)" }}>{t.ticks} ticks</div>
+              </div>
             </div>
           ))}
         </div>
