@@ -1,6 +1,7 @@
 import { prisma } from "../db.js";
 import { ROID_PRODUCTION_PER_TICK } from "./constants.js";
 import { addNews } from "./news.js";
+import { addMorale } from "./morale.js";
 
 export const MAX_TAX = 50;            // teto do imposto (%)
 export const DONATION_MAX_PCT = 20;   // máximo do fundo por doação a 1 planeta
@@ -25,6 +26,9 @@ async function recomputeCG(galaxy: number) {
   const st = await ensureGalaxy(galaxy);
   if (st.cgPlanetId !== top) {
     await prisma.galaxyState.update({ where: { galaxy }, data: { cgPlanetId: top, mePlanetId: null, mgPlanetId: null, mdPlanetId: null } });
+    // Moral: quem assume o posto de Comandante da Galaxia ganha +10; quem perde, -10.
+    if (st.cgPlanetId) await addMorale(st.cgPlanetId, -10);
+    if (top) await addMorale(top, 10);
   }
 }
 
