@@ -41,7 +41,7 @@ export function Sabotagem() {
       {msg && <div className="cost" style={{ color: "var(--carbonum)" }}>{msg}</div>}
       {error && <div className="error">{error}</div>}
       <table>
-        <thead><tr><th>Sabotagem</th><th>Efeito</th><th></th></tr></thead>
+        <thead><tr><th>Sabotagem</th><th>Efeito</th><th>Tempo</th><th></th></tr></thead>
         <tbody>
           {data.all.map((s) => {
             const unlocked = data.available.includes(s.key);
@@ -49,6 +49,7 @@ export function Sabotagem() {
               <tr key={s.key} style={{ opacity: unlocked ? 1 : 0.45 }}>
                 <td><b>{s.name}</b></td>
                 <td className="roid-count">{s.desc}</td>
+                <td className="roid-count">{s.ticks}t</td>
                 <td>{unlocked ? <button onClick={() => run(s.key)}>executar</button> : <span className="roid-count">🔒 pesquisar</span>}</td>
               </tr>
             );

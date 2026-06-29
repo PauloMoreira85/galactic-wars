@@ -5,7 +5,7 @@ import { processBuildOrders, parseTech } from "./fleet.js";
 import { miningBonus } from "./tech.js";
 import { processFleets } from "./galaxy.js";
 import { processTax } from "./governance.js";
-import { processEffects } from "./sabotage.js";
+import { processEffects, resolveSabotages } from "./sabotage.js";
 import { softResetRound } from "./round.js";
 
 let timer: NodeJS.Timeout | null = null;
@@ -105,6 +105,7 @@ async function applyTicks(fromTick: number, toTick: number) {
   const t4 = Date.now();
   for (let t = fromTick + 1; t <= toTick; t++) {
     await processFleets(t);
+    await resolveSabotages(t);
   }
   const t5 = Date.now();
   if (t5 - t0 >= 1000) {

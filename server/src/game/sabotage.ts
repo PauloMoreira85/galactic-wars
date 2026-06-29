@@ -11,26 +11,28 @@ import { parseAgents, blockChance, ceNeeded } from "./agents.js";
 
 const SAB_COOLDOWN = 5; // ticks entre sabotagens do mesmo sabotador
 
-export interface SabotageDef { key: string; name: string; building: string; desc: string }
-// Cada sabotagem exige a construção (tech) correspondente.
+export interface SabotageDef { key: string; name: string; building: string; desc: string; ticks: number }
+// Cada sabotagem exige a construção (tech) correspondente. `ticks` = tempo de
+// CONCLUSÃO: a sabotagem é lançada agora e o efeito só cai depois desses ticks.
 export const SABOTAGES: SabotageDef[] = [
-  { key: "explosao_mina", name: "Explosão de Mina", building: "sabSistemasMineracao", desc: "Zera a produção de roids do alvo por 1 tick." },
-  { key: "blackout", name: "Blackout Industrial", building: "sabEquipeProducao", desc: "Atrasa a produção de naves do alvo em 4 ticks." },
-  { key: "roubo_recursos", name: "Roubo de Recursos", building: "sabInfiltracao", desc: "Destrói parte dos recursos do alvo e rouba metade." },
-  { key: "vazamento", name: "Vazamento Radioativo", building: "sabEquipeMineracao", desc: "Reduz a produção do alvo em 75% por 4 ticks." },
-  { key: "virus", name: "Vírus Industrial", building: "sabProducaoAvancada", desc: "Atrasa a produção de naves do alvo em 16 ticks." },
-  { key: "forjar_ordem", name: "Forjar Ordem", building: "sabProducaoAvancada", desc: "Faz TODAS as frotas do alvo recuarem." },
-  { key: "roubo_tecnologia", name: "Roubo de Tecnologia", building: "sabAssimiladora", desc: "Rouba uma tecnologia do alvo." },
+  { key: "explosao_mina", name: "Explosão de Mina", building: "sabSistemasMineracao", ticks: 3, desc: "Zera a produção de roids do alvo por 1 tick." },
+  { key: "blackout", name: "Blackout Industrial", building: "sabEquipeProducao", ticks: 4, desc: "Atrasa a produção de naves do alvo em 4 ticks." },
+  { key: "roubo_recursos", name: "Roubo de Recursos", building: "sabInfiltracao", ticks: 6, desc: "Rouba ~8% dos recursos do alvo e destrói outros ~8%." },
+  { key: "vazamento", name: "Vazamento Radioativo", building: "sabEquipeMineracao", ticks: 5, desc: "Reduz a produção do alvo em 75% por 4 ticks." },
+  { key: "virus", name: "Vírus Industrial", building: "sabProducaoAvancada", ticks: 8, desc: "Atrasa a produção de naves do alvo em 16 ticks." },
+  { key: "forjar_ordem", name: "Forjar Ordem", building: "sabProducaoAvancada", ticks: 6, desc: "Faz TODAS as frotas do alvo recuarem." },
+  { key: "roubo_tecnologia", name: "Roubo de Tecnologia", building: "sabAssimiladora", ticks: 8, desc: "Rouba uma tecnologia do alvo." },
 ];
 const SAB_BY_KEY: Record<string, SabotageDef> = Object.fromEntries(SABOTAGES.map((s) => [s.key, s]));
 function raceOf(r: string) { return isRaceKey(r) ? r : "humanos"; }
 
-// Chance de sucesso de infiltração (espionagem/sabotagem). Mais roids no alvo = mais difícil;
-// Rakshasa tem +30% de contra-espionagem.
+// Chance-base de sucesso da infiltração (NUNCA 100%). Vantagem de roids ajuda;
+// Rakshasa é mais difícil de sabotar. Isto é separado do bloqueio por contra-
+// espionagem (CE) do alvo — mesmo sem CE, a sabotagem pode falhar aqui.
 export function infiltrationChance(myRoids: number, targetRoids: number, targetRace: string): number {
-  let c = 0.55 + 0.4 * ((myRoids - targetRoids) / (myRoids + targetRoids + 1));
-  if (raceOf(targetRace) === "rakshasa") c *= 0.7;
-  return Math.max(0.1, Math.min(0.95, c));
+  let c = 0.6 + 0.3 * ((myRoids - targetRoids) / (myRoids + targetRoids + 1));
+  if (raceOf(targetRace) === "rakshasa") c *= 0.8;
+  return Math.max(0.2, Math.min(0.9, c)); // teto 90% → sempre há risco
 }
 
 // Sabotagens que o sabotador pode usar (com base nas construções).
@@ -66,16 +68,34 @@ export async function executeSabotage(saboteurPlanetId: string, target: { galaxy
   if (cd && tick - cd.lastTick < SAB_COOLDOWN) throw new Error(`Aguarde ${SAB_COOLDOWN - (tick - cd.lastTick)} tick(s) para sabotar de novo`);
   await prisma.sabotageCooldown.upsert({ where: { planetId: saboteurPlanetId }, update: { lastTick: tick }, create: { planetId: saboteurPlanetId, lastTick: tick } });
 
-  // Contra-espionagem PROBABILÍSTICA (mesmo modelo da espionagem): quanto mais
-  // coberto (CE × 2 vs roids), maior a chance de bloquear — mas nunca 100%.
+  // ===== DOIS testes de sucesso (nunca 100%) =====
+  // 1) Contra-espionagem do alvo (CE × 2 vs roids) pode BLOQUEAR.
+  // 2) Mesmo sem CE, a infiltração pode FALHAR (chance-base, teto 90%).
   const tgtCE = parseAgents(tgt.agents)["CE"] ?? 0;
   const tgtRoids = tgt.roidMetalium + tgt.roidCarbonum + tgt.roidPlutonium;
+  const myRoids = me.roidMetalium + me.roidCarbonum + me.roidPlutonium;
   const bc = blockChance(tgtCE, tgtRoids, tgt.user.race);
   if (Math.random() < bc) {
     await addNews(tgt.id, tick, `🛡️ Sua contra-espionagem bloqueou uma sabotagem (${def.name})`);
-    return { success: false, message: `Sabotagem bloqueada pela contra-espionagem do alvo (chance ${Math.round(bc * 100)}%). Tente de novo.` };
+    return { success: false, message: `Sabotagem bloqueada pela contra-espionagem do alvo (chance ${Math.round(bc * 100)}%). Perdeu a tentativa — tente de novo.` };
+  }
+  const succ = infiltrationChance(myRoids, tgtRoids, tgt.user.race);
+  if (Math.random() > succ) {
+    return { success: false, message: `A infiltração falhou (chance de sucesso era ${Math.round(succ * 100)}%). Tente de novo após o cooldown.` };
   }
 
+  // Sucesso no lançamento: o efeito leva `def.ticks` ticks pra concluir.
+  await prisma.sabotageOrder.create({ data: {
+    saboteurPlanetId: me.id, targetGalaxy: target.galaxy, targetSystem: target.system, targetSlot: target.slot,
+    key, launchTick: tick, resolveTick: tick + def.ticks,
+  } });
+  return { success: true, message: `🕵️ ${def.name} infiltrada! Efeito em ${def.ticks} tick(s).` };
+}
+
+// Aplica o EFEITO de uma sabotagem já infiltrada (chamado quando o resolveTick chega).
+async function applySabotageEffect(saboteurPlanetId: string, target: { galaxy: number; system: number; slot: number }, key: string, tick: number): Promise<string> {
+  const tgt = await prisma.planet.findUnique({ where: { galaxy_system_slot: target } });
+  if (!tgt) return ""; // alvo sumiu (reset/exílio) — efeito perdido
   let detail = "";
   switch (key) {
     case "explosao_mina":
@@ -92,11 +112,12 @@ export async function executeSabotage(saboteurPlanetId: string, target: { galaxy
       detail = `produção de naves atrasada em ${add} ticks`; break;
     }
     case "roubo_recursos": {
-      const lose = { m: Math.floor(tgt.metalium / 3), c: Math.floor(tgt.carbonum / 3), p: Math.floor(tgt.plutonium / 3) };
-      const gain = { m: Math.floor(tgt.metalium / 6), c: Math.floor(tgt.carbonum / 6), p: Math.floor(tgt.plutonium / 6) };
+      // Nerfado: rouba ~1/12 (≈8%) e destrói outro ~1/12 (destruição = roubo, não 2x).
+      const steal = { m: Math.floor(tgt.metalium / 12), c: Math.floor(tgt.carbonum / 12), p: Math.floor(tgt.plutonium / 12) };
+      const lose = { m: steal.m * 2, c: steal.c * 2, p: steal.p * 2 }; // metade vai pro saboteur, metade é destruída
       await prisma.planet.update({ where: { id: tgt.id }, data: { metalium: { decrement: lose.m }, carbonum: { decrement: lose.c }, plutonium: { decrement: lose.p } } });
-      await prisma.planet.update({ where: { id: me.id }, data: { metalium: { increment: gain.m }, carbonum: { increment: gain.c }, plutonium: { increment: gain.p } } });
-      detail = `roubou ${gain.m}M ${gain.c}C ${gain.p}P (e destruiu o dobro)`; break;
+      await prisma.planet.update({ where: { id: saboteurPlanetId }, data: { metalium: { increment: steal.m }, carbonum: { increment: steal.c }, plutonium: { increment: steal.p } } }).catch(() => {});
+      detail = `roubou ${steal.m}M ${steal.c}C ${steal.p}P (e destruiu o mesmo tanto)`; break;
     }
     case "forjar_ordem": {
       const fleets = await prisma.fleet.findMany({ where: { ownerPlanetId: tgt.id, status: { not: "returning" } } });
@@ -110,14 +131,29 @@ export async function executeSabotage(saboteurPlanetId: string, target: { galaxy
       const stolen = owned[Math.floor(Math.random() * owned.length)];
       tl[stolen] -= 1;
       await prisma.planet.update({ where: { id: tgt.id }, data: { tech: JSON.stringify(tl) } });
-      const myTl = parseTech(me.tech);
-      myTl[stolen] = Math.min(TECH_BY_KEY[stolen].max, (myTl[stolen] ?? 0) + 1);
-      await prisma.planet.update({ where: { id: me.id }, data: { tech: JSON.stringify(myTl) } });
+      const me = await prisma.planet.findUnique({ where: { id: saboteurPlanetId } });
+      if (me) {
+        const myTl = parseTech(me.tech);
+        myTl[stolen] = Math.min(TECH_BY_KEY[stolen].max, (myTl[stolen] ?? 0) + 1);
+        await prisma.planet.update({ where: { id: saboteurPlanetId }, data: { tech: JSON.stringify(myTl) } });
+      }
       detail = `roubou a tecnologia: ${TECH_BY_KEY[stolen].name}`; break;
     }
   }
-  await addNews(tgt.id, tick, `💥 Você sofreu sabotagem: ${def.name} (${detail})`);
-  return { success: true, message: `Sabotagem aplicada: ${def.name} — ${detail}` };
+  const sd = SAB_BY_KEY[key];
+  await addNews(tgt.id, tick, `💥 Você sofreu sabotagem: ${sd?.name ?? key} (${detail})`);
+  return detail;
+}
+
+// Resolve as sabotagens cujo efeito venceu (chamado a cada tick pelo motor).
+export async function resolveSabotages(tick: number) {
+  const due = await prisma.sabotageOrder.findMany({ where: { resolveTick: { lte: tick } } });
+  for (const o of due) {
+    try {
+      await applySabotageEffect(o.saboteurPlanetId, { galaxy: o.targetGalaxy, system: o.targetSystem, slot: o.targetSlot }, o.key, tick);
+    } catch (e) { console.error("[sabotage] falha ao resolver:", e); }
+    await prisma.sabotageOrder.delete({ where: { id: o.id } }).catch(() => {});
+  }
 }
 
 // Aplica os efeitos temporários (debuff de produção) e limpa os expirados. Chamado no tick.

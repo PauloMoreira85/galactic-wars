@@ -20,6 +20,7 @@ async function main() {
   await prisma.spyReport.deleteMany();
   await prisma.planetEffect.deleteMany();
   await prisma.sabotageCooldown.deleteMany();
+  await prisma.sabotageOrder.deleteMany();
   await prisma.donationCooldown.deleteMany();
   await prisma.galaxyVote.deleteMany();
   await prisma.galaxyInvite.deleteMany();

@@ -367,6 +367,20 @@ model SabotageCooldown {
   lastTick Int
 }
 
+// Sabotagem em andamento: lançada agora, efeito aplicado em resolveTick (leva ticks).
+model SabotageOrder {
+  id               String @id @default(cuid())
+  saboteurPlanetId String
+  targetGalaxy     Int
+  targetSystem     Int
+  targetSlot       Int
+  key              String
+  launchTick       Int
+  resolveTick      Int
+
+  @@index([resolveTick])
+}
+
 // Notícias: log de eventos do planeta (pesquisa, construção, combate, espionagem...).
 model News {
   id        String   @id @default(cuid())
