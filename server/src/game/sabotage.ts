@@ -17,13 +17,13 @@ export interface SabotageDef { key: string; name: string; building: string; desc
 //  `plut`  = custo em PLUTONIUM pago no lançamento (mesmo se a sabotagem falhar).
 //            Sabotagem é cara e só gasta plutônio (nada de metal/carbono).
 export const SABOTAGES: SabotageDef[] = [
-  { key: "explosao_mina", name: "Explosão de Mina", building: "sabSistemasMineracao", ticks: 3, plut: 2000, desc: "Zera a produção de roids do alvo por 1 tick." },
-  { key: "blackout", name: "Blackout Industrial", building: "sabEquipeProducao", ticks: 4, plut: 3500, desc: "Atrasa a produção de naves do alvo em 4 ticks." },
-  { key: "roubo_recursos", name: "Roubo de Recursos", building: "sabInfiltracao", ticks: 6, plut: 6000, desc: "Rouba ~8% dos recursos do alvo e destrói outros ~8%." },
-  { key: "vazamento", name: "Vazamento Radioativo", building: "sabEquipeMineracao", ticks: 5, plut: 5000, desc: "Reduz a produção do alvo em 75% por 4 ticks." },
-  { key: "virus", name: "Vírus Industrial", building: "sabProducaoAvancada", ticks: 8, plut: 10000, desc: "Atrasa a produção de naves do alvo em 16 ticks." },
-  { key: "forjar_ordem", name: "Forjar Ordem", building: "sabProducaoAvancada", ticks: 6, plut: 8000, desc: "Faz TODAS as frotas do alvo recuarem." },
-  { key: "roubo_tecnologia", name: "Roubo de Tecnologia", building: "sabAssimiladora", ticks: 8, plut: 12000, desc: "Rouba uma tecnologia do alvo." },
+  { key: "explosao_mina", name: "Explosão de Mina", building: "sabSistemasMineracao", ticks: 4, plut: 6000, desc: "Zera a produção de roids do alvo por 1 tick." },
+  { key: "blackout", name: "Blackout Industrial", building: "sabEquipeProducao", ticks: 6, plut: 10000, desc: "Atrasa a produção de naves do alvo em 4 ticks." },
+  { key: "roubo_recursos", name: "Roubo de Recursos", building: "sabInfiltracao", ticks: 8, plut: 18000, desc: "Rouba ~8% dos recursos do alvo e destrói outros ~8%." },
+  { key: "vazamento", name: "Vazamento Radioativo", building: "sabEquipeMineracao", ticks: 10, plut: 36000, desc: "Reduz a produção do alvo em 75% por 4 ticks." },
+  { key: "virus", name: "Vírus Industrial", building: "sabProducaoAvancada", ticks: 12, plut: 70000, desc: "Atrasa a produção de naves do alvo em 16 ticks." },
+  { key: "forjar_ordem", name: "Forjar Ordem", building: "sabProducaoAvancada", ticks: 6, plut: 100000, desc: "Faz TODAS as frotas do alvo recuarem." },
+  { key: "roubo_tecnologia", name: "Roubo de Tecnologia", building: "sabAssimiladora", ticks: 16, plut: 150000, desc: "Rouba uma tecnologia do alvo." },
 ];
 const SAB_BY_KEY: Record<string, SabotageDef> = Object.fromEntries(SABOTAGES.map((s) => [s.key, s]));
 function raceOf(r: string) { return isRaceKey(r) ? r : "humanos"; }
