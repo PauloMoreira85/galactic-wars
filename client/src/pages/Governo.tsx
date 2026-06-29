@@ -155,7 +155,7 @@ export function Governo() {
                 style={{ background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px" }}
               >
                 <option value="">nomear...</option>
-                {gov.members.map((m) => <option key={m.id} value={m.id}>{m.name} ({m.commander})</option>)}
+                {gov.members.filter((m) => m.id !== gov.cgId).map((m) => <option key={m.id} value={m.id}>{m.name} ({m.commander})</option>)}
               </select>
             </div>
           ))}

@@ -62,8 +62,14 @@ export async function appoint(cgPlanetId: string, role: "me" | "mg" | "md", targ
   if (g == null) throw new Error("Planeta nao encontrado");
   const st = await ensureGalaxy(g);
   if (st.cgPlanetId !== cgPlanetId) throw new Error("Apenas o Comandante da Galaxia pode nomear ministros");
+  if (targetPlanetId === cgPlanetId) throw new Error("O Comandante não pode acumular um cargo de ministro (1 cargo por planeta)");
   if ((await planetGalaxy(targetPlanetId)) !== g) throw new Error("O ministro deve ser da sua galaxia");
-  const data = role === "me" ? { mePlanetId: targetPlanetId } : role === "mg" ? { mgPlanetId: targetPlanetId } : { mdPlanetId: targetPlanetId };
+  // 1 cargo por planeta: tira o alvo de qualquer outro ministério antes de nomear.
+  const data: any = {};
+  if (st.mePlanetId === targetPlanetId) data.mePlanetId = null;
+  if (st.mgPlanetId === targetPlanetId) data.mgPlanetId = null;
+  if (st.mdPlanetId === targetPlanetId) data.mdPlanetId = null;
+  data[role === "me" ? "mePlanetId" : role === "mg" ? "mgPlanetId" : "mdPlanetId"] = targetPlanetId;
   await prisma.galaxyState.update({ where: { galaxy: g }, data });
 }
 
