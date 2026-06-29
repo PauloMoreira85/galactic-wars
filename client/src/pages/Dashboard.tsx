@@ -99,7 +99,7 @@ function useRoundStatus(view: PlanetView | null) {
   return { label: "Próximo round", time: fmtDur(Math.floor((next - now) / 1000)) };
 }
 
-type Section = "planeta" | "galaxia" | "frotas" | "trafego" | "pesquisa" | "construcao" | "naves" | "recursos" | "combates" | "votacao" | "noticias" | "aliancas" | "associados" | "preferencias" | "forum" | "forumgalaxia" | "chat" | "mensagens" | "sabotagem" | "intel";
+type Section = "planeta" | "galaxia" | "frotas" | "trafego" | "tecnologia" | "naves" | "recursos" | "combates" | "votacao" | "noticias" | "aliancas" | "associados" | "preferencias" | "forum" | "forumgalaxia" | "chat" | "mensagens" | "sabotagem" | "intel";
 
 interface MenuItem {
   key: string;
@@ -117,8 +117,7 @@ const MENU: MenuItem[][] = [
     { key: "frotas", label: "Frotas" },
   ],
   [
-    { key: "pesquisa", label: "Pesquisa" },
-    { key: "construcao", label: "Construção" },
+    { key: "tecnologia", label: "Tecnologia" },
   ],
   [
     { key: "intel", label: "Inteligência" },
@@ -158,9 +157,8 @@ const TITLES: Record<Section, string> = {
   galaxia: "Galáxia",
   frotas: "Frotas",
   trafego: "Tráfego",
-  pesquisa: "Pesquisa",
+  tecnologia: "Tecnologia",
   naves: "Naves",
-  construcao: "Construção",
   recursos: "Recursos",
   combates: "Combates",
   votacao: "Votação / Governo",
@@ -306,56 +304,59 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   const roidCost = (r: Resource) => planet.nextRoidCost[r];
   const canAffordRoid = (r: Resource) => planet.resources[r] >= roidCost(r);
 
-  // Renderiza os itens de tech (Pesquisa ou Construção) agrupados por categoria.
-  function renderTech(kind: "research" | "building", verb: string) {
-    const items = view!.tech.filter((t) => t.kind === kind);
-    const cats = CAT_ORDER.filter((c) => items.some((t) => t.category === c));
+  // Árvore de Tecnologia: Pesquisa + Construção JUNTAS, na ordem do canon, por
+  // categoria (mesmo esquema da referência). Construção só libera depois da sua
+  // pesquisa (reqsMet) — exceto a 1ª construção das trilhas que começam construindo.
+  function renderTechTree() {
+    const cats = CAT_ORDER.filter((c) => view!.tech.some((t) => t.category === c));
     return cats.map((cat) => (
       <div className="panel" key={cat}>
         <h2>{CAT_LABELS[cat]}</h2>
-        {items.filter((t) => t.category === cat).map((t: TechItem) => (
-          <div className="roid-row" key={t.key}>
-            <div className="roid-label">
-              <div>
+        {view!.tech.filter((t) => t.category === cat).map((t: TechItem) => {
+          const isR = t.kind === "research";
+          const inQueue = view!.queue.some((q) => q.kind === "tech" && q.key === t.key);
+          const kindPending = view!.queue.some((q) => q.techKind === t.kind); // 1 pesquisa + 1 construção por vez
+          const verb = isR ? "Pesquisar" : "Construir";
+          const progress = isR ? "Pesquisando…" : "Construindo…";
+          const badge: React.CSSProperties = {
+            fontFamily: "ui-monospace, monospace", fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 6,
+            color: isR ? "#7aa2ff" : "#ffb24d", background: isR ? "#7aa2ff1a" : "#ffb24d1a",
+            border: `1px solid ${isR ? "#7aa2ff55" : "#ffb24d55"}`, whiteSpace: "nowrap",
+          };
+          return (
+            <div className="roid-row" key={t.key}>
+              <div className="roid-label">
                 <div>
-                  <b>{t.name}</b>{" "}
-                  {t.max > 1 && <span className="roid-count">nível {t.level}/{t.max}</span>}
-                  {t.max === 1 && t.level >= 1 && <span style={{ color: "var(--carbonum)" }}>✓ feito</span>}
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                    <span style={badge}>{isR ? "🔬 Pesquisa" : "🛠️ Construção"}</span>
+                    <b>{t.name}</b>
+                    {t.max > 1 && <span className="roid-count">nível {t.level}/{t.max}</span>}
+                    {t.max === 1 && t.level >= 1 && <span style={{ color: "var(--carbonum)" }}>✓ feito</span>}
+                  </div>
+                  <div className="roid-count">{t.desc}</div>
+                  {!t.reqsMet && t.requires.length > 0 && (
+                    <div className="roid-count" style={{ color: "var(--danger)" }}>🔒 requer: {t.requires.map((r) => r.name).join(", ")}</div>
+                  )}
+                  {t.reqsMet && !t.maxed && !t.affordable && (
+                    <div className="roid-count" style={{ color: "#e6a23c" }}>⚠️ liberado — faltam recursos</div>
+                  )}
+                  {t.cost && (
+                    <div className="roid-count">{fmt(t.cost.metalium)} M · {fmt(t.cost.carbonum)} C · {t.ticks} ticks</div>
+                  )}
                 </div>
-                <div className="roid-count">{t.desc}</div>
-                {!t.reqsMet && t.requires.length > 0 && (
-                  <div className="roid-count" style={{ color: "var(--danger)" }}>
-                    🔒 requer: {t.requires.map((r) => r.name).join(", ")}
-                  </div>
-                )}
-                {t.reqsMet && !t.maxed && !t.affordable && (
-                  <div className="roid-count" style={{ color: "#e6a23c" }}>⚠️ liberado — faltam recursos</div>
-                )}
-                {t.cost && (
-                  <div className="roid-count">
-                    {fmt(t.cost.metalium)}M · {fmt(t.cost.carbonum)}C · {fmt(t.cost.plutonium)}P · {t.ticks} ticks
-                  </div>
-                )}
               </div>
-            </div>
-            <div>
-              {t.maxed ? (
-                <span className="roid-count">máx</span>
-              ) : (() => {
-                const inQueue = view!.queue.some((q) => q.kind === "tech" && q.key === t.key);
-                const kindPending = view!.queue.some((q) => q.techKind === kind); // 1 por vez (pesquisa/construção)
-                const progress = kind === "research" ? "Pesquisando…" : "Construindo…";
-                return (
+              <div>
+                {t.maxed ? <span className="roid-count">máx</span> : (
                   <button disabled={!t.canStart || shipBusy !== null || inQueue || kindPending}
-                    title={kindPending && !inQueue ? `Já há ${kind === "research" ? "uma pesquisa" : "uma construção"} em andamento — cancele na fila pra trocar` : undefined}
+                    title={kindPending && !inQueue ? `Já há ${isR ? "uma pesquisa" : "uma construção"} em andamento — cancele na fila pra trocar` : undefined}
                     onClick={() => doUpgrade(t.key)}>
                     {shipBusy === t.key ? "..." : inQueue ? progress : verb}
                   </button>
-                );
-              })()}
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     ));
   }
@@ -616,42 +617,27 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
           </>
         )}
 
-        {(section === "pesquisa" || section === "construcao") && (() => {
-          const wantKind = section === "pesquisa" ? "research" : "building";
-          const fila = view.queue.filter((q) => q.techKind === wantKind);
-          if (fila.length === 0) return null;
-          return (
-          <div className="panel">
-            <h2>Fila</h2>
-            {fila.map((q) => { const t = queueTag(q); return (
-              <div className="roid-row" key={q.id}>
-                <div>{t.icon} <span className="roid-count" style={{ color: t.color }}>{t.tag}:</span> {q.label}</div>
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <span className="roid-count">{q.ticksRemaining} tick(s)</span>
-                  <button onClick={() => doCancel(q.id)} title="Cancelar — reembolso proporcional ao tempo que falta" style={{ padding: "2px 8px", fontSize: 11 }}>cancelar</button>
-                </div>
+        {section === "tecnologia" && (
+          <>
+            {view.queue.some((q) => q.kind === "tech") && (
+              <div className="panel">
+                <h2>Fila</h2>
+                {view.queue.filter((q) => q.kind === "tech").map((q) => { const t = queueTag(q); return (
+                  <div className="roid-row" key={q.id}>
+                    <div>{t.icon} <span className="roid-count" style={{ color: t.color }}>{t.tag}:</span> {q.label}</div>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <span className="roid-count">{q.ticksRemaining} tick(s)</span>
+                      <button onClick={() => doCancel(q.id)} title="Cancelar — reembolso proporcional ao tempo que falta" style={{ padding: "2px 8px", fontSize: 11 }}>cancelar</button>
+                    </div>
+                  </div>
+                ); })}
               </div>
-            ); })}
-          </div>
-          );
-        })()}
-
-        {section === "pesquisa" && (
-          <>
+            )}
             <div className="cost" style={{ marginBottom: 12 }}>
-              Pesquise para desbloquear construções e novas classes de nave.
+              🔬 <b>Pesquisa</b> libera a 🛠️ <b>Construção</b> seguinte (as 1ªs de Mineração e Naves já vêm livres). Roda 1 pesquisa + 1 construção ao mesmo tempo.
+              <br />Minas: <span>+{fmt(view.planet.miningBonus.metalium)} M</span> · <span>+{fmt(view.planet.miningBonus.carbonum)} C</span> · <span>+{fmt(view.planet.miningBonus.plutonium)} P</span> por tick · viagem: <span>−{view.planet.travelReduction} tick(s)</span>.
             </div>
-            {renderTech("research", "Pesquisar")}
-            {error && <div className="error">{error}</div>}
-          </>
-        )}
-
-        {section === "construcao" && (
-          <>
-            <div className="cost" style={{ marginBottom: 12 }}>
-              Bônus de mineração: <span>+{fmt(view.planet.miningBonus.metalium)} M</span> · <span>+{fmt(view.planet.miningBonus.carbonum)} C</span> · <span>+{fmt(view.planet.miningBonus.plutonium)} P</span> por tick · viagem: <span>−{view.planet.travelReduction} tick(s)</span>.
-            </div>
-            {renderTech("building", "Construir")}
+            {renderTechTree()}
             {error && <div className="error">{error}</div>}
           </>
         )}
