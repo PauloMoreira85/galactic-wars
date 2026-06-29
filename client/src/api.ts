@@ -456,8 +456,8 @@ export const api = {
     }>("/game/tools/combat-sim", { method: "POST", body: JSON.stringify({ attacker, defender, ticks }) }),
   toolSabotages: () =>
     request<{ sabotages: { key: string; name: string; plut: number; ticks: number }[] }>("/game/tools/sabotage"),
-  sabotageSim: (body: { key: string; myRoids: number; targetRoids: number; targetRace: string; targetCE: number }) =>
-    request<{ key: string; name: string; plut: number; ticks: number; block: number; infil: number; success: number }>("/game/tools/sabotage-sim", { method: "POST", body: JSON.stringify(body) }),
+  sabotageSim: (body: { key: string; attackerAE: number; targetRoids: number; targetRace: string; targetCE: number }) =>
+    request<{ key: string; name: string; plut: number; ticks: number; success: number }>("/game/tools/sabotage-sim", { method: "POST", body: JSON.stringify(body) }),
   toolPlanets: () =>
     request<{ planets: { name: string; commander: string; coords: string; galaxy: number; roids: number; score: number; protected: boolean }[]; totalUsers: number }>("/game/tools/planets"),
   spyReports: () =>

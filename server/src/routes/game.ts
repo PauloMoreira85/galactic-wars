@@ -6,7 +6,7 @@ import { RESOURCES, ROID_PRODUCTION_PER_TICK, nextRoidCost, nextFleetSlotCost, M
 import { buildRoid, totalRoids } from "../game/roids.js";
 import { RACES, isRaceKey, RACE_KEYS } from "../game/races.js";
 import { startUpgrade, buildUnit, buildAgent, parseTech, cancelOrder } from "../game/fleet.js";
-import { AGENTS, AGENT_KEYS, AGENT_FULL_NAME, isAgentKey, parseAgents, stringifyAgents, isShielded, ceNeeded, blockChance, ROIDS_POR_CE } from "../game/agents.js";
+import { AGENTS, AGENT_KEYS, AGENT_FULL_NAME, isAgentKey, parseAgents, stringifyAgents, isShielded, ceNeeded, spySuccessChance, ROIDS_POR_CE } from "../game/agents.js";
 import { createFleet, setFleetComposition, renameFleet, dispatchFleet, fuelCost, viewSystem, galaxyTraffic, type ShipCounts } from "../game/galaxy.js";
 import { recallFleet, BATTLE_TICKS, simulateCombat } from "../game/combat.js";
 import { unitsOfRace, isUnitUnlocked, CLASS_LABEL, unitByName, shipImage, radarVisibleCount } from "../game/catalog.js";
@@ -457,16 +457,17 @@ gameRouter.post("/spy", async (req: AuthedRequest, res) => {
   myAgents[agent] = (myAgents[agent] ?? 0) - 1;
   await prisma.planet.update({ where: { id: me.id }, data: { agents: stringifyAgents(myAgents) } });
 
-  // Contra-espionagem DETERMINÍSTICA: alvo protegido se CE × 2 ≥ roids do alvo.
+  // Sucesso = disputa AE (do espião) × AC (do alvo), pesada pelos roids do alvo.
   const tkNow = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
   const tgtAgents = parseAgents(target.agents);
   const tgtCE = tgtAgents["CE"] ?? 0;
   const tgtRoids = target.roidMetalium + target.roidCarbonum + target.roidPlutonium;
+  const myAE = myAgents["AE"] ?? 0;
   const myCoords = `${me.galaxy}:${me.system}:${me.slot}`;
-  const bc = blockChance(tgtCE, tgtRoids, target.user.race);
-  if (Math.random() < bc) {
-    await addNews(target.id, tkNow, `🛡️ Sua contra-espionagem bloqueou um ${AGENT_FULL_NAME[agent]} de ${myCoords}`);
-    return res.json({ failed: true, error: `Espionagem bloqueada pela contra-espionagem do alvo (chance ${Math.round(bc * 100)}%). Perdeu 1 agente ${agent} — mande mais pra furar.` });
+  const succ = spySuccessChance(myAE, tgtCE, tgtRoids, target.user.race);
+  if (Math.random() > succ) {
+    await addNews(target.id, tkNow, `🛡️ Sua contra-espionagem barrou um ${AGENT_FULL_NAME[agent]} de ${myCoords}`);
+    return res.json({ failed: true, error: `Espionagem barrada (chance de sucesso ${Math.round(succ * 100)}% — seu AE ${myAE} vs AC ${tgtCE} do alvo). Perdeu 1 agente ${agent} — treine mais AE.` });
   }
   const units = parseUnits(target.units);
   const intel: any = { agent, coords: `${galaxy}:${system}:${slot}`, name: target.name, commander: target.user.username, race: RACES[raceKey].name };
@@ -1108,14 +1109,14 @@ gameRouter.get("/tools/sabotage", (_req, res) => res.json({ sabotages: sabotageC
 gameRouter.post("/tools/sabotage-sim", async (req: AuthedRequest, res) => {
   const parsed = z.object({
     key: z.string(),
-    myRoids: z.number().int().min(0).max(1_000_000),
+    attackerAE: z.number().int().min(0).max(1_000_000),
     targetRoids: z.number().int().min(0).max(1_000_000),
     targetRace: z.string(),
     targetCE: z.number().int().min(0).max(1_000_000),
   }).safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Dados inválidos" });
-  const { key, myRoids, targetRoids, targetRace, targetCE } = parsed.data;
-  const odds = sabotageOdds(key, myRoids, targetRoids, targetRace, targetCE);
+  const { key, attackerAE, targetRoids, targetRace, targetCE } = parsed.data;
+  const odds = sabotageOdds(key, attackerAE, targetRoids, targetRace, targetCE);
   if (!odds) return res.status(400).json({ error: "Sabotagem desconhecida" });
   res.json(odds);
 });

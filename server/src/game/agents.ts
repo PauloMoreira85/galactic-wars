@@ -5,7 +5,7 @@ import { parseUnits, stringifyUnits, type UnitMap } from "./unitmap.js";
 // espionagem (DEFESA). Pesquisa (Central de Inteligência → ...) destrava cada tipo;
 // o treino dá a QUANTIDADE. Espionar gasta 1 agente do tipo (dê certo ou não).
 
-export const AGENT_KEYS = ["CE", "P", "M", "T", "D"] as const;
+export const AGENT_KEYS = ["AE", "CE", "P", "M", "T", "D"] as const;
 export type AgentKey = (typeof AGENT_KEYS)[number];
 
 export interface AgentDef {
@@ -21,7 +21,8 @@ export interface AgentDef {
 // Custos/tempo são AJUSTÁVEIS — calibrados pra que blindar um planeta com CE
 // (CE ≥ roids/2) seja um investimento real, mas viável.
 export const AGENTS: Record<AgentKey, AgentDef> = {
-  CE: { key: "CE", name: "Contra-Espionagem", desc: "Defesa. Cada CE cobre ~2 roids; o planeta fica protegido quando CE ≥ roids ÷ 2.", level: 1, offensive: false, m: 1000, c: 1000, p: 0, ticks: 4 },
+  AE: { key: "AE", name: "Agente de Espionagem (AE)", desc: "OFENSIVO. Força de espionagem: aumenta a chance de furar a contra-espionagem do alvo. Não é gasto por missão — é a sua potência (igual o AC). Custa plutônio.", level: 1, offensive: true, m: 0, c: 0, p: 1000, ticks: 4 },
+  CE: { key: "CE", name: "Contra-Espionagem (AC)", desc: "DEFESA. Cada AC cobre ~2 roids; protegido quando AC ≥ roids ÷ 2 (nunca 100%). Custa plutônio.", level: 1, offensive: false, m: 0, c: 0, p: 1000, ticks: 4 },
   P:  { key: "P",  name: "Agente Padrão (P)",      desc: "Revela raça, pontuação, roids e total de naves do alvo.", level: 2, offensive: true, m: 800,  c: 600,  p: 100, ticks: 4 },
   M:  { key: "M",  name: "Agente Militar (M)",     desc: "Revela QUAIS e quantas naves o alvo tem.",                 level: 3, offensive: true, m: 1200, c: 1000, p: 200, ticks: 8 },
   T:  { key: "T",  name: "Agente de Transmissão (T)", desc: "Revela as notícias recentes do alvo.",                  level: 4, offensive: true, m: 1500, c: 1200, p: 300, ticks: 12 },
@@ -30,6 +31,7 @@ export const AGENTS: Record<AgentKey, AgentDef> = {
 
 // Nome completo de cada agente (para notícias/relatórios).
 export const AGENT_FULL_NAME: Record<string, string> = {
+  AE: "Agente de Espionagem",
   P: "Agente Padrão",
   M: "Agente Militar",
   T: "Agente de Transmissão",
@@ -68,13 +70,17 @@ export function isShielded(targetCE: number, targetRoids: number, targetRace: st
   return effectiveCE(targetCE, targetRace) * ROIDS_POR_CE >= targetRoids;
 }
 
-// Teto de bloqueio: a contra-espionagem NUNCA bloqueia 100% — sempre há chance
-// de furar (mandando mais agentes). Mesmo totalmente coberto, ~15% passa.
-export const MAX_BLOCK = 0.85;
-
-// Chance de a espionagem/sabotagem ser BLOQUEADA. = cobertura (CE×2 / roids),
-// limitada ao teto. Sem CE -> 0% (sempre passa). Coberto -> 85% (15% fura).
-export function blockChance(targetCE: number, targetRoids: number, targetRace: string): number {
-  const cov = (effectiveCE(targetCE, targetRace) * ROIDS_POR_CE) / Math.max(1, targetRoids);
-  return Math.min(MAX_BLOCK, Math.max(0, cov));
+// Chance de uma espionagem/sabotagem DAR CERTO: disputa entre a força ofensiva
+// do atacante (AE) e a contra-espionagem efetiva do alvo (AC), medidas em
+// "densidade por roid" — a cobertura cheia é roids ÷ 2 (cada agente cobre ~2 roids).
+//   off = AE / (roids/2)   ·   def = AC_efetivo / (roids/2)   ·   net = off − def
+//   chance = 50% + 45% × net  (limitada a 5%–95%, nunca 0 nem 100%)
+// → quanto mais roids o alvo tem, mais AE você precisa pra furar (e mais AC ele
+//   precisa pra blindar). Sem ninguém investindo, ~50%.
+export function spySuccessChance(attackerAE: number, targetCE: number, targetRoids: number, targetRace: string): number {
+  const cover = Math.max(1, targetRoids / ROIDS_POR_CE); // roids/2 = cobertura "cheia"
+  const off = Math.max(0, attackerAE) / cover;
+  const def = effectiveCE(targetCE, targetRace) / cover;
+  const chance = 0.5 + 0.45 * (off - def);
+  return Math.max(0.05, Math.min(0.95, chance));
 }

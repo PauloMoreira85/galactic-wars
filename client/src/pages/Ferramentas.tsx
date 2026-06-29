@@ -264,8 +264,8 @@ const SAB_RACES: [string, string][] = [["humanos", "Humanos"], ["daharan", "Daha
 function SabotagemCalc() {
   const [sabos, setSabos] = useState<Awaited<ReturnType<typeof api.toolSabotages>>["sabotages"]>([]);
   const [key, setKey] = useState("");
-  const [myRoids, setMyRoids] = useState(6);
-  const [tgtRoids, setTgtRoids] = useState(6);
+  const [myAE, setMyAE] = useState(0);
+  const [tgtRoids, setTgtRoids] = useState(20);
   const [tgtRace, setTgtRace] = useState("humanos");
   const [tgtCE, setTgtCE] = useState(0);
   const [res, setRes] = useState<Awaited<ReturnType<typeof api.sabotageSim>> | null>(null);
@@ -274,7 +274,7 @@ function SabotagemCalc() {
   useEffect(() => { api.toolSabotages().then((d) => { setSabos(d.sabotages); setKey(d.sabotages[0]?.key ?? ""); }).catch(() => {}); }, []);
   async function run() {
     setErr(""); setRes(null);
-    try { setRes(await api.sabotageSim({ key, myRoids, targetRoids: tgtRoids, targetRace: tgtRace, targetCE: tgtCE })); }
+    try { setRes(await api.sabotageSim({ key, attackerAE: myAE, targetRoids: tgtRoids, targetRace: tgtRace, targetCE: tgtCE })); }
     catch (e: any) { setErr(e.message ?? "Falha"); }
   }
   const pct = (n: number) => `${Math.round(n * 100)}%`;
@@ -289,8 +289,8 @@ function SabotagemCalc() {
     <div className="panel">
       <h2>Calculadora de Sabotagem</h2>
       <div className="cost" style={{ marginBottom: 12 }}>
-        Prevê as chances no jogo atual: a contra-espionagem (CE) do alvo pode <b>bloquear</b>, e mesmo sem CE a <b>infiltração</b> pode falhar.
-        Vantagem de roids ajuda; Rakshasa é mais difícil. Custo é só em <b>plutônio</b> e é pago mesmo se falhar.
+        Disputa <b>AE</b> (sua força de espionagem) × <b>AC</b> (contra-espionagem do alvo), pesada pelos roids do alvo:
+        mais roids = mais AE pra furar e mais AC pra blindar. Nunca 0% nem 100%. Custo só em <b>plutônio</b>, pago mesmo se falhar.
       </div>
       <div className="grid3" style={{ marginBottom: 12 }}>
         <label className="roid-count" style={{ display: "block" }}>
@@ -305,9 +305,9 @@ function SabotagemCalc() {
             {SAB_RACES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
           </select>
         </label>
-        {num("Seus roids (total)", myRoids, setMyRoids)}
+        {num("Seu AE (espionagem)", myAE, setMyAE)}
         {num("Roids do alvo (total)", tgtRoids, setTgtRoids)}
-        {num("Agentes CE do alvo", tgtCE, setTgtCE)}
+        {num("AC do alvo (contra-esp.)", tgtCE, setTgtCE)}
       </div>
       <button onClick={run}>🎯 Calcular</button>
       {err && <div className="error" style={{ marginTop: 8 }}>{err}</div>}
@@ -320,8 +320,7 @@ function SabotagemCalc() {
             <div className="res-card"><div className="name">Tempo</div><div className="amount">{res.ticks}t</div></div>
           </div>
           <div className="cost" style={{ marginTop: 10 }}>
-            Bloqueio por contra-espionagem: <b>{pct(res.block)}</b> · Infiltração (se não bloqueada): <b>{pct(res.infil)}</b>
-            <br />Sucesso líquido = (1 − bloqueio) × infiltração = <b>{pct(res.success)}</b>. O plutônio é gasto mesmo numa falha.
+            Chance = disputa do seu <b>AE</b> contra o <b>AC</b> do alvo (densidade por roid). O plutônio é gasto mesmo numa falha.
           </div>
         </div>
       )}

@@ -7,7 +7,7 @@ import { parseUnits, addUnits } from "./unitmap.js";
 import { planetScore } from "./score.js";
 import { addNews } from "./news.js";
 import { finalize } from "./combat.js";
-import { parseAgents, blockChance, ceNeeded } from "./agents.js";
+import { parseAgents, spySuccessChance } from "./agents.js";
 
 const SAB_COOLDOWN = 5; // ticks entre sabotagens do mesmo sabotador
 
@@ -28,24 +28,13 @@ export const SABOTAGES: SabotageDef[] = [
 const SAB_BY_KEY: Record<string, SabotageDef> = Object.fromEntries(SABOTAGES.map((s) => [s.key, s]));
 function raceOf(r: string) { return isRaceKey(r) ? r : "humanos"; }
 
-// Chance-base de sucesso da infiltração (NUNCA 100%). Vantagem de roids ajuda;
-// Rakshasa é mais difícil de sabotar. Isto é separado do bloqueio por contra-
-// espionagem (CE) do alvo — mesmo sem CE, a sabotagem pode falhar aqui.
-export function infiltrationChance(myRoids: number, targetRoids: number, targetRace: string): number {
-  let c = 0.6 + 0.3 * ((myRoids - targetRoids) / (myRoids + targetRoids + 1));
-  if (raceOf(targetRace) === "rakshasa") c *= 0.8;
-  return Math.max(0.2, Math.min(0.9, c)); // teto 90% → sempre há risco
-}
-
-// Calculadora de Sabotagem: prevê o resultado no jogo ATUAL (mesmas fórmulas do
-// executeSabotage). block = chance da contra-espionagem do alvo barrar;
-// infil = chance da infiltração dar certo (se não barrada); success = líquida.
-export function sabotageOdds(key: string, myRoids: number, targetRoids: number, targetRace: string, targetCE: number) {
+// Calculadora de Sabotagem: prevê o resultado no jogo ATUAL — disputa AE (sua
+// força de espionagem) × AC (contra-espionagem do alvo), pesada pelos roids do alvo.
+export function sabotageOdds(key: string, attackerAE: number, targetRoids: number, targetRace: string, targetCE: number) {
   const def = SAB_BY_KEY[key];
   if (!def) return null;
-  const block = blockChance(targetCE, targetRoids, targetRace);
-  const infil = infiltrationChance(myRoids, targetRoids, targetRace);
-  return { key, name: def.name, plut: def.plut, ticks: def.ticks, block, infil, success: (1 - block) * infil };
+  const success = spySuccessChance(attackerAE, targetCE, targetRoids, targetRace);
+  return { key, name: def.name, plut: def.plut, ticks: def.ticks, success };
 }
 export function sabotageCatalog() {
   return SABOTAGES.map((s) => ({ key: s.key, name: s.name, plut: s.plut, ticks: s.ticks }));
@@ -88,20 +77,14 @@ export async function executeSabotage(saboteurPlanetId: string, target: { galaxy
   await prisma.planet.update({ where: { id: me.id }, data: { plutonium: { decrement: def.plut } } });
   await prisma.sabotageCooldown.upsert({ where: { planetId: saboteurPlanetId }, update: { lastTick: tick }, create: { planetId: saboteurPlanetId, lastTick: tick } });
 
-  // ===== DOIS testes de sucesso (nunca 100%) =====
-  // 1) Contra-espionagem do alvo (CE × 2 vs roids) pode BLOQUEAR.
-  // 2) Mesmo sem CE, a infiltração pode FALHAR (chance-base, teto 90%).
+  // Sucesso = disputa AE (seu) × AC (do alvo), pesada pelos roids do alvo (nunca 0/100%).
   const tgtCE = parseAgents(tgt.agents)["CE"] ?? 0;
   const tgtRoids = tgt.roidMetalium + tgt.roidCarbonum + tgt.roidPlutonium;
-  const myRoids = me.roidMetalium + me.roidCarbonum + me.roidPlutonium;
-  const bc = blockChance(tgtCE, tgtRoids, tgt.user.race);
-  if (Math.random() < bc) {
-    await addNews(tgt.id, tick, `🛡️ Sua contra-espionagem bloqueou uma sabotagem (${def.name})`);
-    return { success: false, message: `Sabotagem bloqueada pela contra-espionagem do alvo (chance ${Math.round(bc * 100)}%). Custou ${def.plut} de plutônio.` };
-  }
-  const succ = infiltrationChance(myRoids, tgtRoids, tgt.user.race);
+  const myAE = parseAgents(me.agents)["AE"] ?? 0;
+  const succ = spySuccessChance(myAE, tgtCE, tgtRoids, tgt.user.race);
   if (Math.random() > succ) {
-    return { success: false, message: `A infiltração falhou (chance de sucesso era ${Math.round(succ * 100)}%). Custou ${def.plut} de plutônio.` };
+    await addNews(tgt.id, tick, `🛡️ Sua contra-espionagem barrou uma tentativa de sabotagem (${def.name})`);
+    return { success: false, message: `A sabotagem falhou (chance de sucesso ${Math.round(succ * 100)}% — AE ${myAE} vs AC ${tgtCE} do alvo). Custou ${def.plut} de plutônio.` };
   }
 
   // Sucesso no lançamento: o efeito leva `def.ticks` ticks pra concluir.
