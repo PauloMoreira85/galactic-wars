@@ -954,7 +954,7 @@ gameRouter.post("/account/race", async (req: AuthedRequest, res) => {
       roidMetalium: STARTING.roidMetalium, roidCarbonum: STARTING.roidCarbonum, roidPlutonium: STARTING.roidPlutonium,
       shipCaca: 0, shipCorveta: 0, shipFragata: 0, shipDestroyer: 0, shipCruzador: 0, shipNavemae: 0,
       roider1: 0, roider2: 0, units: "{}", agents: "{}", researchTier: 0,
-      tech: JSON.stringify({ prospeccaoBasica: 1, pesq_centralInteligencia: 1 }),
+      tech: JSON.stringify({ pesq_centralInteligencia: 1 }),
       prodMul: 100, travelMul: 100, fleetSlots: 0,
     },
   });

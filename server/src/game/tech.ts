@@ -41,24 +41,28 @@ const STEP_TICKS = [8, 14, 22, 35, 50, 50];
 const STEP_RESEARCH_COST = [2500, 5000, 10000, 20000, 40000, 80000];
 const STEP_BUILD_COST = [3000, 6500, 13000, 26000, 52000, 100000];
 
-interface Step { r: string; rName: string; rDesc: string; b: string; bName: string; bDesc: string }
-function track(category: TechCategory, steps: Step[]): TechDef[] {
-  const out: TechDef[] = [];
-  steps.forEach((s, i) => {
-    out.push({
-      key: s.r, name: s.rName, category, kind: "research", max: 1, desc: s.rDesc,
-      requires: i > 0 ? [{ key: steps[i - 1].r, level: 1 }] : [],
-      baseCost: { metalium: STEP_RESEARCH_COST[i], carbonum: STEP_RESEARCH_COST[i], plutonium: 0 },
-      costGrowth: 1, baseTicks: STEP_TICKS[i],
-    });
-    out.push({
-      key: s.b, name: s.bName, category, kind: "building", max: 1, desc: s.bDesc,
-      requires: [{ key: s.r, level: 1 }],
-      baseCost: { metalium: STEP_BUILD_COST[i], carbonum: STEP_BUILD_COST[i], plutonium: 0 },
-      costGrowth: 1, baseTicks: STEP_TICKS[i],
-    });
+// Lista ORDENADA de itens (pesquisa/construção). Regras de dependência (2 trilhas):
+//  - pesquisa exige só a PESQUISA anterior (flui sozinha).
+//  - construção exige a pesquisa imediatamente ANTES dela. Se NÃO houver pesquisa
+//    antes (categoria que começa construindo, ex.: Mineração), a 1ª construção é LIVRE.
+// Ticks/custos pelo "tier" da construção: a pesquisa que libera a construção N usa
+// os mesmos ticks/custo da construção N (assim Naves e Mineração casam por tier:
+// pesquisa de Caça = 1ª construção de Mineração = 8 ticks).
+interface TItem { key: string; name: string; kind: TechKind; desc: string }
+function track(category: TechCategory, items: TItem[]): TechDef[] {
+  let lastResearch: string | null = null;
+  let buildTier = 0;
+  return items.map((it) => {
+    const requires: Req[] = lastResearch ? [{ key: lastResearch, level: 1 }] : [];
+    const tier = Math.min(buildTier, STEP_TICKS.length - 1);
+    if (it.kind === "research") lastResearch = it.key; else buildTier++;
+    const cost = it.kind === "research" ? STEP_RESEARCH_COST[tier] : STEP_BUILD_COST[tier];
+    return {
+      key: it.key, name: it.name, category, kind: it.kind, max: 1, desc: it.desc,
+      requires, baseCost: { metalium: cost, carbonum: cost, plutonium: 0 },
+      costGrowth: 1, baseTicks: STEP_TICKS[tier],
+    };
   });
-  return out;
 }
 
 // Cadeia Inteligencia/Sabotagem (pesquisa -> construcao alternadas).
@@ -96,36 +100,47 @@ function pesqConstrChain(
 // Tiers sequenciais de Inteligencia (definem o nível de espionagem).
 export const INTEL_TIERS = ["centralInteligencia", "servicoSecreto", "agentesMilitares", "transmissao", "agentesDuplos"];
 
-// ===== Mineração (cada construção adiciona produção FLAT do recurso) =====
-// COMEÇA com construção pronta: a 1ª pesquisa (prospeccaoBasica) já vem liberada
-// de fábrica (ver tech inicial), então o Centro de Mineração é construível no t=0.
+// ===== Mineração — COMEÇA CONSTRUINDO (Centro de Mineração é livre, sem pesquisa) =====
 const MINERACAO = track("mineracao", [
-  { r: "prospeccaoBasica", rName: "Prospecção Básica", rDesc: "Libera o Centro de Mineração.", b: "centroMineracao", bName: "Centro de Mineração", bDesc: "+1500 de produção de Metalium por tick." },
-  { r: "extracaoCristal", rName: "Extração de Carbonum", rDesc: "Libera a Mina de Carbonum.", b: "minaCristal", bName: "Mina de Carbonum", bDesc: "+1500 de produção de Carbonum por tick." },
-  { r: "fusaoEonio", rName: "Fusão de Plutonium", rDesc: "Libera o Laboratório de Plutonium.", b: "labEonio", bName: "Laboratório de Plutonium", bDesc: "+1500 de produção de Plutonium por tick." },
-  { r: "recursosProfundidade", rName: "Recursos em Profundidade", rDesc: "Libera a Mina Profunda de Metalium.", b: "minaProfundaMetal", bName: "Mina Profunda de Metalium", bDesc: "+10000 de produção de Metalium por tick." },
-  { r: "armasPlasma", rName: "Sondas de Carbonum Profundo", rDesc: "Libera a Mina Profunda de Carbonum.", b: "minaProfundaCristal", bName: "Mina Profunda de Carbonum", bDesc: "+10000 de produção de Carbonum por tick." },
-  { r: "materiaisReforcados", rName: "Materiais Reforçados", rDesc: "Libera o Laboratório Reforçado.", b: "labReforcado", bName: "Laboratório Reforçado", bDesc: "+10000 de produção de Plutonium por tick." },
+  { key: "centroMineracao", name: "Centro de Mineração", kind: "building", desc: "+1500 de produção de Metalium por tick." },
+  { key: "extracaoCristal", name: "Extração de Carbonum", kind: "research", desc: "Libera a Mina de Carbonum." },
+  { key: "minaCristal", name: "Mina de Carbonum", kind: "building", desc: "+1500 de produção de Carbonum por tick." },
+  { key: "fusaoEonio", name: "Fusão de Plutonium", kind: "research", desc: "Libera o Laboratório de Plutonium." },
+  { key: "labEonio", name: "Laboratório de Plutonium", kind: "building", desc: "+1500 de produção de Plutonium por tick." },
+  { key: "recursosProfundidade", name: "Recursos em Profundidade", kind: "research", desc: "Libera a Mina Profunda de Metalium." },
+  { key: "minaProfundaMetal", name: "Mina Profunda de Metalium", kind: "building", desc: "+10000 de produção de Metalium por tick." },
+  { key: "armasPlasma", name: "Sondas de Carbonum Profundo", kind: "research", desc: "Libera a Mina Profunda de Carbonum." },
+  { key: "minaProfundaCristal", name: "Mina Profunda de Carbonum", kind: "building", desc: "+10000 de produção de Carbonum por tick." },
+  { key: "materiaisReforcados", name: "Materiais Reforçados", kind: "research", desc: "Libera o Laboratório Reforçado." },
+  { key: "labReforcado", name: "Laboratório Reforçado", kind: "building", desc: "+10000 de produção de Plutonium por tick." },
 ]);
 
-// ===== Deslocamento (cada construção reduz 1 tick do tempo de viagem) =====
-// COMEÇA na pesquisa (Mecânica Quântica) — só constrói depois de pesquisar.
+// ===== Deslocamento — COMEÇA NA PESQUISA =====
 const DESLOCAMENTO = track("tec", [
-  { r: "mecanicaQuantica", rName: "Mecânica Quântica", rDesc: "Libera o Gerador de Subvácuo.", b: "geradorSubvacuo", bName: "Gerador de Subvácuo", bDesc: "−1 tick no tempo de viagem das suas frotas." },
-  { r: "geracaoPortais", rName: "Geração de Portais", rDesc: "Libera o Regulador de Portais.", b: "reguladorPortais", bName: "Regulador de Portais", bDesc: "−1 tick adicional no tempo de viagem (total −2)." },
-  { r: "dobrasEspaciais", rName: "Dobras Espaciais", rDesc: "Libera o Estabilizador de Vórtex.", b: "estabilizadorVortex", bName: "Estabilizador de Vórtex", bDesc: "−1 tick adicional (total −3)." },
-  { r: "hiperespaco", rName: "Hiperespaço", rDesc: "Libera o Reator de Hiperespaço.", b: "reatorHiperespaco", bName: "Reator de Hiperespaço", bDesc: "−1 tick adicional (total −4)." },
+  { key: "mecanicaQuantica", name: "Mecânica Quântica", kind: "research", desc: "Libera o Gerador de Subvácuo." },
+  { key: "geradorSubvacuo", name: "Gerador de Subvácuo", kind: "building", desc: "−1 tick no tempo de viagem das suas frotas." },
+  { key: "geracaoPortais", name: "Geração de Portais", kind: "research", desc: "Libera o Regulador de Portais." },
+  { key: "reguladorPortais", name: "Regulador de Portais", kind: "building", desc: "−1 tick adicional no tempo de viagem (total −2)." },
+  { key: "dobrasEspaciais", name: "Dobras Espaciais", kind: "research", desc: "Libera o Estabilizador de Vórtex." },
+  { key: "estabilizadorVortex", name: "Estabilizador de Vórtex", kind: "building", desc: "−1 tick adicional (total −3)." },
+  { key: "hiperespaco", name: "Hiperespaço", kind: "research", desc: "Libera o Reator de Hiperespaço." },
+  { key: "reatorHiperespaco", name: "Reator de Hiperespaço", kind: "building", desc: "−1 tick adicional (total −4)." },
 ]);
 
-// ===== Naves (construir a fábrica habilita a classe) =====
-// COMEÇA na pesquisa: caças exigem "Tecnologia de Caças" ANTES de construir a fundição.
+// ===== Naves — COMEÇA NA PESQUISA (caça exige "Tecnologia de Caças" antes) =====
 const NAVES = track("naves", [
-  { r: "tecnologiaCacas", rName: "Tecnologia de Caças", rDesc: "Libera a Fundição de Caças.", b: "fundicaoCacas", bName: "Fundição de Caças", bDesc: "Permite produzir Caças." },
-  { r: "lancadoresTorpedos", rName: "Lançadores de Torpedos", rDesc: "Libera a Produção de Corvetas.", b: "producaoCorvetas", bName: "Produção de Corvetas", bDesc: "Permite produzir Corvetas." },
-  { r: "disparosRapidos", rName: "Disparos Rápidos", rDesc: "Libera a Montagem de Fragatas.", b: "montagemFragatas", bName: "Montagem de Fragatas", bDesc: "Permite produzir Fragatas." },
-  { r: "resistenciaTorpedos", rName: "Resistência a Torpedos", rDesc: "Libera a Fábrica de Destróiers.", b: "fabricaDestroyers", bName: "Fábrica de Destróiers", bDesc: "Permite produzir Destróiers." },
-  { r: "fuselagensAltaResist", rName: "Fuselagens de Alta Resistência", rDesc: "Libera a Indústria de Cruzadores.", b: "industriaCruzadores", bName: "Indústria de Cruzadores", bDesc: "Permite produzir Cruzadores." },
-  { r: "armamentoPesado", rName: "Armamento Pesado", rDesc: "Libera os Estaleiros Orbitais.", b: "estaleirosOrbitais", bName: "Estaleiros Orbitais", bDesc: "Permite produzir Naves-Mãe." },
+  { key: "tecnologiaCacas", name: "Tecnologia de Caças", kind: "research", desc: "Libera a Fundição de Caças." },
+  { key: "fundicaoCacas", name: "Fundição de Caças", kind: "building", desc: "Permite produzir Caças." },
+  { key: "lancadoresTorpedos", name: "Lançadores de Torpedos", kind: "research", desc: "Libera a Produção de Corvetas." },
+  { key: "producaoCorvetas", name: "Produção de Corvetas", kind: "building", desc: "Permite produzir Corvetas." },
+  { key: "disparosRapidos", name: "Disparos Rápidos", kind: "research", desc: "Libera a Montagem de Fragatas." },
+  { key: "montagemFragatas", name: "Montagem de Fragatas", kind: "building", desc: "Permite produzir Fragatas." },
+  { key: "resistenciaTorpedos", name: "Resistência a Torpedos", kind: "research", desc: "Libera a Fábrica de Destróiers." },
+  { key: "fabricaDestroyers", name: "Fábrica de Destróiers", kind: "building", desc: "Permite produzir Destróiers." },
+  { key: "fuselagensAltaResist", name: "Fuselagens de Alta Resistência", kind: "research", desc: "Libera a Indústria de Cruzadores." },
+  { key: "industriaCruzadores", name: "Indústria de Cruzadores", kind: "building", desc: "Permite produzir Cruzadores." },
+  { key: "armamentoPesado", name: "Armamento Pesado", kind: "research", desc: "Libera os Estaleiros Orbitais." },
+  { key: "estaleirosOrbitais", name: "Estaleiros Orbitais", kind: "building", desc: "Permite produzir Naves-Mãe." },
 ]);
 
 export const TECHS: TechDef[] = [

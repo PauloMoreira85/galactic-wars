@@ -104,10 +104,10 @@ authRouter.post("/register", async (req, res) => {
             roidCarbonum: STARTING.roidCarbonum,
             roidPlutonium: STARTING.roidPlutonium,
             createdTick: tick,
-            // Comeca com 2 pesquisas feitas -> 2 construcoes ja liberadas
-            // Complexo de Mineracao + Central de Inteligencia. Pesquisas de Caca,
-            // Sabotagem e Propulsao ficam disponiveis (sem pre-requisito).
-            tech: JSON.stringify({ prospeccaoBasica: 1, pesq_centralInteligencia: 1 }),
+            // Começa podendo CONSTRUIR direto: Centro de Mineração é livre (sem
+            // pesquisa) e a Central de Inteligência já vem liberada. Naves,
+            // Deslocamento e Sabotagem começam na pesquisa (sem pré-requisito).
+            tech: JSON.stringify({ pesq_centralInteligencia: 1 }),
           },
         },
       },

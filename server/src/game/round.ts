@@ -41,7 +41,7 @@ export async function softResetRound(roundStartAt?: Date) {
       shipCaca: 0, shipCorveta: 0, shipFragata: 0, shipDestroyer: 0, shipCruzador: 0, shipNavemae: 0,
       roider1: 0, roider2: 0,
       units: "{}", agents: "{}", researchTier: 0,
-      tech: JSON.stringify({ prospeccaoBasica: 1, pesq_centralInteligencia: 1 }),
+      tech: JSON.stringify({ pesq_centralInteligencia: 1 }),
       prodMul: 100, travelMul: 100, fleetSlots: 0, createdTick: 0, autoExiles: 3,
     },
   });
