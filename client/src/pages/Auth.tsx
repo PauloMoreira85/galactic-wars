@@ -56,6 +56,14 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
 
   const wide = mode === "register";
 
+  // Regras atuais (derivadas do servidor) para a landing do jogo principal.
+  const tickLabel = meta
+    ? (meta.tickIntervalSeconds >= 60 ? `${Math.round(meta.tickIntervalSeconds / 60)} minuto${meta.tickIntervalSeconds >= 120 ? "s" : ""}` : `${meta.tickIntervalSeconds} segundos`)
+    : "1 minuto";
+  const roundTicks = meta ? Math.round((meta.roundDurationMinutes * 60) / meta.tickIntervalSeconds) : 1200;
+  const roundHours = meta ? Math.round(meta.roundDurationMinutes / 60) : 20;
+  const startList = meta ? meta.startTimes.join(" · ") : "08:00";
+
   return (
     <div className="landing">
       <div className="landing-hero">
@@ -65,6 +73,7 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
         </video>
         <div className="landing-tagline">
           {IS_RUR ? "RUR — Round Ultra-Rápido. O universo em 100 minutos." : "Conquiste os roids. Domine a galáxia."}
+          {!IS_RUR && <span style={{ marginLeft: 10, padding: "2px 8px", borderRadius: 999, background: "#ffb020", color: "#1a1205", fontSize: "0.6em", fontWeight: 800, verticalAlign: "middle", letterSpacing: 1 }}>BETA</span>}
         </div>
       </div>
 
@@ -85,13 +94,26 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
           <a className="link" href={MAIN_URL} target="_blank" rel="noopener noreferrer">🌍 Prefere o jogo clássico? Abrir o Galactic Wars principal ↗</a>
         </div>
       ) : (
-        <div className="panel" style={{ maxWidth: 760, margin: "12px auto 0", borderColor: "var(--accent)" }}>
-          <div className="cost" style={{ lineHeight: 1.6 }}>
-            ⚡ <b>Novidade: RUR — Round Ultra-Rápido!</b> Ticks de <b>5 segundos</b>, round inteiro em <b>~100 min</b>,
-            3 partidas por dia (<b>12:00 · 18:00 · 22:00</b>). Universo próprio, ação na hora.{" "}
-            <a className="link" href={RUR_URL} target="_blank" rel="noopener noreferrer">Abrir o RUR ↗</a>
+        <>
+          <div className="panel" style={{ maxWidth: 760, margin: "12px auto 0", borderColor: "#ffb020", background: "rgba(255,176,32,0.06)" }}>
+            <h2 style={{ marginTop: 0, color: "#ffb020" }}>🧪 BETA — em testes</h2>
+            <div className="cost" style={{ lineHeight: 1.7 }}>
+              O Galactic Wars está em <b>fase de testes</b>: estamos validando economia, combate, espionagem, sabotagem e tudo mais <b>antes de lançar o round oficial</b>. Crie sua conta, jogue à vontade e <b>mande seu feedback</b> — os rounds de teste podem ser <b>reiniciados a qualquer momento</b>.
+              <ul style={{ margin: "8px 0 0 18px", padding: 0 }}>
+                <li><b>Tick de {tickLabel}</b> — produção, frotas e combate avançam a cada tick.</li>
+                <li>Round de <b>{roundTicks} ticks</b> (~{roundHours}h), começando às <b>{startList}</b> (horário de Brasília).</li>
+                <li>A cada round você <b>escolhe a raça</b> e recomeça do zero.</li>
+              </ul>
+            </div>
           </div>
-        </div>
+          <div className="panel" style={{ maxWidth: 760, margin: "12px auto 0", borderColor: "var(--accent)" }}>
+            <div className="cost" style={{ lineHeight: 1.6 }}>
+              ⚡ <b>Quer testar algo mais rápido? RUR — Round Ultra-Rápido!</b> Ticks de <b>5 segundos</b>, round inteiro em <b>~100 min</b>,
+              3 partidas por dia (<b>12:00 · 18:00 · 22:00</b>). Universo próprio, ação na hora.{" "}
+              <a className="link" href={RUR_URL} target="_blank" rel="noopener noreferrer">Abrir o RUR ↗</a>
+            </div>
+          </div>
+        </>
       )}
 
       <div className={`panel ${wide ? "auth-wide" : "auth-wrap"}`} style={wide ? { maxWidth: 760, margin: "4vh auto 0" } : undefined}>
