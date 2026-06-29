@@ -325,12 +325,14 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             border: `1px solid ${isR ? "#7aa2ff55" : "#ffb24d55"}`, whiteSpace: "nowrap",
           };
           return (
-            <div className="roid-row" key={t.key}>
+            <div className="roid-row" key={t.key}
+              style={inQueue ? { background: "rgba(255,150,40,0.14)", borderLeft: "3px solid #ff9628", borderRadius: 6 } : undefined}>
               <div className="roid-label">
                 <div>
                   <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                     <span style={badge}>{isR ? "🔬 Pesquisa" : "🛠️ Construção"}</span>
-                    <b>{t.name}</b>
+                    <b style={inQueue ? { color: "#ff9628" } : undefined}>{t.name}</b>
+                    {inQueue && <span className="roid-count" style={{ color: "#ff9628", fontWeight: 700 }}>● em andamento</span>}
                     {t.max > 1 && <span className="roid-count">nível {t.level}/{t.max}</span>}
                     {t.max === 1 && t.level >= 1 && <span style={{ color: "var(--carbonum)" }}>✓ feito</span>}
                   </div>
