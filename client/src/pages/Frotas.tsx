@@ -121,7 +121,7 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
                   ))}
                 </tr>
                 <tr className="fg-meta">
-                  <td>Viagem (G/S/U)</td><td>—</td>
+                  <td title="Galáxia (mesma) / mesmo Setor ou Sistema / resto do Universo">Viagem (G/S/U)</td><td>—</td>
                   {fleets.map((f) => (
                     <td key={f.id} className="roid-count">{f.travel.galaxia}/{f.travel.setor}/{f.travel.universo}t<div>⛽{fmt(f.travel.fuel)}</div></td>
                   ))}
