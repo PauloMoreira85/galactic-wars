@@ -114,7 +114,7 @@ export interface PlanetView {
     resources: Record<Resource, number>;
     roids: Record<Resource, number> & { total: number };
     productionPerTick: Record<Resource, number>;
-    nextRoidCost: Record<Resource, number>; // custo (em METALIUM) do próximo roid de cada recurso
+    nextRoidCost: Record<Resource, number>; // custo do próximo roid de cada recurso (pago no próprio recurso)
     miningBonus: Record<Resource, number>;  // bônus FLAT de produção das minas
     travelReduction: number;                // ticks reduzidos no tempo de viagem
     score: number;

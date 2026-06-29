@@ -5,13 +5,13 @@ export type ResourceKey = "metalium" | "carbonum" | "plutonium";
 
 export const RESOURCES: ResourceKey[] = ["metalium", "carbonum", "plutonium"];
 
-// Quanto cada roid produz do seu recurso por tick (canon original: 250/tick).
+// Quanto cada roid produz do seu recurso por tick.
 export const ROID_PRODUCTION_PER_TICK = 250;
 
-// Custo de INICIAR um roid (canon original): é pago SEMPRE em METALIUM (não importa
-// o recurso do roid) e é proporcional a quantos roids DAQUELE recurso você já tem.
-// custo (metalium) = ROID_METALIUM_PER × (roids daquele recurso + 1).
-export const ROID_METALIUM_PER = 1000;
+// Custo de INICIAR um roid: pago no PRÓPRIO recurso do roid (roid de carbonum
+// custa carbonum, etc.) e escala com quantos roids daquele recurso você já tem.
+// custo = ROID_COST_PER × (roids daquele recurso + 1).
+export const ROID_COST_PER = 1000;
 
 // Mercado Negro: troca um recurso por outro com taxa (você recebe 1 - taxa).
 export const MARKET_FEE = 0.20; // 20%
@@ -62,12 +62,12 @@ export function nextFleetSlotCost(currentSlots: number) {
 }
 
 // Custo do PRÓXIMO roid de `resource`, dado quantos roids DESSE recurso o planeta
-// já tem. Pago SEMPRE em METALIUM (canon original), proporcional à quantidade
-// daquele recurso. `resource` é só pra contexto — o custo não muda por recurso.
-export function nextRoidCost(_resource: ResourceKey, countOfResource: number) {
+// já tem. Pago no PRÓPRIO recurso do roid, escalando com a quantidade.
+export function nextRoidCost(resource: ResourceKey, countOfResource: number) {
+  const amount = ROID_COST_PER * (Math.max(0, countOfResource) + 1);
   return {
-    metalium: ROID_METALIUM_PER * (Math.max(0, countOfResource) + 1),
-    carbonum: 0,
-    plutonium: 0,
+    metalium: resource === "metalium" ? amount : 0,
+    carbonum: resource === "carbonum" ? amount : 0,
+    plutonium: resource === "plutonium" ? amount : 0,
   };
 }

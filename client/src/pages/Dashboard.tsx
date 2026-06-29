@@ -300,10 +300,9 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   if (view.mustChooseRace) return <RaceChoiceScreen view={view} onChosen={refresh} onLogout={onLogout} />;
 
   const { planet, game } = view;
-  // Todo roid é pago em METALIUM (canon original), proporcional aos roids daquele
-  // recurso. planet.nextRoidCost[r] = o custo EM METALIUM do próximo roid de r.
+  // Cada roid é pago no PRÓPRIO recurso, escalando com a quantidade daquele recurso.
   const roidCost = (r: Resource) => planet.nextRoidCost[r];
-  const canAffordRoid = (r: Resource) => planet.resources.metalium >= roidCost(r);
+  const canAffordRoid = (r: Resource) => planet.resources[r] >= roidCost(r);
 
   // Árvore de Tecnologia: Pesquisa + Construção JUNTAS, na ordem do canon, por
   // categoria (mesmo esquema da referência). Construção só libera depois da sua
@@ -572,7 +571,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                   </div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div className="roid-count">custo: {fmt(roidCost(key))} Metalium</div>
+                  <div className="roid-count">custo: {fmt(roidCost(key))} {label}</div>
                   <button disabled={!canAffordRoid(key) || busy !== null} onClick={() => build(key)}>
                     {busy === key ? "..." : `⛏️ minerar ${label}`}
                   </button>

@@ -178,12 +178,11 @@ async function planetView(userId: string) {
         carbonum: roids.carbonum * ROID_PRODUCTION_PER_TICK + bonus.carbonum,
         plutonium: roids.plutonium * ROID_PRODUCTION_PER_TICK + bonus.plutonium,
       },
-      // Custo (em METALIUM) do próximo roid de CADA recurso — canon original:
-      // todo roid é pago em metalium, proporcional à quantidade daquele recurso.
+      // Custo do próximo roid de CADA recurso — pago no PRÓPRIO recurso.
       nextRoidCost: {
         metalium: nextRoidCost("metalium", planet.roidMetalium).metalium,
-        carbonum: nextRoidCost("carbonum", planet.roidCarbonum).metalium,
-        plutonium: nextRoidCost("plutonium", planet.roidPlutonium).metalium,
+        carbonum: nextRoidCost("carbonum", planet.roidCarbonum).carbonum,
+        plutonium: nextRoidCost("plutonium", planet.roidPlutonium).plutonium,
       },
       miningBonus: bonus, travelReduction: propLevel,
       score, rank, cargo,
