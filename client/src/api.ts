@@ -272,7 +272,7 @@ export const api = {
   spyLookup: (hash: string) =>
     request<{ hash: string; targetName: string; targetCoords: string; agent: string; tick: number; intel: any }>(`/game/spy/lookup/${encodeURIComponent(hash)}`),
 
-  sabotage: () => request<{ all: { key: string; name: string; building: string; desc: string; ticks: number }[]; available: string[] }>("/game/sabotage"),
+  sabotage: () => request<{ all: { key: string; name: string; building: string; desc: string; ticks: number; plut: number }[]; available: string[] }>("/game/sabotage"),
   sabotageRun: (galaxy: number, system: number, slot: number, key: string) =>
     request<{ success?: boolean; message?: string }>("/game/sabotage", { method: "POST", body: JSON.stringify({ galaxy, system, slot, key }) }),
 
