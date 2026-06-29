@@ -253,13 +253,13 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     }
   }
 
-  async function doTrade() {
+  async function doTrade(mode: "negro" | "fundo") {
     setMktErr("");
     if (mktFrom === mktTo) { setMktErr("Escolha recursos diferentes."); return; }
     if (mktAmt <= 0) { setMktErr("Informe uma quantidade."); return; }
     setMktBusy(true);
     try {
-      setView(await api.marketTrade(mktFrom, mktTo, mktAmt));
+      setView(await (mode === "fundo" ? api.marketFundTrade : api.marketTrade)(mktFrom, mktTo, mktAmt));
       setMktAmt(0);
     } catch (e: any) { setMktErr(e.message ?? "Falha na troca"); }
     finally { setMktBusy(false); }
@@ -610,9 +610,9 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
           </div>
 
           <div className="panel">
-            <h2>🔄 Mercado da Galáxia</h2>
+            <h2>🔄 Trocar Recursos</h2>
             <div className="cost" style={{ marginBottom: 10 }}>
-              Troca <b>com o fundo da galáxia</b>: o que você dá entra no fundo, o que recebe sai dele. Taxa de <b>{view.galaxyFund.marketFee}%</b> (definida pelo Ministro da Economia) fica de lucro pro fundo. Só dá pra trocar se o fundo tiver o recurso de destino.
+              Escolha o recurso que vai dar, o que quer receber e a quantidade. Depois troque no <b>Mercado Negro</b> (taxa fixa) ou com o <b>Fundo da Galáxia</b> (taxa do ME).
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
               <select
@@ -635,11 +635,24 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                 onChange={(e) => setMktAmt(Math.max(0, Math.floor(Number(e.target.value))))}
                 style={{ width: 140, margin: 0, padding: "6px 10px" }}
               />
-              <button disabled={mktBusy || mktAmt <= 0 || mktFrom === mktTo} onClick={doTrade}>{mktBusy ? "..." : "trocar"}</button>
             </div>
-            <div className="roid-count" style={{ marginTop: 8 }}>
-              Você recebe: <b style={{ color: "var(--text)" }}>{fmt(Math.floor(mktAmt * (1 - view.galaxyFund.marketFee / 100)))}</b> de {RES_META.find((r) => r.key === mktTo)?.label}
-              {" · "}fundo tem <b>{fmt(view.galaxyFund[mktTo])}</b>
+
+            {/* Mercado Negro — taxa fixa, sempre disponível */}
+            <div className="roid-row" style={{ marginTop: 12 }}>
+              <div className="roid-label"><div>
+                <div><b>🕳️ Mercado Negro</b> <span className="roid-count">taxa 25% · sempre disponível</span></div>
+                <div className="roid-count">Você recebe <b>{fmt(Math.floor(mktAmt * 0.75))}</b> de {RES_META.find((r) => r.key === mktTo)?.label} (o recurso trocado é consumido)</div>
+              </div></div>
+              <button disabled={mktBusy || mktAmt <= 0 || mktFrom === mktTo} onClick={() => doTrade("negro")}>{mktBusy ? "..." : "🕳️ trocar"}</button>
+            </div>
+
+            {/* Fundo da Galáxia — taxa do ME, depende do fundo */}
+            <div className="roid-row">
+              <div className="roid-label"><div>
+                <div><b>🏦 Fundo da Galáxia</b> <span className="roid-count">taxa {view.galaxyFund.marketFee}% {view.galaxyFund.marketLocked ? "· 🔒 trancado pelo ME" : ""}</span></div>
+                <div className="roid-count">Você recebe <b>{fmt(Math.floor(mktAmt * (1 - view.galaxyFund.marketFee / 100)))}</b> de {RES_META.find((r) => r.key === mktTo)?.label} · fundo tem <b>{fmt(view.galaxyFund[mktTo])}</b></div>
+              </div></div>
+              <button disabled={mktBusy || mktAmt <= 0 || mktFrom === mktTo || view.galaxyFund.marketLocked} onClick={() => doTrade("fundo")}>{mktBusy ? "..." : view.galaxyFund.marketLocked ? "🔒 trancado" : "🏦 trocar"}</button>
             </div>
             {mktErr && <div className="error" style={{ marginTop: 10 }}>{mktErr}</div>}
           </div>

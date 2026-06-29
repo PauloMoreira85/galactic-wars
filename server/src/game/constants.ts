@@ -13,8 +13,8 @@ export const ROID_PRODUCTION_PER_TICK = 250;
 // custo (metalium) = ROID_COST_PER × (roids daquele recurso + 1).
 export const ROID_COST_PER = 1000;
 
-// Mercado Negro: troca um recurso por outro com taxa (você recebe 1 - taxa).
-export const MARKET_FEE = 0.20; // 20%
+// Mercado Negro: troca um recurso por outro com taxa FIXA (você recebe 1 - taxa).
+export const MARKET_FEE = 0.25; // 25%
 
 // Limite de estoque por recurso: 30 milhões. O que passar disso é perdido.
 export const RESOURCE_CAP = 30_000_000;

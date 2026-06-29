@@ -136,7 +136,7 @@ export interface PlanetView {
   onlineCount: number;
   newsUnread: number;
   admin: boolean;
-  galaxyFund: { metalium: number; carbonum: number; plutonium: number; taxRate: number; marketFee: number };
+  galaxyFund: { metalium: number; carbonum: number; plutonium: number; taxRate: number; marketFee: number; marketLocked: boolean };
   tech: TechItem[];
   effects: { espionage: number };
   units: UnitItem[];
@@ -163,6 +163,7 @@ export interface GovView {
   md: string | null; mdId: string | null;
   taxRate: number;
   marketFee: number;
+  marketLocked: boolean;
   fund: Record<Resource, number>;
   treaties: { other: number; otherCoord?: string; status: string; proposedByMe: boolean }[];
   iAmCG: boolean; iAmME: boolean; iAmMG: boolean; iAmMD: boolean;
@@ -373,6 +374,8 @@ export const api = {
     request<PlanetView>(`/game/queue/${id}/cancel`, { method: "POST" }),
   marketTrade: (from: Resource, to: Resource, amount: number) =>
     request<PlanetView>("/game/market/trade", { method: "POST", body: JSON.stringify({ from, to, amount }) }),
+  marketFundTrade: (from: Resource, to: Resource, amount: number) =>
+    request<PlanetView>("/game/market/fund-trade", { method: "POST", body: JSON.stringify({ from, to, amount }) }),
 
   traffic: () =>
     request<{
@@ -435,6 +438,8 @@ export const api = {
     request<GovView>("/game/galaxy/tax", { method: "POST", body: JSON.stringify({ rate }) }),
   govMarketFee: (rate: number) =>
     request<GovView>("/game/galaxy/market-fee", { method: "POST", body: JSON.stringify({ rate }) }),
+  govMarketLock: (locked: boolean) =>
+    request<GovView>("/game/galaxy/market-lock", { method: "POST", body: JSON.stringify({ locked }) }),
   govDonate: (toPlanetId: string, metalium: number, carbonum: number, plutonium: number) =>
     request<GovView>("/game/galaxy/donate", { method: "POST", body: JSON.stringify({ toPlanetId, metalium, carbonum, plutonium }) }),
   mgFleets: () =>

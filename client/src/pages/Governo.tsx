@@ -175,9 +175,13 @@ export function Governo() {
           <div className="roid-row">
             <div>Taxa do mercado (% que fica no fundo nas trocas)</div>
             <div style={{ display: "flex", gap: 6 }}>
-              <input type="number" min={0} max={90} value={feeInput} onChange={(e) => setFeeInput(Number(e.target.value))} style={{ width: 70, margin: 0, padding: "4px 6px" }} />
+              <input type="number" min={0} max={25} value={feeInput} onChange={(e) => setFeeInput(Number(e.target.value))} style={{ width: 70, margin: 0, padding: "4px 6px" }} />
               <button onClick={() => act(() => api.govMarketFee(feeInput))}>aplicar</button>
             </div>
+          </div>
+          <div className="roid-row">
+            <div>Mercado da galáxia: <b style={{ color: gov.marketLocked ? "#ff6b6b" : "#37e07a" }}>{gov.marketLocked ? "🔒 trancado" : "🔓 aberto"}</b></div>
+            <button onClick={() => act(() => api.govMarketLock(!gov.marketLocked))}>{gov.marketLocked ? "destrancar" : "trancar"}</button>
           </div>
           <div style={{ marginTop: 10 }} className="cost">Doar do fundo (máx 20% por doação, 1 doação a cada 100 ticks por planeta):</div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginTop: 6 }}>

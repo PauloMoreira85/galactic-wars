@@ -11,7 +11,7 @@ function coordLabel(id: number): string {
 }
 
 export const MAX_TAX = 25;            // teto do imposto (%)
-export const MAX_MARKET_FEE = 90;     // teto da taxa de troca do mercado (%)
+export const MAX_MARKET_FEE = 25;     // teto da taxa de troca do mercado (%)
 export const DONATION_MAX_PCT = 20;   // máximo do fundo por doação a 1 planeta
 export const DONATION_WINDOW = 100;   // ticks de cooldown entre doações ao mesmo planeta
 
@@ -169,6 +169,15 @@ export async function setMarketFee(mePlanetId: string, rate: number) {
   await prisma.galaxyState.update({ where: { galaxy: g }, data: { marketFee: r } });
 }
 
+// ME tranca/destranca o mercado da galáxia (trancado = ninguém troca com o fundo).
+export async function setMarketLocked(mePlanetId: string, locked: boolean) {
+  const g = await planetGalaxy(mePlanetId);
+  if (g == null) throw new Error("Planeta nao encontrado");
+  const st = await ensureGalaxy(g);
+  if (st.mePlanetId !== mePlanetId) throw new Error("Apenas o Ministro da Economia pode trancar o mercado");
+  await prisma.galaxyState.update({ where: { galaxy: g }, data: { marketLocked: locked } });
+}
+
 // ME doa recursos do fundo para um planeta (cap 20% do fundo, cooldown por planeta).
 export async function donate(mePlanetId: string, toPlanetId: string, amounts: { metalium: number; carbonum: number; plutonium: number }) {
   const g = await planetGalaxy(mePlanetId);
@@ -249,6 +258,7 @@ export async function govView(planetId: string) {
     md: nameOf(st.mdPlanetId), mdId: st.mdPlanetId,
     taxRate: st.taxRate,
     marketFee: st.marketFee,
+    marketLocked: st.marketLocked,
     fund: { metalium: st.fundMetalium, carbonum: st.fundCarbonum, plutonium: st.fundPlutonium },
     treaties: await listTreaties(g),
     iAmCG: st.cgPlanetId === planetId, iAmME: st.mePlanetId === planetId, iAmMG: st.mgPlanetId === planetId, iAmMD: st.mdPlanetId === planetId,

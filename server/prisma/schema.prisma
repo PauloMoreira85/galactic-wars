@@ -256,6 +256,7 @@ model GalaxyState {
   mdPlanetId    String? // Ministro da Diplomacia
   taxRate       Int     @default(0) // % da producao desviada pro fundo
   marketFee     Int     @default(20) // % cobrada nas trocas com o fundo (definido pelo ME)
+  marketLocked  Boolean @default(false) // ME pode trancar o fundo (ninguém troca)
   fundMetalium  Int     @default(0)
   fundCarbonum  Int     @default(0)
   fundPlutonium Int     @default(0)
