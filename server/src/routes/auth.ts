@@ -107,7 +107,7 @@ authRouter.post("/register", async (req, res) => {
             // Comeca com 2 pesquisas feitas -> 2 construcoes ja liberadas
             // Complexo de Mineracao + Central de Inteligencia. Pesquisas de Caca,
             // Sabotagem e Propulsao ficam disponiveis (sem pre-requisito).
-            tech: JSON.stringify({ pesqMineracao: 1, pesq_centralInteligencia: 1 }),
+            tech: JSON.stringify({ prospeccaoBasica: 1, pesq_centralInteligencia: 1 }),
           },
         },
       },
