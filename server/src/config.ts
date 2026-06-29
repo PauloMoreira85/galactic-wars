@@ -54,7 +54,8 @@ export const config = {
   // Pasta do client buildado a servir em produção (sobrescrevível por env).
   clientDist: process.env.CLIENT_DIST ?? "",
   // Usuários admin (gerenciam anunciantes etc.) — nomes de líder, case-insensitive.
-  // Padrão "JaH" (dono do jogo); dá pra sobrescrever/somar com ADMIN_USERS="nome1,nome2".
-  adminUsers: (process.env.ADMIN_USERS ?? "JaH")
+  // Padrão "JaH" (dono do jogo). Usa || (não ??) porque o docker-compose passa
+  // ADMIN_USERS="" quando não há .env, e "" precisa cair no padrão também.
+  adminUsers: (process.env.ADMIN_USERS || "JaH")
     .split(",").map((s) => s.trim().toLowerCase()).filter(Boolean),
 };
