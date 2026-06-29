@@ -5,17 +5,13 @@ export type ResourceKey = "metalium" | "carbonum" | "plutonium";
 
 export const RESOURCES: ResourceKey[] = ["metalium", "carbonum", "plutonium"];
 
-// Quanto cada roid produz do seu recurso por tick (canon: 200 com moral 100).
-// Quando a Moral existir, a produção efetiva será 140 + 0.6*moral.
-export const ROID_PRODUCTION_PER_TICK = 300;
+// Quanto cada roid produz do seu recurso por tick (canon original: 250/tick).
+export const ROID_PRODUCTION_PER_TICK = 250;
 
-// Custo de PRODUZIR um novo roid. Escala com o total de roids do planeta:
-//   custo = base * (growth ^ totalRoids)
-// Ex.: base 100 / growth 1.12 -> 1o roid 100, 10o ~310, 20o ~965...
-// Custo de INICIAR a mineração de um roid: paga SÓ no recurso do roid.
-// Começa no base do recurso e sobe +250 a cada roid DESSE recurso que você já tem.
-export const ROID_BASE_COST: Record<ResourceKey, number> = { metalium: 1250, carbonum: 1000, plutonium: 1000 };
-export const ROID_COST_STEP = 250;
+// Custo de INICIAR um roid (canon original): é pago SEMPRE em METALIUM (não importa
+// o recurso do roid) e é proporcional a quantos roids DAQUELE recurso você já tem.
+// custo (metalium) = ROID_METALIUM_PER × (roids daquele recurso + 1).
+export const ROID_METALIUM_PER = 1000;
 
 // Mercado Negro: troca um recurso por outro com taxa (você recebe 1 - taxa).
 export const MARKET_FEE = 0.20; // 20%
@@ -66,12 +62,12 @@ export function nextFleetSlotCost(currentSlots: number) {
 }
 
 // Custo do PRÓXIMO roid de `resource`, dado quantos roids DESSE recurso o planeta
-// já tem. Paga apenas no recurso correspondente (os outros vêm 0).
-export function nextRoidCost(resource: ResourceKey, countOfResource: number) {
-  const amount = ROID_BASE_COST[resource] + ROID_COST_STEP * Math.max(0, countOfResource);
+// já tem. Pago SEMPRE em METALIUM (canon original), proporcional à quantidade
+// daquele recurso. `resource` é só pra contexto — o custo não muda por recurso.
+export function nextRoidCost(_resource: ResourceKey, countOfResource: number) {
   return {
-    metalium: resource === "metalium" ? amount : 0,
-    carbonum: resource === "carbonum" ? amount : 0,
-    plutonium: resource === "plutonium" ? amount : 0,
+    metalium: ROID_METALIUM_PER * (Math.max(0, countOfResource) + 1),
+    carbonum: 0,
+    plutonium: 0,
   };
 }
