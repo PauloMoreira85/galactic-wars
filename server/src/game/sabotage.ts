@@ -8,6 +8,7 @@ import { planetScore } from "./score.js";
 import { addNews } from "./news.js";
 import { finalize } from "./combat.js";
 import { parseAgents, spySuccessChance } from "./agents.js";
+import { addMorale } from "./morale.js";
 
 const SAB_COOLDOWN = 5; // ticks entre sabotagens do mesmo sabotador
 
@@ -92,6 +93,9 @@ export async function executeSabotage(saboteurPlanetId: string, target: { galaxy
     saboteurPlanetId: me.id, targetGalaxy: target.galaxy, targetSystem: target.system, targetSlot: target.slot,
     key, launchTick: tick, resolveTick: tick + def.ticks,
   } });
+  // +moral pela sabotagem bem-sucedida (nível = posição na cadeia de sabotagem).
+  const tier = SABOTAGES.findIndex((s) => s.key === key) + 1;
+  await addMorale(me.id, tier);
   return { success: true, message: `🕵️ ${def.name} infiltrada! Efeito em ${def.ticks} tick(s).` };
 }
 

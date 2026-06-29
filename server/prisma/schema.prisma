@@ -81,6 +81,7 @@ model Planet {
   tech      String @default("{}")
   prodMul   Int    @default(100) // % de producao dos roids (100 = base)
   travelMul Int    @default(100) // % do tempo de viagem (100 = base, <100 = mais rapido)
+  morale    Int    @default(100) // moral (0-200); afeta a producao: ×(0.7 + 0.003×moral)
 
   // Vagas de frota compradas (permanentes). Limita quantas frotas simultaneas.
   fleetSlots Int @default(0)

@@ -64,7 +64,7 @@ export async function autoExile(planetId: string) {
       await leaveGalaxy(planetId, planet.galaxy);
       await prisma.planet.update({
         where: { id: planetId },
-        data: { galaxy: g, system: free.system, slot: free.slot, autoExiles: { decrement: 1 } },
+        data: { galaxy: g, system: free.system, slot: free.slot, autoExiles: { decrement: 1 }, morale: { increment: 10 } },
       });
       const tick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
       await prisma.news.create({ data: { planetId, tick, message: `🪂 Auto-exílio: seu planeta foi realocado para ${g}:${free.system}:${free.slot}` } });

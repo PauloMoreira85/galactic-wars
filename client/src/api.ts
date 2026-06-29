@@ -124,6 +124,8 @@ export interface PlanetView {
     fleetsActive: number;
     nextFleetSlotCost: Record<Resource, number> | null;
     autoExiles: number;
+    morale: number;
+    moralePct: number;
     protection: { active: boolean; ticksLeft: number };
   };
   agents: {

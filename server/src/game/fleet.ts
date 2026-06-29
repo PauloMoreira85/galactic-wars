@@ -172,7 +172,7 @@ export async function processBuildOrders(uptoTick: number) {
           levels[order.techKey] = order.targetLevel;
           await prisma.planet.update({
             where: { id: order.planetId },
-            data: { tech: JSON.stringify(levels) },
+            data: { tech: JSON.stringify(levels), morale: { increment: 3 } }, // +3 moral por pesquisa/construção
           });
           const def = TECH_BY_KEY[order.techKey];
           const isResearch = def?.kind === "research";

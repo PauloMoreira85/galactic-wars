@@ -18,6 +18,7 @@ import { createPrivateGalaxy, invitePrivate, joinPrivate, privateView } from "..
 import { effectiveTec, galaxyPenalty, travelTime } from "../game/travel.js";
 import { vote, appoint, setTax, donate, govView, mgFleets, setGalaxyName, setGalaxyFlag, proposeTreaty, acceptTreaty, cancelTreaty } from "../game/governance.js";
 import { planetScore } from "../game/score.js";
+import { clampMorale, moraleMult } from "../game/morale.js";
 import { addNews, recentNews } from "../game/news.js";
 import { createAlliance, invitePlayer, acceptInvite, leaveAlliance, kickMember, setMemberRole, allianceView } from "../game/alliance.js";
 import { forumIndex, listTopics, createTopic, getTopic, reply as forumReply, isForum } from "../game/forum.js";
@@ -194,6 +195,8 @@ async function planetView(userId: string) {
       fleetSlots: planet.fleetSlots, fleetsActive: myFleets.length,
       nextFleetSlotCost: nextFleetSlotCost(planet.fleetSlots),
       autoExiles: planet.autoExiles,
+      morale: clampMorale(planet.morale),
+      moralePct: Math.round(moraleMult(planet.morale) * 100), // % de produção pela moral
       protection: {
         active: tick < planet.createdTick + NEWBIE_PROTECTION_TICKS,
         ticksLeft: Math.max(0, planet.createdTick + NEWBIE_PROTECTION_TICKS - tick),
@@ -475,6 +478,7 @@ gameRouter.post("/spy", async (req: AuthedRequest, res) => {
   if (agent === "P") {
     // Padrão: raça, pontuação, recursos em estoque, roids e qtd TOTAL de naves.
     intel.score = planetScore(target, units);
+    intel.morale = clampMorale(target.morale);
     intel.resources = { metalium: target.metalium, carbonum: target.carbonum, plutonium: target.plutonium };
     intel.roids = { metalium: target.roidMetalium, carbonum: target.roidCarbonum, plutonium: target.roidPlutonium };
     // Rakshasa: invisíveis não contam — só roiders. Demais raças: total normal.

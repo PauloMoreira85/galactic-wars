@@ -438,7 +438,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             <div className="sh-cell"><span>Tick</span><b>#{game.tickNumber} / {game.roundTicks}{countdown ? ` · ${countdown}` : ""}</b></div>
             {roundStatus && <div className="sh-cell"><span>{roundStatus.label}</span><b>{roundStatus.time}</b></div>}
             <div className="sh-cell"><span>Online</span><b>{view.onlineCount}</b></div>
-            <div className="sh-cell"><span>Moral</span><b>—</b></div>
+            <div className="sh-cell"><span>Moral</span><b style={{ color: planet.morale >= 100 ? "#37e07a" : planet.morale >= 70 ? "var(--text)" : "#ff6b6b" }}>{planet.morale} <span style={{ fontWeight: 400, opacity: 0.7, fontSize: 12 }}>({planet.moralePct}%)</span></b></div>
           </div>
         </div>
 

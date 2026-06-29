@@ -5,6 +5,7 @@ import { parseUnits, stringifyUnits, totalUnits, addUnits, type UnitMap } from "
 import { travelTime } from "./travel.js";
 import { travelReductionTicks } from "./tech.js";
 import { addNews } from "./news.js";
+import { addMorale } from "./morale.js";
 
 // ===== Balanceamento =====
 export const BATTLE_TICKS = 3;
@@ -325,6 +326,14 @@ export async function resolveSiege(target: { galaxy: number; system: number; slo
       report: JSON.stringify({ ...baseReport, attackerRace: raceTable(raceOf(atk.user.race)) }),
     }});
   }
+  // Moral do combate (canon): atacar planeta MAIS FORTE (+7/tick); atacar alvo
+  // bem mais fraco = bullying (−1/tick); defensor perdendo roids p/ bem mais forte (+3/tick).
+  for (const ownerId of atkOwners) {
+    if (ratio < 1) await addMorale(ownerId, 7);
+    else if (ratio > 2) await addMorale(ownerId, -1);
+  }
+  if (ratio > 2) await addMorale(def.id, 3);
+
   await addNews(def.id, tick, `🛡️ Combate no seu planeta — ${atkContribs.length} frota(s) atacante(s); você perdeu ${totalUnits(st.dLost)} nave(s), inimigo perdeu ${totalUnits(st.aLost)}`);
 }
 

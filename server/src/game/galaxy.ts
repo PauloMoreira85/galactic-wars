@@ -44,7 +44,7 @@ export async function createFleet(planetId: string) {
     }
     await tx.planet.update({
       where: { id: planetId },
-      data: { metalium: { decrement: cost.metalium }, carbonum: { decrement: cost.carbonum }, fleetSlots: { increment: 1 } },
+      data: { metalium: { decrement: cost.metalium }, carbonum: { decrement: cost.carbonum }, fleetSlots: { increment: 1 }, morale: { increment: 10 } },
     });
     const fleet = await tx.fleet.create({
       data: {

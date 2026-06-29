@@ -39,6 +39,7 @@ export async function buildRoid(planetId: string, resource: ResourceKey) {
         carbonum: { decrement: cost.carbonum },
         plutonium: { decrement: cost.plutonium },
         [field]: { increment: 1 },
+        morale: { increment: 1 }, // +1 moral por roid iniciado
       },
     });
   }, TX_OPTS));

@@ -6,6 +6,7 @@ import { miningBonus } from "./tech.js";
 import { processFleets } from "./galaxy.js";
 import { processTax } from "./governance.js";
 import { processEffects, resolveSabotages } from "./sabotage.js";
+import { moraleMult, decayAndClampMorale, MORALE_DECAY_EVERY } from "./morale.js";
 import { softResetRound } from "./round.js";
 
 let timer: NodeJS.Timeout | null = null;
@@ -77,12 +78,13 @@ async function processTicks(n: number) {
   // ações do jogador (build/pesquisa), que antes esperavam até o busy_timeout (5s).
   const updates = planets.map((p) => {
     const b = miningBonus(parseTech(p.tech));
+    const mm = moraleMult(p.morale); // produção × moral (0.7–1.3)
     return prisma.planet.update({
       where: { id: p.id },
       data: {
-        metalium: Math.min(RESOURCE_CAP, p.metalium + (p.roidMetalium * ROID_PRODUCTION_PER_TICK + b.metalium) * n),
-        carbonum: Math.min(RESOURCE_CAP, p.carbonum + (p.roidCarbonum * ROID_PRODUCTION_PER_TICK + b.carbonum) * n),
-        plutonium: Math.min(RESOURCE_CAP, p.plutonium + (p.roidPlutonium * ROID_PRODUCTION_PER_TICK + b.plutonium) * n),
+        metalium: Math.min(RESOURCE_CAP, p.metalium + Math.floor((p.roidMetalium * ROID_PRODUCTION_PER_TICK + b.metalium) * mm) * n),
+        carbonum: Math.min(RESOURCE_CAP, p.carbonum + Math.floor((p.roidCarbonum * ROID_PRODUCTION_PER_TICK + b.carbonum) * mm) * n),
+        plutonium: Math.min(RESOURCE_CAP, p.plutonium + Math.floor((p.roidPlutonium * ROID_PRODUCTION_PER_TICK + b.plutonium) * mm) * n),
       },
     });
   });
@@ -106,6 +108,7 @@ async function applyTicks(fromTick: number, toTick: number) {
   for (let t = fromTick + 1; t <= toTick; t++) {
     await processFleets(t);
     await resolveSabotages(t);
+    if (t % MORALE_DECAY_EVERY === 0) await decayAndClampMorale(); // moral decai -1 a cada 5 ticks
   }
   const t5 = Date.now();
   if (t5 - t0 >= 1000) {

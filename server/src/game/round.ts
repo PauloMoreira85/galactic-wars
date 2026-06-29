@@ -42,7 +42,7 @@ export async function softResetRound(roundStartAt?: Date) {
       roider1: 0, roider2: 0,
       units: "{}", agents: "{}", researchTier: 0,
       tech: JSON.stringify({}),
-      prodMul: 100, travelMul: 100, fleetSlots: 0, createdTick: 0, autoExiles: 3,
+      prodMul: 100, travelMul: 100, morale: 100, fleetSlots: 0, createdTick: 0, autoExiles: 3,
     },
   });
 
