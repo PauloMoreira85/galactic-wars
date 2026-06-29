@@ -162,6 +162,7 @@ export interface GovView {
   mg: string | null; mgId: string | null;
   md: string | null; mdId: string | null;
   taxRate: number;
+  marketFee: number;
   fund: Record<Resource, number>;
   treaties: { other: number; otherCoord?: string; status: string; proposedByMe: boolean }[];
   iAmCG: boolean; iAmME: boolean; iAmMG: boolean; iAmMD: boolean;
@@ -432,6 +433,8 @@ export const api = {
     request<GovView>(`/game/galaxy/treaty/${action}`, { method: "POST", body: JSON.stringify({ otherGalaxy }) }),
   govTax: (rate: number) =>
     request<GovView>("/game/galaxy/tax", { method: "POST", body: JSON.stringify({ rate }) }),
+  govMarketFee: (rate: number) =>
+    request<GovView>("/game/galaxy/market-fee", { method: "POST", body: JSON.stringify({ rate }) }),
   govDonate: (toPlanetId: string, metalium: number, carbonum: number, plutonium: number) =>
     request<GovView>("/game/galaxy/donate", { method: "POST", body: JSON.stringify({ toPlanetId, metalium, carbonum, plutonium }) }),
   mgFleets: () =>

@@ -9,6 +9,7 @@ export function Governo() {
   const [gov, setGov] = useState<GovView | null>(null);
   const [error, setError] = useState("");
   const [taxInput, setTaxInput] = useState(0);
+  const [feeInput, setFeeInput] = useState(20);
   const [galName, setGalName] = useState("");
   const [treatySetor, setTreatySetor] = useState(1);
   const [treatySistema, setTreatySistema] = useState(1);
@@ -22,6 +23,7 @@ export function Governo() {
       const g = await api.gov();
       setGov(g);
       setTaxInput(g.taxRate);
+      setFeeInput(g.marketFee);
       if (g.iAmMG) {
         try { setMgFleets((await api.mgFleets()).fleets); } catch {}
       }
@@ -81,10 +83,21 @@ export function Governo() {
         <div className="status-row"><span>⚔️ Min. da Guerra</span><b>{gov.mg ?? "— vago —"}</b></div>
         <div className="status-row"><span>🕊️ Min. da Diplomacia</span><b>{gov.md ?? "— vago —"}</b></div>
         <div className="status-row"><span>Imposto</span><b>{gov.taxRate}%</b></div>
+        <div className="status-row"><span>Taxa do mercado</span><b>{gov.marketFee}%</b></div>
         <div className="cost" style={{ marginTop: 8 }}>
           Fundo da galáxia: <span>{fmt(gov.fund.metalium)} M</span> · <span>{fmt(gov.fund.carbonum)} C</span> · <span>{fmt(gov.fund.plutonium)} P</span>
         </div>
         {error && <div className="error" style={{ marginTop: 8 }}>{error}</div>}
+      </div>
+
+      <div className="panel">
+        <h2>📜 O que cada cargo faz</h2>
+        <div className="cost" style={{ lineHeight: 1.8 }}>
+          <div><b style={{ color: "#ffd23f" }}>👑 Comandante (CG)</b> — o mais votado da galáxia. Nomeia e troca os ministros e define o nome e a bandeira da galáxia.</div>
+          <div><b style={{ color: "#3aa0ff" }}>💰 Ministro da Economia (ME)</b> — define o <b>imposto</b> (% da produção que vai pro fundo), a <b>taxa do mercado</b> da galáxia e <b>doa</b> recursos do fundo aos planetas.</div>
+          <div><b style={{ color: "#ff5050" }}>⚔️ Ministro da Guerra (MG)</b> — enxerga as <b>frotas</b> de todos os planetas da galáxia (inteligência militar interna).</div>
+          <div><b style={{ color: "#ff9a2b" }}>🕊️ Ministro da Diplomacia (MD)</b> — propõe e aceita <b>tratados</b> de não-agressão com outras galáxias.</div>
+        </div>
       </div>
 
       <div className="panel">
@@ -157,6 +170,13 @@ export function Governo() {
             <div style={{ display: "flex", gap: 6 }}>
               <input type="number" min={0} max={50} value={taxInput} onChange={(e) => setTaxInput(Number(e.target.value))} style={{ width: 70, margin: 0, padding: "4px 6px" }} />
               <button onClick={() => act(() => api.govTax(taxInput))}>aplicar</button>
+            </div>
+          </div>
+          <div className="roid-row">
+            <div>Taxa do mercado (% que fica no fundo nas trocas)</div>
+            <div style={{ display: "flex", gap: 6 }}>
+              <input type="number" min={0} max={90} value={feeInput} onChange={(e) => setFeeInput(Number(e.target.value))} style={{ width: 70, margin: 0, padding: "4px 6px" }} />
+              <button onClick={() => act(() => api.govMarketFee(feeInput))}>aplicar</button>
             </div>
           </div>
           <div style={{ marginTop: 10 }} className="cost">Doar do fundo (máx 20% por doação, 1 doação a cada 100 ticks por planeta):</div>

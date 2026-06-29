@@ -610,9 +610,9 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
           </div>
 
           <div className="panel">
-            <h2>🕳️ Mercado Negro</h2>
+            <h2>🔄 Mercado da Galáxia</h2>
             <div className="cost" style={{ marginBottom: 10 }}>
-              Troque um recurso por outro. Taxa de <b>20%</b> — você recebe 80% do valor trocado.
+              Troca <b>com o fundo da galáxia</b>: o que você dá entra no fundo, o que recebe sai dele. Taxa de <b>{view.galaxyFund.marketFee}%</b> (definida pelo Ministro da Economia) fica de lucro pro fundo. Só dá pra trocar se o fundo tiver o recurso de destino.
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
               <select
@@ -638,7 +638,8 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
               <button disabled={mktBusy || mktAmt <= 0 || mktFrom === mktTo} onClick={doTrade}>{mktBusy ? "..." : "trocar"}</button>
             </div>
             <div className="roid-count" style={{ marginTop: 8 }}>
-              Você recebe: <b style={{ color: "var(--text)" }}>{fmt(Math.floor(mktAmt * (1 - 0.20)))}</b> de {RES_META.find((r) => r.key === mktTo)?.label}
+              Você recebe: <b style={{ color: "var(--text)" }}>{fmt(Math.floor(mktAmt * (1 - view.galaxyFund.marketFee / 100)))}</b> de {RES_META.find((r) => r.key === mktTo)?.label}
+              {" · "}fundo tem <b>{fmt(view.galaxyFund[mktTo])}</b>
             </div>
             {mktErr && <div className="error" style={{ marginTop: 10 }}>{mktErr}</div>}
           </div>

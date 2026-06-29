@@ -1,0 +1,2 @@
+-- AddColumn
+ALTER TABLE "GalaxyState" ADD COLUMN "marketFee" INTEGER NOT NULL DEFAULT 20;

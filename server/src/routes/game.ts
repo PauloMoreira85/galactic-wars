@@ -17,7 +17,7 @@ import { autoExile } from "../game/relocation.js";
 import { randomBytes } from "node:crypto";
 import { createPrivateGalaxy, invitePrivate, joinPrivate, privateView } from "../game/privategalaxy.js";
 import { effectiveTec, galaxyPenalty, travelTime } from "../game/travel.js";
-import { vote, appoint, setTax, donate, govView, mgFleets, setGalaxyName, setGalaxyFlag, proposeTreaty, acceptTreaty, cancelTreaty } from "../game/governance.js";
+import { vote, appoint, setTax, setMarketFee, donate, govView, mgFleets, setGalaxyName, setGalaxyFlag, proposeTreaty, acceptTreaty, cancelTreaty } from "../game/governance.js";
 import { planetScore } from "../game/score.js";
 import { clampMorale, moraleMult } from "../game/morale.js";
 import { addNews, recentNews } from "../game/news.js";
@@ -217,7 +217,7 @@ async function planetView(userId: string) {
     admin: config.adminUsers.includes(planet.user.username.toLowerCase()),
     galaxyFund: {
       metalium: gstate?.fundMetalium ?? 0, carbonum: gstate?.fundCarbonum ?? 0, plutonium: gstate?.fundPlutonium ?? 0,
-      taxRate: gstate?.taxRate ?? 0, marketFee: (gstate as any)?.marketFee ?? MARKET_FEE * 100,
+      taxRate: gstate?.taxRate ?? 0, marketFee: gstate?.marketFee ?? MARKET_FEE * 100,
     },
     tech: techCatalog,
     units,
@@ -619,6 +619,16 @@ gameRouter.post("/galaxy/tax", async (req: AuthedRequest, res) => {
   res.json(await govView(planet.id));
 });
 
+gameRouter.post("/galaxy/market-fee", async (req: AuthedRequest, res) => {
+  const parsed = z.object({ rate: z.number().int().min(0).max(90) }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "Taxa invalida" });
+  const planet = await myPlanet(req.userId!);
+  if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
+  try { await setMarketFee(planet.id, parsed.data.rate); }
+  catch (e: any) { return res.status(400).json({ error: e.message ?? "Falha" }); }
+  res.json(await govView(planet.id));
+});
+
 gameRouter.post("/galaxy/donate", async (req: AuthedRequest, res) => {
   const parsed = z.object({ toPlanetId: z.string(), metalium: z.number().int().min(0), carbonum: z.number().int().min(0), plutonium: z.number().int().min(0) }).safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Pedido invalido" });
@@ -868,7 +878,10 @@ gameRouter.get("/ranking", async (_req, res) => {
   res.json({ ranking: ranked });
 });
 
-// Mercado Negro: troca um recurso por outro com taxa de MARKET_FEE (recebe 1 - taxa).
+// Mercado da galáxia: troca um recurso por outro COM o fundo da galáxia. O recurso
+// que você dá ENTRA no fundo; o que recebe SAI do fundo (menos a taxa do ME, que
+// fica de lucro pro fundo). Só dá pra trocar se o fundo tiver o recurso de destino.
+const FUND_FIELD = { metalium: "fundMetalium", carbonum: "fundCarbonum", plutonium: "fundPlutonium" } as const;
 const marketSchema = z.object({
   from: z.enum(["metalium", "carbonum", "plutonium"]),
   to: z.enum(["metalium", "carbonum", "plutonium"]),
@@ -884,11 +897,23 @@ gameRouter.post("/market/trade", async (req: AuthedRequest, res) => {
       const planet = await tx.planet.findUnique({ where: { userId: req.userId! } });
       if (!planet) throw new Error("Planeta nao encontrado");
       if ((planet as any)[from] < amount) throw new Error("Recurso insuficiente para a troca");
-      const received = Math.floor(amount * (1 - MARKET_FEE));
-      const data: any = {};
-      data[from] = { decrement: amount };
-      data[to] = Math.min(RESOURCE_CAP, (planet as any)[to] + received); // respeita o teto
-      await tx.planet.update({ where: { id: planet.id }, data });
+      const galId = galaxyId(planet.galaxy, planet.system);
+      const gst = await tx.galaxyState.findUnique({ where: { galaxy: galId } });
+      const feePct = gst?.marketFee ?? MARKET_FEE * 100;
+      const received = Math.floor(amount * (1 - feePct / 100));
+      const fundHas = gst ? (gst as any)[FUND_FIELD[to]] : 0;
+      if (received <= 0) throw new Error("Quantidade muito baixa para a taxa atual");
+      if (fundHas < received) throw new Error(`O fundo da galáxia não tem ${to} suficiente (tem ${fundHas}). As trocas saem do fundo — peça ao Ministro da Economia pra abastecê-lo (imposto).`);
+      // Planeta: entrega `amount` de `from`, recebe `received` de `to` (respeita o teto).
+      await tx.planet.update({ where: { id: planet.id }, data: {
+        [from]: { decrement: amount },
+        [to]: Math.min(RESOURCE_CAP, (planet as any)[to] + received),
+      } as any });
+      // Fundo: recebe `amount` de `from`, entrega `received` de `to` (lucra a taxa).
+      await tx.galaxyState.update({ where: { galaxy: galId }, data: {
+        [FUND_FIELD[from]]: { increment: amount },
+        [FUND_FIELD[to]]: { decrement: received },
+      } as any });
     }, TX_OPTS);
   } catch (e: any) { return res.status(400).json({ error: e.message ?? "Falha na troca" }); }
   res.json(await planetView(req.userId!));
