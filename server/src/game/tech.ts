@@ -143,21 +143,25 @@ const NAVES = track("naves", [
   { key: "estaleirosOrbitais", name: "Estaleiros Orbitais", kind: "building", desc: "Permite produzir Naves-Mãe." },
 ]);
 
+// ===== Inteligência — COMEÇA CONSTRUINDO (Central é livre, sem pesquisa) =====
+// Os prédios definem o nível de espionagem (INTEL_TIERS). Igual à Mineração:
+// 1ª construção livre, as próximas exigem a pesquisa que as libera.
+const INTELIGENCIA = track("espionagem", [
+  { key: "centralInteligencia", name: "Central de Inteligência", kind: "building", desc: "Produz Coordenadores de Operações e Agentes de Contra-Espionagem. Permite espionar (revela a raça do alvo)." },
+  { key: "pesqServicoSecreto", name: "Pesquisa: Serviço Secreto", kind: "research", desc: "Libera a Formação de Serviço Secreto." },
+  { key: "servicoSecreto", name: "Formação de Serviço Secreto", kind: "building", desc: "Agentes Padrão: revelam raça, pontuação, recursos em estoque, roids e qtd de naves + status online." },
+  { key: "pesqAgentesMilitares", name: "Pesquisa: Agentes Militares", kind: "research", desc: "Libera os Agentes Militares." },
+  { key: "agentesMilitares", name: "Agentes Militares", kind: "building", desc: "Revelam QUAIS e quantas naves o alvo tem (em Rakshasa, só as roiders aparecem)." },
+  { key: "pesqTransmissao", name: "Pesquisa: Transmissão", kind: "research", desc: "Libera a Equipe de Transmissão." },
+  { key: "transmissao", name: "Equipe de Transmissão", kind: "building", desc: "Agentes de Transmissão: notícias do alvo e tráfego (ataques/defesas chegando)." },
+  { key: "pesqAgentesDuplos", name: "Pesquisa: Agentes Duplos", kind: "research", desc: "Libera os Agentes Duplos." },
+  { key: "agentesDuplos", name: "Agentes Duplos", kind: "building", desc: "Revelam todas as frotas do alvo (quais/quantas naves, missão, ticks p/ chegar). Enxergam até os Rakshasa." },
+]);
+
 export const TECHS: TechDef[] = [
   ...MINERACAO,
   ...DESLOCAMENTO,
-  // --- Inteligencia ---
-  ...pesqConstrChain("espionagem",
-    { metalium: 2500, carbonum: 2000, plutonium: 0 },
-    { metalium: 2500, carbonum: 1700, plutonium: 0 },
-    [
-      { key: "centralInteligencia", name: "Central de Inteligência", desc: "Produz Coordenadores de Operações e Agentes de Contra-Espionagem. Permite espionar (revela a raça do alvo)." },
-      { key: "servicoSecreto", name: "Formação de Serviço Secreto", desc: "Agentes Padrão: revelam raça, pontuação, moral, qtd de cada roid e qtd de naves (não quais) + status online." },
-      { key: "agentesMilitares", name: "Agentes Militares", desc: "Revelam QUAIS e quantas naves o alvo tem (em Rakshasa, só as roiders aparecem)." },
-      { key: "transmissao", name: "Equipe de Transmissão", desc: "Agentes de Transmissão: notícias do alvo e tráfego (ataques/defesas chegando)." },
-      { key: "agentesDuplos", name: "Agentes Duplos", desc: "Revelam todas as frotas do alvo (quais/quantas naves, missão, ticks p/ chegar). Enxergam até os Rakshasa." },
-    ]
-  ),
+  ...INTELIGENCIA,
   // --- Sabotagem ---
   ...pesqConstrChain("sabotagem",
     { metalium: 3500, carbonum: 2500, plutonium: 0 },

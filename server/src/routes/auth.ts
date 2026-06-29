@@ -104,10 +104,10 @@ authRouter.post("/register", async (req, res) => {
             roidCarbonum: STARTING.roidCarbonum,
             roidPlutonium: STARTING.roidPlutonium,
             createdTick: tick,
-            // Começa podendo CONSTRUIR direto: Centro de Mineração é livre (sem
-            // pesquisa) e a Central de Inteligência já vem liberada. Naves,
+            // Sem tech inicial: Centro de Mineração e Central de Inteligência são
+            // construções LIVRES (1ª de cada trilha, sem pesquisa). Naves,
             // Deslocamento e Sabotagem começam na pesquisa (sem pré-requisito).
-            tech: JSON.stringify({ pesq_centralInteligencia: 1 }),
+            tech: JSON.stringify({}),
           },
         },
       },
