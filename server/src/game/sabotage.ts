@@ -25,6 +25,10 @@ export const SABOTAGES: SabotageDef[] = [
   { key: "virus", name: "Vírus Industrial", building: "sabProducaoAvancada", ticks: 12, plut: 70000, desc: "Atrasa a produção de naves do alvo em 16 ticks." },
   { key: "forjar_ordem", name: "Forjar Ordem", building: "sabProducaoAvancada", ticks: 6, plut: 100000, desc: "Faz TODAS as frotas do alvo recuarem." },
   { key: "roubo_tecnologia", name: "Roubo de Tecnologia", building: "sabAssimiladora", ticks: 16, plut: 150000, desc: "Rouba uma tecnologia do alvo." },
+  { key: "boatos", name: "Boatos", building: "sabRedeBoatos", ticks: 8, plut: 200000, desc: "Espalha rumores e derruba a moral do alvo em 15." },
+  { key: "intrigas", name: "Intrigas Internas", building: "sabIntrigas", ticks: 10, plut: 280000, desc: "Instala conflito interno: derruba a moral do alvo em 30." },
+  { key: "suborno", name: "Suborno de Agentes", building: "sabSuborno", ticks: 12, plut: 380000, desc: "Suborna metade da contra-espionagem (AC) do alvo." },
+  { key: "isolamento", name: "Isolamento Militar", building: "sabIsolamento", ticks: 14, plut: 500000, desc: "Impede o alvo de enviar frotas por 8 ticks." },
 ];
 const SAB_BY_KEY: Record<string, SabotageDef> = Object.fromEntries(SABOTAGES.map((s) => [s.key, s]));
 function raceOf(r: string) { return isRaceKey(r) ? r : "humanos"; }
@@ -145,6 +149,26 @@ async function applySabotageEffect(saboteurPlanetId: string, target: { galaxy: n
         await prisma.planet.update({ where: { id: saboteurPlanetId }, data: { tech: JSON.stringify(myTl) } });
       }
       detail = `roubou a tecnologia: ${TECH_BY_KEY[stolen].name}`; break;
+    }
+    case "boatos":
+      await addMorale(tgt.id, -15);
+      detail = "moral abalada (−15)"; break;
+    case "intrigas":
+      await addMorale(tgt.id, -30);
+      detail = "conflito interno: moral despencou (−30)"; break;
+    case "suborno": {
+      const ag = parseAgents(tgt.agents);
+      const ce = ag["CE"] ?? 0;
+      if (ce <= 0) { detail = "alvo não tinha contra-espionagem para subornar"; break; }
+      const left = Math.floor(ce / 2);
+      ag["CE"] = left;
+      await prisma.planet.update({ where: { id: tgt.id }, data: { agents: JSON.stringify(ag) } });
+      detail = `subornou a contra-espionagem (AC ${ce} → ${left})`; break;
+    }
+    case "isolamento": {
+      const dur = 8;
+      await prisma.planetEffect.create({ data: { planetId: tgt.id, kind: "fleetlock", pct: 0, expiresTick: tick + dur } });
+      detail = `isolado militarmente: sem enviar frotas por ${dur} ticks`; break;
     }
   }
   const sd = SAB_BY_KEY[key];

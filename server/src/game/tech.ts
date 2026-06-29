@@ -107,6 +107,14 @@ const SABOTAGEM = track("sabotagem", [
   { key: "sabProducaoAvancada", name: "Equipe Avançada de Produção", kind: "building", desc: "Vírus Industrial e Forjar Ordem (faz as frotas do alvo recuarem).", cost: 125000, ticks: 36 },
   { key: "pesqRouboTec", name: "Roubo tecnológico", kind: "research", desc: "Infiltra um cientista nos laboratórios do alvo.", cost: 150000, ticks: 36 },
   { key: "sabAssimiladora", name: "Equipe Assimiladora", kind: "building", desc: "Roubo de Tecnologia: rouba uma tecnologia do alvo.", cost: 250000, ticks: 48 },
+  { key: "pesqGuerraPsicologica", name: "Guerra Psicológica", kind: "research", desc: "Técnicas para minar a moral de uma população inimiga.", cost: 180000, ticks: 48 },
+  { key: "sabRedeBoatos", name: "Rede de Boatos", kind: "building", desc: "Boatos: espalha rumores e derruba a moral do alvo (−15).", cost: 300000, ticks: 48 },
+  { key: "pesqAgitacao", name: "Agitação Social", kind: "research", desc: "Métodos para fomentar conflitos internos no alvo.", cost: 240000, ticks: 48 },
+  { key: "sabIntrigas", name: "Célula de Intrigas", kind: "building", desc: "Intrigas Internas: instala conflito interno e derruba a moral do alvo (−30).", cost: 380000, ticks: 60 },
+  { key: "pesqRedeSuborno", name: "Rede de Suborno", kind: "research", desc: "Contatos para comprar a lealdade de agentes inimigos.", cost: 320000, ticks: 60 },
+  { key: "sabSuborno", name: "Equipe de Suborno", kind: "building", desc: "Suborno de Agentes: suborna metade da contra-espionagem (AC) do alvo.", cost: 480000, ticks: 60 },
+  { key: "pesqBloqueioOrbital", name: "Bloqueio Orbital", kind: "research", desc: "Táticas para cercar e isolar um planeta inimigo.", cost: 420000, ticks: 72 },
+  { key: "sabIsolamento", name: "Equipe de Bloqueio", kind: "building", desc: "Isolamento Militar: impede o alvo de enviar frotas por 8 ticks.", cost: 600000, ticks: 72 },
 ]);
 
 // ===== Naves — COMEÇA CONSTRUINDO (Indústrias de Naves / caças é livre) =====

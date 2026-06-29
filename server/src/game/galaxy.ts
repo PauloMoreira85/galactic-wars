@@ -107,6 +107,11 @@ export async function dispatchFleet(planetId: string, fleetId: string, target: C
     const fleetUnits = parseUnits(fleet.units);
     if (totalUnits(fleetUnits) === 0) throw new Error("Carregue naves na frota antes de enviar");
 
+    // Isolamento Militar (sabotagem): planeta cercado não pode enviar frotas.
+    const nowT = await currentTick();
+    const lock = await tx.planetEffect.findFirst({ where: { planetId, kind: "fleetlock", expiresTick: { gt: nowT } } });
+    if (lock) throw new Error(`Seu planeta está isolado militarmente (sabotagem) — não pode enviar frotas por mais ${lock.expiresTick - nowT} tick(s)`);
+
     const origin: Coords = { galaxy: planet.galaxy, system: planet.system, slot: planet.slot };
     if (target.galaxy === origin.galaxy && target.system === origin.system && target.slot === origin.slot) {
       throw new Error("Voce nao pode enviar frota para o proprio planeta");
