@@ -21,11 +21,11 @@ export interface AgentDef {
 // Custos/tempo são AJUSTÁVEIS — calibrados pra que blindar um planeta com CE
 // (CE ≥ roids/2) seja um investimento real, mas viável.
 export const AGENTS: Record<AgentKey, AgentDef> = {
-  CE: { key: "CE", name: "Contra-Espionagem", desc: "Defesa. Cada CE cobre ~2 roids; o planeta fica protegido quando CE ≥ roids ÷ 2.", level: 1, offensive: false, m: 1000, c: 1000, p: 0, ticks: 1 },
-  P:  { key: "P",  name: "Agente Padrão (P)",      desc: "Revela raça, pontuação, roids e total de naves do alvo.", level: 2, offensive: true, m: 800,  c: 600,  p: 100, ticks: 1 },
-  M:  { key: "M",  name: "Agente Militar (M)",     desc: "Revela QUAIS e quantas naves o alvo tem.",                 level: 3, offensive: true, m: 1200, c: 1000, p: 200, ticks: 1 },
-  T:  { key: "T",  name: "Agente de Transmissão (T)", desc: "Revela as notícias recentes do alvo.",                  level: 4, offensive: true, m: 1500, c: 1200, p: 300, ticks: 2 },
-  D:  { key: "D",  name: "Agente Duplo (D)",       desc: "Revela todas as frotas do alvo (composição/missão).",      level: 5, offensive: true, m: 2500, c: 2000, p: 600, ticks: 2 },
+  CE: { key: "CE", name: "Contra-Espionagem", desc: "Defesa. Cada CE cobre ~2 roids; o planeta fica protegido quando CE ≥ roids ÷ 2.", level: 1, offensive: false, m: 1000, c: 1000, p: 0, ticks: 4 },
+  P:  { key: "P",  name: "Agente Padrão (P)",      desc: "Revela raça, pontuação, roids e total de naves do alvo.", level: 2, offensive: true, m: 800,  c: 600,  p: 100, ticks: 4 },
+  M:  { key: "M",  name: "Agente Militar (M)",     desc: "Revela QUAIS e quantas naves o alvo tem.",                 level: 3, offensive: true, m: 1200, c: 1000, p: 200, ticks: 8 },
+  T:  { key: "T",  name: "Agente de Transmissão (T)", desc: "Revela as notícias recentes do alvo.",                  level: 4, offensive: true, m: 1500, c: 1200, p: 300, ticks: 12 },
+  D:  { key: "D",  name: "Agente Duplo (D)",       desc: "Revela todas as frotas do alvo (composição/missão).",      level: 5, offensive: true, m: 2500, c: 2000, p: 600, ticks: 16 },
 };
 
 // Nome completo de cada agente (para notícias/relatórios).
