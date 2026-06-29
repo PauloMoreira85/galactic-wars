@@ -168,7 +168,7 @@ export function Governo() {
           <div className="roid-row">
             <div>Imposto da galáxia (% da produção → fundo)</div>
             <div style={{ display: "flex", gap: 6 }}>
-              <input type="number" min={0} max={50} value={taxInput} onChange={(e) => setTaxInput(Number(e.target.value))} style={{ width: 70, margin: 0, padding: "4px 6px" }} />
+              <input type="number" min={0} max={25} value={taxInput} onChange={(e) => setTaxInput(Number(e.target.value))} style={{ width: 70, margin: 0, padding: "4px 6px" }} />
               <button onClick={() => act(() => api.govTax(taxInput))}>aplicar</button>
             </div>
           </div>

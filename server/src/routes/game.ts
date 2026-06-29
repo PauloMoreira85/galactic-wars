@@ -610,7 +610,7 @@ gameRouter.post("/galaxy/appoint", async (req: AuthedRequest, res) => {
 });
 
 gameRouter.post("/galaxy/tax", async (req: AuthedRequest, res) => {
-  const parsed = z.object({ rate: z.number().int().min(0).max(50) }).safeParse(req.body);
+  const parsed = z.object({ rate: z.number().int().min(0).max(25) }).safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Taxa invalida" });
   const planet = await myPlanet(req.userId!);
   if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });

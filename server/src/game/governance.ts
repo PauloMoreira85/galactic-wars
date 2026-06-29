@@ -10,7 +10,7 @@ function coordLabel(id: number): string {
   return `${setor}:${paralelo}`;
 }
 
-export const MAX_TAX = 50;            // teto do imposto (%)
+export const MAX_TAX = 25;            // teto do imposto (%)
 export const MAX_MARKET_FEE = 90;     // teto da taxa de troca do mercado (%)
 export const DONATION_MAX_PCT = 20;   // máximo do fundo por doação a 1 planeta
 export const DONATION_WINDOW = 100;   // ticks de cooldown entre doações ao mesmo planeta
