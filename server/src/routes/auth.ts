@@ -7,7 +7,7 @@ import { signToken } from "../auth.js";
 import { sendMail } from "../email.js";
 import { clientIp, recordIp } from "../game/ipguard.js";
 import { STARTING, SLOTS_PER_SYSTEM, GALAXIES } from "../game/constants.js";
-import { galaxyId, galaxyDecompose } from "../game/geo.js";
+import { galaxyId, galaxyDecompose, NUM_SETORES } from "../game/geo.js";
 import { RACE_KEYS, publicRaces, type RaceKey } from "../game/races.js";
 import { unitsOfRace, CLASS_LABEL } from "../game/catalog.js";
 
@@ -53,7 +53,7 @@ const registerSchema = z.object({
 // dezenas de galáxias com 1-2 planetas) sem deixar todo mundo aliado no começo.
 export async function allocateSlot() {
   const planets = await prisma.planet.findMany({
-    where: { galaxy: { lte: GALAXIES } }, // só públicas (privadas usam setor >= 100)
+    where: { galaxy: { lte: NUM_SETORES } }, // só públicas (privadas usam setor 6-10)
     select: { galaxy: true, system: true, slot: true },
   });
   // Quantos planetas em cada galáxia (id 1..GALAXIES).
