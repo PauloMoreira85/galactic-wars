@@ -1,20 +1,21 @@
-<svg width="680" height="180" viewBox="0 0 680 180" xmlns="http://www.w3.org/2000/svg" role="img" font-family="Segoe UI, system-ui, Arial, sans-serif">
-<title>teramind.ia</title><desc>Banner do patrocinador teramind.ia — inteligencia artificial</desc>
+<svg width="680" height="190" viewBox="0 0 680 190" xmlns="http://www.w3.org/2000/svg" role="img" font-family="Segoe UI, system-ui, Arial, sans-serif">
+<title>teramind.ia — radiologia</title><desc>teramind.ia: plataforma de radiologia (PACS, laudo, WhatsApp e copiloto por voz)</desc>
 <defs>
-  <linearGradient id="tmbg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0a1020"/><stop offset="1" stop-color="#12233f"/></linearGradient>
-  <linearGradient id="tmacc" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#9a6bff"/><stop offset="1" stop-color="#22e0d6"/></linearGradient>
-  <radialGradient id="tmglow" cx="0.16" cy="0.5" r="0.55"><stop offset="0" stop-color="#22e0d6" stop-opacity="0.22"/><stop offset="1" stop-color="#22e0d6" stop-opacity="0"/></radialGradient>
+  <linearGradient id="tbg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0a1422"/><stop offset="1" stop-color="#0f2438"/></linearGradient>
+  <linearGradient id="tacc" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2bd4c4"/><stop offset="1" stop-color="#3b9cff"/></linearGradient>
+  <radialGradient id="tglow" cx="0.15" cy="0.5" r="0.6"><stop offset="0" stop-color="#2bd4c4" stop-opacity="0.20"/><stop offset="1" stop-color="#2bd4c4" stop-opacity="0"/></radialGradient>
 </defs>
-<rect x="2" y="2" width="676" height="176" rx="18" fill="url(#tmbg)"/>
-<rect x="2" y="2" width="676" height="176" rx="18" fill="url(#tmglow)"/>
-<rect x="2" y="2" width="676" height="176" rx="18" fill="none" stroke="url(#tmacc)" stroke-opacity="0.55" stroke-width="2"/>
-<g transform="translate(108,90)" stroke="url(#tmacc)" stroke-width="3">
-  <g stroke-opacity="0.65"><line x1="-44" y1="-40" x2="4" y2="-4"/><line x1="-44" y1="0" x2="4" y2="-4"/><line x1="-44" y1="40" x2="4" y2="-4"/><line x1="4" y1="-4" x2="50" y2="-34"/><line x1="4" y1="-4" x2="50" y2="30"/></g>
-  <circle cx="-44" cy="-40" r="8" fill="#9a6bff"/><circle cx="-44" cy="0" r="8" fill="#22e0d6"/><circle cx="-44" cy="40" r="8" fill="#9a6bff"/>
-  <circle cx="4" cy="-4" r="12" fill="#22e0d6"/>
-  <circle cx="50" cy="-34" r="8" fill="#9a6bff"/><circle cx="50" cy="30" r="8" fill="#22e0d6"/>
+<rect x="2" y="2" width="676" height="186" rx="18" fill="url(#tbg)"/>
+<rect x="2" y="2" width="676" height="186" rx="18" fill="url(#tglow)"/>
+<rect x="2" y="2" width="676" height="186" rx="18" fill="none" stroke="url(#tacc)" stroke-opacity="0.55" stroke-width="2"/>
+<g transform="translate(96,96)">
+  <circle r="40" fill="#2bd4c4" fill-opacity="0.07" stroke="url(#tacc)" stroke-width="3"/>
+  <polyline points="-30,2 -16,2 -8,-22 2,20 10,2 30,2" fill="none" stroke="url(#tacc)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="30" cy="-30" r="13" fill="#2bd4c4"/>
+  <g stroke="#0a1422" stroke-width="3" stroke-linecap="round"><line x1="30" y1="-35" x2="30" y2="-25"/><line x1="25" y1="-30" x2="35" y2="-30"/></g>
 </g>
-<text x="205" y="88" font-size="54" font-weight="800" fill="#ffffff" letter-spacing="-1.5">teramind<tspan fill="#22e0d6">.ia</tspan></text>
-<text x="207" y="120" font-size="19" font-weight="600" fill="#9fb6d4" letter-spacing="3">INTELIGÊNCIA ARTIFICIAL</text>
-<text x="207" y="148" font-size="17" font-weight="700" fill="#22e0d6" letter-spacing="1.5">teramind.ia.br</text>
+<text x="178" y="68" font-size="50" font-weight="800" fill="#ffffff" letter-spacing="-1.5">teramind<tspan fill="#2bd4c4">.ia</tspan></text>
+<text x="180" y="98" font-size="18" font-weight="600" fill="#aebfd6">Plataforma de radiologia do Brasil</text>
+<text x="180" y="128" font-size="16.5" font-weight="700" fill="#2bd4c4">PACS · Laudo · WhatsApp · Copiloto por voz</text>
+<text x="180" y="156" font-size="14" font-weight="700" fill="#7f93ad" letter-spacing="1">teramind.ia.br · tudo num só sistema</text>
 </svg>
