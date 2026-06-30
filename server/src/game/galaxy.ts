@@ -173,6 +173,18 @@ export async function dispatchFleet(planetId: string, fleetId: string, target: C
     });
     const tipoMsg = fake ? (mission === "attack" ? "ataque falso" : "defesa falsa") : (mission === "attack" ? "ataque" : "defesa");
     await tx.news.create({ data: { planetId, tick, message: `${fleet.name} (${tipoMsg}) enviada para ${target.galaxy}:${target.system}:${target.slot} (chega em ${tt}t)` } });
+
+    // Avisa o ALVO na hora do envio. Ataque = radar (Rakshasa mostra só roiders;
+    // 100% invisível NÃO dispara aviso — surpresa total). Defesa = avisa o aliado.
+    const tgtP = await tx.planet.findUnique({ where: { galaxy_system_slot: { galaxy: target.galaxy, system: target.system, slot: target.slot } }, select: { id: true } });
+    if (tgtP && tgtP.id !== planetId) {
+      if (mission === "attack") {
+        const visible = radarVisibleCount(fleetUnits);
+        if (visible > 0) await tx.news.create({ data: { planetId: tgtP.id, tick, message: `🚨 ATAQUE! ${planet.name} está te atacando com ${visible} nave(s) — chega em ${tt} tick(s)!` } });
+      } else {
+        await tx.news.create({ data: { planetId: tgtP.id, tick, message: `🛡️ Reforço a caminho: ${planet.name} mandou ${totalUnits(fleetUnits)} nave(s) pra te defender — chega em ${tt} tick(s).` } });
+      }
+    }
     return { ok: true, arriveIn: tt };
   }, TX_OPTS));
 }
