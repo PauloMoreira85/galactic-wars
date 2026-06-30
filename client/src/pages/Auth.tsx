@@ -1,6 +1,23 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, setToken, IS_RUR, MAIN_URL, RUR_URL, type RaceInfo, type HallRound } from "../api";
 import { AdBanner } from "../components/AdBanner";
+
+// Vídeo que só baixa quando entra (perto) na tela — evita carregar dezenas de MB
+// de vídeo no load da landing. Até lá mostra só o poster (imagem leve).
+function LazyVideo({ src, poster }: { src: string; poster: string }) {
+  const ref = useRef<HTMLVideoElement>(null);
+  const [load, setLoad] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || load) return;
+    const io = new IntersectionObserver((es) => {
+      if (es[0]?.isIntersecting) { setLoad(true); io.disconnect(); }
+    }, { rootMargin: "300px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [load]);
+  return <video ref={ref} autoPlay loop muted playsInline preload="none" poster={poster} src={load ? src : undefined} />;
+}
 
 export function Auth({ onAuthed }: { onAuthed: () => void }) {
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -207,10 +224,8 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
           <div className={`race-show ${i % 2 ? "flip" : ""}`} key={r.key}>
             {r.charImg && (
               <div className="race-show-char">
-                {/* Vídeo do personagem (<key>.mp4) com a imagem como poster/fallback. */}
-                <video autoPlay loop muted playsInline poster={r.charImg}>
-                  <source src={r.charImg.replace(/\.jpg$/, ".mp4")} type="video/mp4" />
-                </video>
+                {/* Vídeo do personagem — só baixa ao rolar até aqui (lazy). */}
+                <LazyVideo src={r.charImg.replace(/\.jpg$/, ".mp4")} poster={r.charImg} />
               </div>
             )}
             <div className="race-show-info">
