@@ -76,7 +76,7 @@ export async function buildUnit(planetId: string, unitName: string, quantity: nu
     const order = await tx.buildOrder.create({
       data: { planetId, kind: "ship", shipClass: unitName, quantity, startTick: tick, completeTick: tick + u.ticks },
     });
-    await addNews(planetId, tick, `Construção iniciada: ${quantity}x ${unitName}`, tx);
+    // Construção de naves NÃO gera notícia (mantém em segredo — a frota é a surpresa).
     return order;
   }, TX_OPTS));
 }
@@ -155,7 +155,7 @@ export async function processBuildOrders(uptoTick: number) {
       if (planet) {
         const hangar = addUnits(parseUnits(planet.units), { [order.shipClass]: order.quantity });
         await prisma.planet.update({ where: { id: order.planetId }, data: { units: stringifyUnits(hangar) } });
-        await addNews(order.planetId, uptoTick, `Construção concluída: ${order.quantity}x ${order.shipClass}`);
+        // Naves prontas NÃO geram notícia (a frota fica em segredo até atacar/defender).
       }
     } else if (order.kind === "agent" && order.shipClass && isAgentKey(order.shipClass)) {
       const planet = await prisma.planet.findUnique({ where: { id: order.planetId } });
