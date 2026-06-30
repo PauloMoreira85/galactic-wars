@@ -3,6 +3,7 @@ import { ROID_PRODUCTION_PER_TICK } from "./constants.js";
 import { addNews } from "./news.js";
 import { addMorale } from "./morale.js";
 import { galaxyId, galaxyWhere, galaxyDecompose } from "./geo.js";
+import { parseUnits, totalUnits } from "./unitmap.js";
 
 // "setor:paralelo" para exibir uma galáxia (a partir do id interno).
 function coordLabel(id: number): string {
@@ -273,12 +274,24 @@ export async function mgFleets(mgPlanetId: string) {
   if (g == null) throw new Error("Planeta nao encontrado");
   const st = await ensureGalaxy(g);
   if (st.mgPlanetId !== mgPlanetId) throw new Error("Apenas o Ministro da Guerra pode ver isto");
-  const planets = await prisma.planet.findMany({ where: galaxyWhere(g), select: { id: true, name: true } });
-  const byId = new Map(planets.map((p) => [p.id, p.name]));
-  const fleets = await prisma.fleet.findMany({ where: { ownerPlanetId: { in: planets.map((p) => p.id) } } });
-  return fleets.map((f) => ({
-    owner: byId.get(f.ownerPlanetId) ?? "?",
-    mission: f.mission, status: f.status,
-    target: `${f.targetGalaxy}:${f.targetSystem}:${f.targetSlot}`,
-  }));
+  const planets = await prisma.planet.findMany({ where: galaxyWhere(g), include: { user: { select: { username: true } } } });
+  const allFleets = await prisma.fleet.findMany({ where: { ownerPlanetId: { in: planets.map((p) => p.id) } } });
+  // Visão militar COMPLETA de aliado: naves na base (hangar) + todas as frotas,
+  // com a composição real (inclusive naves invisíveis — é inteligência interna).
+  return planets.map((p) => {
+    const base = parseUnits(p.units);
+    const fleets = allFleets.filter((f) => f.ownerPlanetId === p.id).map((f) => {
+      const u = parseUnits(f.units);
+      return {
+        name: f.name, mission: f.mission, status: f.status,
+        target: `${f.targetGalaxy}:${f.targetSystem}:${f.targetSlot}`,
+        units: u, total: totalUnits(u),
+      };
+    });
+    return {
+      planet: p.name, commander: p.user.username,
+      coords: `${p.galaxy}:${p.system}:${p.slot}`,
+      base, baseTotal: totalUnits(base), fleets,
+    };
+  });
 }

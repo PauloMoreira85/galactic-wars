@@ -686,7 +686,7 @@ gameRouter.post("/galaxy/treaty/:action", async (req: AuthedRequest, res) => {
 gameRouter.get("/galaxy/mg-fleets", async (req: AuthedRequest, res) => {
   const planet = await myPlanet(req.userId!);
   if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
-  try { res.json({ fleets: await mgFleets(planet.id) }); }
+  try { res.json({ planets: await mgFleets(planet.id) }); }
   catch (e: any) { return res.status(400).json({ error: e.message ?? "Falha" }); }
 });
 

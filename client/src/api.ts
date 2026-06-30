@@ -443,7 +443,7 @@ export const api = {
   govDonate: (toPlanetId: string, metalium: number, carbonum: number, plutonium: number) =>
     request<GovView>("/game/galaxy/donate", { method: "POST", body: JSON.stringify({ toPlanetId, metalium, carbonum, plutonium }) }),
   mgFleets: () =>
-    request<{ fleets: { owner: string; mission: string; status: string; target: string }[] }>("/game/galaxy/mg-fleets"),
+    request<{ planets: MgPlanet[] }>("/game/galaxy/mg-fleets"),
 
   ranking: () =>
     request<{
@@ -503,6 +503,9 @@ export const api = {
   adminAdUpdate: (id: string, body: Partial<AdInput>) => request<{ ad: AdminAd }>(`/ads/admin/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   adminAdDelete: (id: string) => request<{ ok: boolean }>(`/ads/admin/${id}`, { method: "DELETE" }),
 };
+
+export interface MgFleet { name: string; mission: string; status: string; target: string; units: Record<string, number>; total: number }
+export interface MgPlanet { planet: string; commander: string; coords: string; base: Record<string, number>; baseTotal: number; fleets: MgFleet[] }
 
 export type AdPlacement = "landing" | "cadastro" | "game" | "round" | "todas";
 export interface Ad { id: string; title: string; imageUrl: string; linkUrl: string; caption: string | null }

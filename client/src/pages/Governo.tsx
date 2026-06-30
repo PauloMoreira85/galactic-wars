@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { api, type GovView } from "../api";
+import { api, type GovView, type MgPlanet } from "../api";
+
+// "Caça ×10 · Hela ×5" a partir do mapa de naves.
+function fmtUnits(u: Record<string, number>): string {
+  const s = Object.entries(u).filter(([, c]) => c > 0).map(([n, c]) => `${n} ×${c}`).join(" · ");
+  return s || "—";
+}
 
 function fmt(n: number) {
   return n.toLocaleString("pt-BR");
@@ -16,7 +22,7 @@ export function Governo() {
   const treatyGalId = (treatySetor - 1) * 6 + treatySistema; // = galaxyId(setor, sistema)
   const [donTo, setDonTo] = useState("");
   const [don, setDon] = useState({ metalium: 0, carbonum: 0, plutonium: 0 });
-  const [mgFleets, setMgFleets] = useState<{ owner: string; mission: string; status: string; target: string }[]>([]);
+  const [mgFleets, setMgFleets] = useState<MgPlanet[]>([]);
 
   async function load() {
     try {
@@ -25,7 +31,7 @@ export function Governo() {
       setTaxInput(g.taxRate);
       setFeeInput(g.marketFee);
       if (g.iAmMG) {
-        try { setMgFleets((await api.mgFleets()).fleets); } catch {}
+        try { setMgFleets((await api.mgFleets()).planets); } catch {}
       }
     } catch (e: any) {
       setError(e.message ?? "Falha");
@@ -95,7 +101,7 @@ export function Governo() {
         <div className="cost" style={{ lineHeight: 1.8 }}>
           <div><b style={{ color: "#ffd23f" }}>👑 Comandante (CG)</b> — o mais votado da galáxia. Nomeia e troca os ministros e define o nome e a bandeira da galáxia.</div>
           <div><b style={{ color: "#3aa0ff" }}>💰 Ministro da Economia (ME)</b> — define o <b>imposto</b> (% da produção que vai pro fundo), a <b>taxa do mercado</b> da galáxia e <b>doa</b> recursos do fundo aos planetas.</div>
-          <div><b style={{ color: "#ff5050" }}>⚔️ Ministro da Guerra (MG)</b> — enxerga as <b>frotas</b> de todos os planetas da galáxia (inteligência militar interna).</div>
+          <div><b style={{ color: "#ff5050" }}>⚔️ Ministro da Guerra (MG)</b> — enxerga a <b>força militar</b> de todos os planetas da galáxia: naves na base e em frotas (até as invisíveis).</div>
           <div><b style={{ color: "#ff9a2b" }}>🕊️ Ministro da Diplomacia (MD)</b> — propõe e aceita <b>tratados</b> de não-agressão com outras galáxias.</div>
         </div>
       </div>
@@ -230,19 +236,25 @@ export function Governo() {
 
       {gov.iAmMG && (
         <div className="panel">
-          <h2>⚔️ Frotas da galáxia (MG)</h2>
+          <h2>⚔️ Força militar da galáxia (MG)</h2>
+          <div className="cost" style={{ marginBottom: 10 }}>Naves de cada planeta — na base (hangar) e em frotas. Inteligência interna: mostra até as naves invisíveis.</div>
           {mgFleets.length === 0 ? (
-            <div className="roid-count">Nenhuma frota em movimento na galáxia.</div>
-          ) : (
-            <table>
-              <thead><tr><th>Planeta</th><th>Missão</th><th>Estado</th><th>Destino</th></tr></thead>
-              <tbody>
-                {mgFleets.map((f, i) => (
-                  <tr key={i}><td>{f.owner}</td><td>{f.mission}</td><td>{f.status}</td><td>{f.target}</td></tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+            <div className="roid-count">Nenhum planeta na galáxia.</div>
+          ) : mgFleets.map((p, i) => (
+            <div key={i} className="roid-row" style={{ display: "block" }}>
+              <div><b>{p.planet}</b> <span className="roid-count">{p.coords} · {p.commander}</span></div>
+              <div className="roid-count" style={{ marginTop: 2 }}>
+                🏠 Base ({p.baseTotal} naves): <span style={{ color: "var(--text)" }}>{fmtUnits(p.base)}</span>
+              </div>
+              {p.fleets.length === 0 ? (
+                <div className="roid-count">Sem frotas montadas.</div>
+              ) : p.fleets.map((f, j) => (
+                <div key={j} className="roid-count" style={{ marginTop: 2 }}>
+                  🚀 {f.name} <span style={{ opacity: 0.8 }}>[{f.status === "idle" ? "na base" : `${f.mission} → ${f.target}`}]</span> ({f.total}): <span style={{ color: "var(--text)" }}>{fmtUnits(f.units)}</span>
+                </div>
+              ))}
+            </div>
+          ))}
         </div>
       )}
     </>
