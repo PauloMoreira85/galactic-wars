@@ -251,6 +251,11 @@ export async function processFleets(uptoTick: number) {
     // Transporte/defesa: estaciona como GUARNIÇÃO por engageTicks; volta depois.
     if (targetPlanet) {
       await prisma.fleet.update({ where: { id: fleet.id }, data: { status: "garrison", arriveTick: fleet.arriveTick + Math.max(1, fleet.engageTicks ?? 1) } });
+      // Avisa o planeta defendido que chegou reforço (se não for a própria frota dele).
+      if (targetPlanet.id !== fleet.ownerPlanetId) {
+        const sender = await prisma.planet.findUnique({ where: { id: fleet.ownerPlanetId }, select: { name: true } });
+        await prisma.news.create({ data: { planetId: targetPlanet.id, tick: uptoTick, message: `🛡️ Reforço chegou: a frota de ${sender?.name ?? "um aliado"} está defendendo seu planeta (${totalUnits(parseUnits(fleet.units))} nave[s])` } });
+      }
       continue;
     }
     await scheduleReturn(fleet.id, fleet, parseUnits(fleet.units));
