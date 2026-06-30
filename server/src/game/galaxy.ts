@@ -365,7 +365,7 @@ export async function galaxyTraffic(planetId: string) {
       mission: f.mission,            // "attack" | "transport"
       status: f.status,              // "outbound" | "engaged"
       // Radar: frota MINHA mostra tudo; frota de terceiro esconde naves invisíveis (Rakshasa).
-      ships: f.ownerPlanetId === planetId ? totalUnits(parseUnits(f.units)) : radarVisibleCount(parseUnits(f.units)),
+      ships: radarVisibleCount(parseUnits(f.units)), // radar esconde as invisíveis até de quem é dono
       ticks: Math.max(0, f.arriveTick - nowTick),
       toMe: f.targetSystem === me.system && f.targetSlot === me.slot,
       own: f.ownerPlanetId === planetId, // frota MINHA (não conta como ameaça/reforço recebido)
@@ -387,7 +387,7 @@ export async function galaxyTraffic(planetId: string) {
     byOwner.get(o.id)!.fleets.push({
       name: f.name, mission: f.mission, status: f.status,
       target: `${f.targetGalaxy}:${f.targetSystem}:${f.targetSlot}`,
-      ships: f.ownerPlanetId === planetId ? totalUnits(parseUnits(f.units)) : radarVisibleCount(parseUnits(f.units)),
+      ships: radarVisibleCount(parseUnits(f.units)), // radar esconde as invisíveis até de quem é dono
       ticks: Math.max(0, f.arriveTick - nowTick),
       captured: { metalium: f.capMetalium, carbonum: f.capCarbonum, plutonium: f.capPlutonium },
     });
