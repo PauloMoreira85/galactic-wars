@@ -189,6 +189,12 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [mktAmt, setMktAmt] = useState(0);
   const [mktErr, setMktErr] = useState("");
   const [mktBusy, setMktBusy] = useState(false);
+  // Troca com o fundo da galáxia (painel separado do Mercado Negro).
+  const [fgFrom, setFgFrom] = useState<Resource>("metalium");
+  const [fgTo, setFgTo] = useState<Resource>("carbonum");
+  const [fgAmt, setFgAmt] = useState(0);
+  const [fgErr, setFgErr] = useState("");
+  const [fgBusy, setFgBusy] = useState(false);
   const [zoom, setZoom] = useState<{ src: string; alt: string } | null>(null);
   const [alerts, setAlerts] = useState({ underAttack: false, incomingDefense: false, galaxyUnderAttack: false });
   const [unreadMsgs, setUnreadMsgs] = useState(0);
@@ -253,16 +259,24 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     }
   }
 
-  async function doTrade(mode: "negro" | "fundo") {
+  async function doTradeMN() {
     setMktErr("");
     if (mktFrom === mktTo) { setMktErr("Escolha recursos diferentes."); return; }
     if (mktAmt <= 0) { setMktErr("Informe uma quantidade."); return; }
     setMktBusy(true);
-    try {
-      setView(await (mode === "fundo" ? api.marketFundTrade : api.marketTrade)(mktFrom, mktTo, mktAmt));
-      setMktAmt(0);
-    } catch (e: any) { setMktErr(e.message ?? "Falha na troca"); }
+    try { setView(await api.marketTrade(mktFrom, mktTo, mktAmt)); setMktAmt(0); }
+    catch (e: any) { setMktErr(e.message ?? "Falha na troca"); }
     finally { setMktBusy(false); }
+  }
+
+  async function doTradeFundo() {
+    setFgErr("");
+    if (fgFrom === fgTo) { setFgErr("Escolha recursos diferentes."); return; }
+    if (fgAmt <= 0) { setFgErr("Informe uma quantidade."); return; }
+    setFgBusy(true);
+    try { setView(await api.marketFundTrade(fgFrom, fgTo, fgAmt)); setFgAmt(0); }
+    catch (e: any) { setFgErr(e.message ?? "Falha na troca"); }
+    finally { setFgBusy(false); }
   }
 
   async function doCancel(id: string) {
@@ -600,59 +614,61 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
           <div className="panel">
             <h2>🏦 Fundo da Galáxia</h2>
             <div className="cost" style={{ marginBottom: 10 }}>
-              O <b>imposto</b> da galáxia ({view.galaxyFund.taxRate}% da produção) e as trocas no mercado abastecem este fundo — o <b>Ministro da Economia</b> usa pra doar recursos aos planetas e define a taxa do mercado.
+              O <b>imposto</b> da galáxia ({view.galaxyFund.taxRate}% da produção) e as trocas abastecem este fundo — o <b>Ministro da Economia</b> doa recursos aos planetas e define a taxa do mercado.
             </div>
             <div style={{ display: "flex", gap: 22, flexWrap: "wrap" }}>
               <div><span className="dot metalium" /> Metalium: <b>{fmt(view.galaxyFund.metalium)}</b></div>
               <div><span className="dot carbonum" /> Carbonum: <b>{fmt(view.galaxyFund.carbonum)}</b></div>
               <div><span className="dot plutonium" /> Plutonium: <b>{fmt(view.galaxyFund.plutonium)}</b></div>
             </div>
-          </div>
 
-          <div className="panel">
-            <h2>🔄 Trocar Recursos</h2>
-            <div className="cost" style={{ marginBottom: 10 }}>
-              Escolha o recurso que vai dar, o que quer receber e a quantidade. Depois troque no <b>Mercado Negro</b> (taxa fixa) ou com o <b>Fundo da Galáxia</b> (taxa do ME).
+            <div style={{ borderTop: "1px solid var(--border)", margin: "12px 0 10px" }} />
+            <div className="cost" style={{ marginBottom: 8 }}>
+              Trocar <b>com o fundo</b>: o que você dá entra no fundo, o que recebe sai dele. Taxa <b>{view.galaxyFund.marketFee}%</b> (do ME) fica de lucro pro fundo. {view.galaxyFund.marketLocked && <b style={{ color: "#ff6b6b" }}>🔒 trancado pelo ME</b>}
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-              <select
-                value={mktFrom}
-                onChange={(e) => { const v = e.target.value as Resource; setMktFrom(v); if (mktTo === v) setMktTo(RES_META.find((r) => r.key !== v)!.key); }}
-                style={{ background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}
-              >
+              <select value={fgFrom} onChange={(e) => { const v = e.target.value as Resource; setFgFrom(v); if (fgTo === v) setFgTo(RES_META.find((r) => r.key !== v)!.key); }}
+                style={{ background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
                 {RES_META.map((r) => <option key={r.key} value={r.key}>{r.label} (tem {fmt(planet.resources[r.key])})</option>)}
               </select>
               <span>→</span>
-              <select
-                value={mktTo}
-                onChange={(e) => setMktTo(e.target.value as Resource)}
-                style={{ background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}
-              >
+              <select value={fgTo} onChange={(e) => setFgTo(e.target.value as Resource)}
+                style={{ background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
+                {RES_META.filter((r) => r.key !== fgFrom).map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
+              </select>
+              <input type="number" min={1} value={fgAmt || ""} placeholder="quantidade"
+                onChange={(e) => setFgAmt(Math.max(0, Math.floor(Number(e.target.value))))}
+                style={{ width: 140, margin: 0, padding: "6px 10px" }} />
+              <button disabled={fgBusy || fgAmt <= 0 || fgFrom === fgTo || view.galaxyFund.marketLocked} onClick={doTradeFundo}>{fgBusy ? "..." : view.galaxyFund.marketLocked ? "🔒 trancado" : "🏦 trocar"}</button>
+            </div>
+            <div className="roid-count" style={{ marginTop: 8 }}>
+              Você recebe: <b style={{ color: "var(--text)" }}>{fmt(Math.floor(fgAmt * (1 - view.galaxyFund.marketFee / 100)))}</b> de {RES_META.find((r) => r.key === fgTo)?.label} · fundo tem <b>{fmt(view.galaxyFund[fgTo])}</b>
+            </div>
+            {fgErr && <div className="error" style={{ marginTop: 10 }}>{fgErr}</div>}
+          </div>
+
+          <div className="panel">
+            <h2>🕳️ Mercado Negro</h2>
+            <div className="cost" style={{ marginBottom: 10 }}>
+              Troca com taxa <b>fixa de 25%</b>, <b>sempre disponível</b> (não passa pelo fundo — o recurso trocado é consumido).
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+              <select value={mktFrom} onChange={(e) => { const v = e.target.value as Resource; setMktFrom(v); if (mktTo === v) setMktTo(RES_META.find((r) => r.key !== v)!.key); }}
+                style={{ background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
+                {RES_META.map((r) => <option key={r.key} value={r.key}>{r.label} (tem {fmt(planet.resources[r.key])})</option>)}
+              </select>
+              <span>→</span>
+              <select value={mktTo} onChange={(e) => setMktTo(e.target.value as Resource)}
+                style={{ background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
                 {RES_META.filter((r) => r.key !== mktFrom).map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
               </select>
-              <input
-                type="number" min={1} value={mktAmt || ""} placeholder="quantidade"
+              <input type="number" min={1} value={mktAmt || ""} placeholder="quantidade"
                 onChange={(e) => setMktAmt(Math.max(0, Math.floor(Number(e.target.value))))}
-                style={{ width: 140, margin: 0, padding: "6px 10px" }}
-              />
+                style={{ width: 140, margin: 0, padding: "6px 10px" }} />
+              <button disabled={mktBusy || mktAmt <= 0 || mktFrom === mktTo} onClick={doTradeMN}>{mktBusy ? "..." : "🕳️ trocar"}</button>
             </div>
-
-            {/* Mercado Negro — taxa fixa, sempre disponível */}
-            <div className="roid-row" style={{ marginTop: 12 }}>
-              <div className="roid-label"><div>
-                <div><b>🕳️ Mercado Negro</b> <span className="roid-count">taxa 25% · sempre disponível</span></div>
-                <div className="roid-count">Você recebe <b>{fmt(Math.floor(mktAmt * 0.75))}</b> de {RES_META.find((r) => r.key === mktTo)?.label} (o recurso trocado é consumido)</div>
-              </div></div>
-              <button disabled={mktBusy || mktAmt <= 0 || mktFrom === mktTo} onClick={() => doTrade("negro")}>{mktBusy ? "..." : "🕳️ trocar"}</button>
-            </div>
-
-            {/* Fundo da Galáxia — taxa do ME, depende do fundo */}
-            <div className="roid-row">
-              <div className="roid-label"><div>
-                <div><b>🏦 Fundo da Galáxia</b> <span className="roid-count">taxa {view.galaxyFund.marketFee}% {view.galaxyFund.marketLocked ? "· 🔒 trancado pelo ME" : ""}</span></div>
-                <div className="roid-count">Você recebe <b>{fmt(Math.floor(mktAmt * (1 - view.galaxyFund.marketFee / 100)))}</b> de {RES_META.find((r) => r.key === mktTo)?.label} · fundo tem <b>{fmt(view.galaxyFund[mktTo])}</b></div>
-              </div></div>
-              <button disabled={mktBusy || mktAmt <= 0 || mktFrom === mktTo || view.galaxyFund.marketLocked} onClick={() => doTrade("fundo")}>{mktBusy ? "..." : view.galaxyFund.marketLocked ? "🔒 trancado" : "🏦 trocar"}</button>
+            <div className="roid-count" style={{ marginTop: 8 }}>
+              Você recebe: <b style={{ color: "var(--text)" }}>{fmt(Math.floor(mktAmt * 0.75))}</b> de {RES_META.find((r) => r.key === mktTo)?.label}
             </div>
             {mktErr && <div className="error" style={{ marginTop: 10 }}>{mktErr}</div>}
           </div>

@@ -168,14 +168,14 @@ export function Governo() {
           <div className="roid-row">
             <div>Imposto da galáxia (% da produção → fundo)</div>
             <div style={{ display: "flex", gap: 6 }}>
-              <input type="number" min={0} max={25} value={taxInput} onChange={(e) => setTaxInput(Number(e.target.value))} style={{ width: 70, margin: 0, padding: "4px 6px" }} />
+              <input type="number" min={0} max={25} value={taxInput || ""} placeholder="0" onChange={(e) => setTaxInput(Math.max(0, Math.min(25, Math.floor(Number(e.target.value) || 0))))} style={{ width: 70, margin: 0, padding: "4px 6px" }} />
               <button onClick={() => act(() => api.govTax(taxInput))}>aplicar</button>
             </div>
           </div>
           <div className="roid-row">
             <div>Taxa do mercado (% que fica no fundo nas trocas)</div>
             <div style={{ display: "flex", gap: 6 }}>
-              <input type="number" min={0} max={25} value={feeInput} onChange={(e) => setFeeInput(Number(e.target.value))} style={{ width: 70, margin: 0, padding: "4px 6px" }} />
+              <input type="number" min={0} max={25} value={feeInput || ""} placeholder="0" onChange={(e) => setFeeInput(Math.max(0, Math.min(25, Math.floor(Number(e.target.value) || 0))))} style={{ width: 70, margin: 0, padding: "4px 6px" }} />
               <button onClick={() => act(() => api.govMarketFee(feeInput))}>aplicar</button>
             </div>
           </div>
@@ -189,9 +189,9 @@ export function Governo() {
               <option value="">planeta...</option>
               {gov.members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
             </select>
-            <input type="number" min={0} placeholder="M" value={don.metalium} onChange={(e) => setDon({ ...don, metalium: Number(e.target.value) })} style={{ width: 80, margin: 0, padding: "4px 6px" }} />
-            <input type="number" min={0} placeholder="C" value={don.carbonum} onChange={(e) => setDon({ ...don, carbonum: Number(e.target.value) })} style={{ width: 80, margin: 0, padding: "4px 6px" }} />
-            <input type="number" min={0} placeholder="P" value={don.plutonium} onChange={(e) => setDon({ ...don, plutonium: Number(e.target.value) })} style={{ width: 80, margin: 0, padding: "4px 6px" }} />
+            <input type="number" min={0} placeholder="M" value={don.metalium || ""} onChange={(e) => setDon({ ...don, metalium: Math.max(0, Math.floor(Number(e.target.value) || 0)) })} style={{ width: 80, margin: 0, padding: "4px 6px" }} />
+            <input type="number" min={0} placeholder="C" value={don.carbonum || ""} onChange={(e) => setDon({ ...don, carbonum: Math.max(0, Math.floor(Number(e.target.value) || 0)) })} style={{ width: 80, margin: 0, padding: "4px 6px" }} />
+            <input type="number" min={0} placeholder="P" value={don.plutonium || ""} onChange={(e) => setDon({ ...don, plutonium: Math.max(0, Math.floor(Number(e.target.value) || 0)) })} style={{ width: 80, margin: 0, padding: "4px 6px" }} />
             <button disabled={!donTo} onClick={() => act(() => api.govDonate(donTo, don.metalium, don.carbonum, don.plutonium))}>doar</button>
           </div>
         </div>
