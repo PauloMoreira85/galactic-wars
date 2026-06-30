@@ -69,7 +69,8 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
     <div className="landing">
       <div className="landing-hero">
         {/* Vídeo da logo (se existir wild-screen.mp4); senão mostra a imagem (poster). */}
-        <video className="landing-hero-media" autoPlay loop muted playsInline poster="/art/logo/logo.jpg">
+        {/* Toca a intro UMA vez e congela no último quadro (sem loop). */}
+        <video className="landing-hero-media" autoPlay muted playsInline poster="/art/logo/logo.jpg" onEnded={(e) => e.currentTarget.pause()}>
           <source src="/art/logo/logo.mp4" type="video/mp4" />
         </video>
         <div className="landing-tagline">
