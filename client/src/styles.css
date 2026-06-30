@@ -149,8 +149,8 @@ body::after {
 
 /* ===== Página inicial (landing) ===== */
 .landing { position: relative; z-index: 1; max-width: 1120px; margin: 0 auto; padding: 18px 16px 60px; }
-.landing-hero { text-align: center; margin-bottom: 18px; }
-.landing-hero img, .landing-hero-media { width: 100%; max-width: 1080px; border-radius: 12px; border: 1px solid var(--border-strong); box-shadow: 0 0 40px rgba(37,211,255,0.15); display: block; margin: 0 auto; }
+.landing-hero { text-align: center; margin: 0 calc(50% - 50vw) 18px; }
+.landing-hero img, .landing-hero-media { width: 100%; max-width: 1500px; border-radius: 0; border: none; box-shadow: 0 0 40px rgba(37,211,255,0.15); display: block; margin: 0 auto; }
 .landing-tagline { font-family: "Orbitron", sans-serif; letter-spacing: 2px; color: #cfeeff; text-shadow: 0 0 10px var(--glow); margin-top: 10px; font-size: 14px; }
 .landing-h2 { font-family: "Orbitron", sans-serif; text-align: center; letter-spacing: 3px; text-transform: uppercase; color: #eaffff; text-shadow: 0 0 12px var(--glow); margin: 34px 0 18px; }
 
