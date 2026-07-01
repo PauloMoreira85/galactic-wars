@@ -250,6 +250,21 @@ export async function resolveSiege(target: { galaxy: number; system: number; slo
   const garr = await prisma.fleet.findMany({ where: { status: "garrison", targetGalaxy: target.galaxy, targetSystem: target.system, targetSlot: target.slot } });
   for (const f of garr) { const u = parseUnits(f.units); if (totalUnits(u) > 0) defContribs.push({ id: f.id, units: u }); }
 
+  // Participantes (nome + total de naves) — pra saber QUEM atacou e QUEM defendeu,
+  // sem poluir a tabela de naves (escala mesmo com muita gente).
+  const atkTotals = new Map<string, number>();
+  for (const f of engaged) atkTotals.set(f.ownerPlanetId, (atkTotals.get(f.ownerPlanetId) ?? 0) + totalUnits(parseUnits(f.units)));
+  const defTotals = new Map<string, number>();
+  let defOwn = totalUnits(parseUnits(def.units));
+  for (const f of idle) defOwn += totalUnits(parseUnits(f.units));
+  if (defOwn > 0) defTotals.set(def.id, defOwn);
+  for (const f of garr) defTotals.set(f.ownerPlanetId, (defTotals.get(f.ownerPlanetId) ?? 0) + totalUnits(parseUnits(f.units)));
+  const partIds = [...new Set([...atkTotals.keys(), ...defTotals.keys()])];
+  const partPlanets = await prisma.planet.findMany({ where: { id: { in: partIds } }, select: { id: true, name: true } });
+  const partName = new Map(partPlanets.map((p) => [p.id, p.name]));
+  const attackers = [...atkTotals].map(([id, ships]) => ({ name: partName.get(id) ?? "?", ships })).sort((a, b) => b.ships - a.ships);
+  const defenders = [...defTotals].map(([id, ships]) => ({ name: partName.get(id) ?? "?", ships, you: id === def.id })).sort((a, b) => b.ships - a.ships);
+
   const aActive: UnitMap = {}; for (const c of atkContribs) for (const n of Object.keys(c.units)) aActive[n] = (aActive[n] || 0) + c.units[n];
   const dActive: UnitMap = {}; for (const c of defContribs) for (const n of Object.keys(c.units)) dActive[n] = (dActive[n] || 0) + c.units[n];
 
@@ -293,6 +308,7 @@ export async function resolveSiege(target: { galaxy: number; system: number; slo
     attacker: rows(st.atkInit, st.aLost, st.aPem, dAssim),
     defender: rows(st.defInit, st.dLost, st.dPem, aAssim),
     captured: roundCap, raid: { capacity, ratePct: Math.round(st.rate * 100), rows: raidRows, captured: roundCap.metalium + roundCap.carbonum + roundCap.plutonium },
+    attackers, defenders,
     round: 1, ticks: 1, log: st.log ?? [],
   };
 

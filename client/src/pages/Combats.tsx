@@ -56,6 +56,18 @@ export function Combats() {
             <div><div className="roid-count">Atacante {iAmAtk && "(você)"}</div><b style={{ color: "var(--danger)" }}>{detail.attackerName}</b> <span className="roid-count">({detail.attackerCoords}) · {d.attackerRace}</span></div>
             <div><div className="roid-count">Defensor {!iAmAtk && "(você)"}</div><b style={{ color: "var(--carbonum)" }}>{detail.defenderName}</b> <span className="roid-count">({detail.defenderCoords}) · {d.defenderRace}</span></div>
           </div>
+          {((d.attackers?.length ?? 0) > 1 || (d.defenders?.length ?? 0) > 1) && (
+            <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginTop: 10, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+              <div>
+                <div className="roid-count">⚔️ Atacantes ({d.attackers!.length})</div>
+                {d.attackers!.map((a, i) => <div key={i}><b style={{ color: "var(--danger)" }}>{a.name}</b> <span className="roid-count">{fmt(a.ships)} naves</span></div>)}
+              </div>
+              <div>
+                <div className="roid-count">🛡️ Defensores ({d.defenders!.length})</div>
+                {d.defenders!.map((x, i) => <div key={i}><b style={{ color: "var(--carbonum)" }}>{x.name}{x.you ? " (você)" : " · aliado"}</b> <span className="roid-count">{fmt(x.ships)} naves</span></div>)}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="panel">
