@@ -238,7 +238,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
   useEffect(() => {
     refresh();
-    const t = setInterval(refresh, 15000);
+    const t = setInterval(refresh, 10000);
     return () => clearInterval(t);
   }, []);
 

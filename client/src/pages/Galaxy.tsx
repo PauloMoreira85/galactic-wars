@@ -45,10 +45,13 @@ export function Galaxy({ view, onChanged, onMessage }: { view: PlanetView; onCha
 
   useEffect(() => {
     loadSystem();
+    // Atualiza sozinho o sistema visualizado (slots/pontuação/online) a cada 8s.
+    const t = setInterval(loadSystem, 8000);
+    return () => clearInterval(t);
   }, [galaxy, system]);
   useEffect(() => {
     loadFleets();
-    const t = setInterval(loadFleets, 10000);
+    const t = setInterval(loadFleets, 8000);
     return () => clearInterval(t);
   }, []);
 
