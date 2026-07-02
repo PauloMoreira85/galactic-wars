@@ -32,6 +32,9 @@ export type Resource = "metalium" | "carbonum" | "plutonium";
 export const MAIN_URL = "https://galacticwar.com.br";
 export const RUR_URL = "https://rur.galacticwar.com.br";
 export const IS_RUR = typeof window !== "undefined" && window.location.hostname.startsWith("rur.");
+// Intervalo de auto-refresh das telas. No RUR o tick é de 5s, então precisa ser
+// quase em tempo real; no jogo principal (tick 60s) 10s basta.
+export const REFRESH_MS = IS_RUR ? 1500 : 10000;
 
 export interface RaceInfo {
   key: string;

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, clearToken, IS_RUR, MAIN_URL, RUR_URL, type PlanetView, type Resource, type TechItem } from "../api";
+import { api, clearToken, IS_RUR, MAIN_URL, RUR_URL, REFRESH_MS, type PlanetView, type Resource, type TechItem } from "../api";
 import { Galaxy } from "./Galaxy";
 import { Trafego } from "./Trafego";
 import { Frotas } from "./Frotas";
@@ -238,7 +238,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
   useEffect(() => {
     refresh();
-    const t = setInterval(refresh, 10000);
+    const t = setInterval(refresh, REFRESH_MS);
     return () => clearInterval(t);
   }, []);
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, type PlanetView } from "../api";
+import { api, REFRESH_MS, type PlanetView } from "../api";
 
 function fmt(n: number) {
   return n.toLocaleString("pt-BR");
@@ -50,7 +50,7 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
       setEdits(e);
     } catch {}
   }
-  useEffect(() => { load(); const t = setInterval(load, 12000); return () => clearInterval(t); }, []);
+  useEffect(() => { load(); const t = setInterval(load, REFRESH_MS); return () => clearInterval(t); }, []);
 
   async function act(fn: () => Promise<any>) {
     setBusy(true); setError("");

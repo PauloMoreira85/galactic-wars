@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api } from "../api";
+import { api, REFRESH_MS } from "../api";
 
 function fmt(n: number) {
   return n.toLocaleString("pt-BR");
@@ -21,7 +21,7 @@ export function Trafego() {
   }
   useEffect(() => {
     load();
-    const t = setInterval(load, 10000);
+    const t = setInterval(load, REFRESH_MS);
     return () => clearInterval(t);
   }, []);
 

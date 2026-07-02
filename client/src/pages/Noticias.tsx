@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { api } from "../api";
+import { api, REFRESH_MS } from "../api";
 
 export function Noticias() {
   const [news, setNews] = useState<{ tick: number; message: string }[]>([]);
   async function load() { try { setNews((await api.news()).news); } catch {} }
-  useEffect(() => { load(); const t = setInterval(load, 10000); return () => clearInterval(t); }, []);
+  useEffect(() => { load(); const t = setInterval(load, REFRESH_MS); return () => clearInterval(t); }, []);
 
   return (
     <div className="panel">

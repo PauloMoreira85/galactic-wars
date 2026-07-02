@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, type PlanetView } from "../api";
+import { api, REFRESH_MS, type PlanetView } from "../api";
 import { IntelReport } from "../components/IntelReport";
 
 function fmt(n: number) {
@@ -46,12 +46,12 @@ export function Galaxy({ view, onChanged, onMessage }: { view: PlanetView; onCha
   useEffect(() => {
     loadSystem();
     // Atualiza sozinho o sistema visualizado (slots/pontuação/online) a cada 8s.
-    const t = setInterval(loadSystem, 8000);
+    const t = setInterval(loadSystem, REFRESH_MS);
     return () => clearInterval(t);
   }, [galaxy, system]);
   useEffect(() => {
     loadFleets();
-    const t = setInterval(loadFleets, 8000);
+    const t = setInterval(loadFleets, REFRESH_MS);
     return () => clearInterval(t);
   }, []);
 

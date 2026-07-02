@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, type AllianceView, ROLE_LABEL, ALLIANCE_ROLES } from "../api";
+import { api, REFRESH_MS, type AllianceView, ROLE_LABEL, ALLIANCE_ROLES } from "../api";
 
 export function Aliancas() {
   const [a, setA] = useState<AllianceView | null>(null);
@@ -9,7 +9,7 @@ export function Aliancas() {
   const [invite, setInvite] = useState("");
 
   async function load() { try { setA(await api.alliance()); } catch (e: any) { setError(e.message ?? "Falha"); } }
-  useEffect(() => { load(); const t = setInterval(load, 15000); return () => clearInterval(t); }, []);
+  useEffect(() => { load(); const t = setInterval(load, REFRESH_MS); return () => clearInterval(t); }, []);
   async function act(fn: () => Promise<AllianceView>) {
     setError("");
     try { setA(await fn()); } catch (e: any) { setError(e.message ?? "Falha"); }

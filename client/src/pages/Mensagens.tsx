@@ -1,5 +1,5 @@
 import { useEffect, useState, Fragment } from "react";
-import { api } from "../api";
+import { api, REFRESH_MS } from "../api";
 
 type PM = Awaited<ReturnType<typeof api.pm>>;
 function when(s: string) { return new Date(s).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }); }
@@ -15,7 +15,7 @@ export function Mensagens({ initialTo }: { initialTo?: string }) {
   const [anon, setAnon] = useState(false);
 
   async function load() { try { setData(await api.pm()); } catch (e: any) { setError(e.message ?? "Falha"); } }
-  useEffect(() => { load(); const t = setInterval(load, 15000); return () => clearInterval(t); }, []);
+  useEffect(() => { load(); const t = setInterval(load, REFRESH_MS); return () => clearInterval(t); }, []);
   // Veio da Galáxia (botão ✉): abre a aba Nova já com a coordenada preenchida.
   useEffect(() => { if (initialTo) { setTo(initialTo); setTab("nova"); } }, [initialTo]);
 

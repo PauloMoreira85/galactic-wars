@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, type GovView, type MgPlanet } from "../api";
+import { api, REFRESH_MS, type GovView, type MgPlanet } from "../api";
 
 // "Caça ×10 · Hela ×5" a partir do mapa de naves.
 function fmtUnits(u: Record<string, number>): string {
@@ -37,7 +37,7 @@ export function Governo() {
       setError(e.message ?? "Falha");
     }
   }
-  useEffect(() => { load(); const t = setInterval(load, 15000); return () => clearInterval(t); }, []);
+  useEffect(() => { load(); const t = setInterval(load, REFRESH_MS); return () => clearInterval(t); }, []);
 
   async function act(fn: () => Promise<GovView>) {
     setError("");
