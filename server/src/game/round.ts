@@ -48,9 +48,15 @@ export async function softResetRound(roundStartAt?: Date) {
   });
 
   // Re-acomoda TODOS os planetas no universo compacto (setor:paralelo:slot).
-  // Distribui em ~N/SLOTS galáxias (mínimo 2) de forma equilibrada — galáxias
-  // enchem juntas, sempre há ≥2 pra ter inimigo. Mantém contas; muda só coordenadas.
+  // Distribui em ~N/SLOTS galáxias (mínimo 2) de forma equilibrada. Mantém contas.
   const all = await prisma.planet.findMany({ orderBy: { createdAt: "asc" }, select: { id: true } });
+  // 1º passo: estaciona TODOS em coords temporárias únicas (setor 900, fora do
+  // universo). Sem isso, reatribuir direto colide com a constraint única
+  // (galaxy,system,slot), pois as coordenadas antigas ainda existem.
+  for (let i = 0; i < all.length; i++) {
+    await prisma.planet.update({ where: { id: all[i].id }, data: { galaxy: 900, system: 1, slot: i + 1 } });
+  }
+  // 2º passo: coordenadas finais compactas (nenhuma colide — setor 1..30, únicas).
   const open = Math.min(GALAXIES, Math.max(2, Math.ceil(all.length / SLOTS_PER_SYSTEM)));
   for (let i = 0; i < all.length; i++) {
     const galId = (i % open) + 1;
