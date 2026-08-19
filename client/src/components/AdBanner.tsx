@@ -14,7 +14,7 @@ export function AdBanner({ variant = "strip", label = true, placement }: { varia
     if (variant !== "stack") return null;
     return (
       <div className="landing-sponsors">
-        <div className="sponsor-label">Patrocínio</div>
+        <div className="sponsor-label">Desenvolvido por:</div>
         <a className="sponsor-slot" href={CONTACT}>📣 Seu anúncio aqui — fale com a gente: contato@galacticwar.com.br</a>
       </div>
     );
@@ -24,7 +24,7 @@ export function AdBanner({ variant = "strip", label = true, placement }: { varia
 
   return (
     <div className={`ads ads-${variant}`}>
-      {label && <div className="sponsor-label">Patrocínio</div>}
+      {label && <div className="sponsor-label">Desenvolvido por:</div>}
       <div className="ads-row">
         {ads.map((ad) => (
           <button key={ad.id} type="button" className="ad-card" title={ad.title} onClick={() => open(ad)}>
