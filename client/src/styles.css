@@ -57,7 +57,7 @@ body::after {
 .app { position: relative; z-index: 1; max-width: 1000px; margin: 0 auto; padding: 24px 16px 64px; }
 
 /* ===== Layout ===== */
-.layout { position: relative; z-index: 1; display: flex; min-height: 100vh; align-items: flex-start; }
+.layout { position: relative; z-index: 1; display: flex; min-height: 100vh; align-items: flex-start; max-width: 1280px; margin: 0 auto; justify-content: center; }
 
 .sidebar {
   width: 222px; flex-shrink: 0; position: sticky; top: 0; align-self: flex-start;
@@ -195,7 +195,7 @@ body::after {
 .ad-card:hover { border-color: var(--accent); box-shadow: 0 0 18px var(--glow); }
 .ad-card img { max-height: 90px; max-width: 320px; border-radius: 6px; display: block; }
 .ads-stack .ad-card img { max-height: 150px; max-width: 600px; }
-.ads-strip .ad-card img { max-height: 54px; max-width: 240px; }
+.ads-strip .ad-card img { max-height: 84px; max-width: 460px; }
 .ad-cap { font-size: 11px; color: var(--muted); }
 
 .landing-foot { text-align: center; color: var(--muted); font-size: 12px; margin-top: 30px; font-family: var(--mono); }
@@ -235,7 +235,7 @@ body::after {
 .menu-link.alert-news:hover:not(:disabled) { color: #16100a; background: #ffdf6b; }
 .action-tab.alert-news { color: #16100a; font-weight: 800; background: #ffd23f; border-color: #ffae00; text-shadow: none; box-shadow: 0 0 14px rgba(255,210,63,0.85); animation: msg-pulse 1.2s ease-in-out infinite; }
 
-.content { flex: 1; min-width: 0; padding: 20px 28px 64px; max-width: 980px; }
+.content { flex: 1; min-width: 0; padding: 20px 28px 64px; max-width: 1040px; }
 .section-title { font-family: "Orbitron", sans-serif; font-size: 20px; letter-spacing: 2px; text-transform: uppercase; margin: 4px 0 18px; color: #eaffff; text-shadow: 0 0 10px var(--glow); }
 
 /* Barra de recursos */
