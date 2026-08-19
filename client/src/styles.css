@@ -424,4 +424,28 @@ td { font-family: var(--mono); }
   .action-tabs { gap: 6px; }
   .action-tab { padding: 6px 10px; font-size: 12px; }
   .resource-bar { gap: 12px; padding: 10px 12px; }
+
+  /* Faixa "Desenvolvido por" ocupa a largura toda no celular */
+  .ads-strip .ad-card { max-width: 100%; }
+  .ads-strip .ad-card img { max-height: none; }
+
+  /* Comandante não corta: sem borda/padding lateral, ocupa a linha inteira */
+  .sh-commander { border-right: none; padding-right: 0; width: 100%; }
+  .sh-planet-icon { font-size: 28px; }
+  .sh-name { font-size: 15px; }
+  .status-header { padding: 10px 12px; gap: 8px; }
+
+  /* Topbar (nome do round / tick) empilha e alinha à esquerda */
+  .topbar { align-items: flex-start; }
+  .tick-info { text-align: left; }
+}
+
+/* Celular estreito (< 420px): menu-chips e recursos ainda mais compactos */
+@media (max-width: 420px) {
+  .menu-link { padding: 5px 8px; font-size: 11.5px; }
+  .sidebar-logo { max-width: 108px; }
+  .resource-bar { flex-wrap: wrap; gap: 8px 16px; }
+  .sh-cell b { font-size: 13px; }
+  table { font-size: 11px; }
+  .grid3 { gap: 10px; }
 }
