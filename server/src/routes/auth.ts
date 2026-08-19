@@ -25,7 +25,9 @@ authRouter.get("/races", (_req, res) => {
 
 // Hall da Fama (público — aparece na landing page).
 authRouter.get("/hall", async (_req, res) => {
-  const rows = await prisma.hallOfFame.findMany({ orderBy: [{ round: "desc" }, { position: "asc" }] });
+  // Só os rounds MAIS RECENTES — nunca a tabela inteira (senão a landing baixa
+  // dezenas de MB e trava o navegador). take = ~20 rounds (×3 posições).
+  const rows = await prisma.hallOfFame.findMany({ orderBy: [{ round: "desc" }, { position: "asc" }], take: 60 });
   const byRound = new Map<number, any>();
   for (const r of rows) {
     if (!byRound.has(r.round)) byRound.set(r.round, { round: r.round, endedAt: r.endedAt, top: [] });
