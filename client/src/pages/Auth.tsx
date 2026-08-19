@@ -1,26 +1,20 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { api, setToken, IS_RUR, MAIN_URL, RUR_URL, type RaceInfo, type HallRound } from "../api";
 import { AdBanner } from "../components/AdBanner";
 
-// Vídeo que só baixa quando entra (perto) na tela — evita carregar dezenas de MB
-// de vídeo no load da landing. Até lá mostra só o poster (imagem leve).
+// Vídeo que NÃO toca sozinho — mostra o poster (imagem leve) e só baixa/toca ao
+// passar o mouse. Evita vários vídeos decodificando juntos e travando a landing.
 function LazyVideo({ src, poster }: { src: string; poster: string }) {
-  const ref = useRef<HTMLVideoElement>(null);
-  const [load, setLoad] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || load) return;
-    const io = new IntersectionObserver((es) => {
-      if (es[0]?.isIntersecting) { setLoad(true); io.disconnect(); }
-    }, { rootMargin: "300px" });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [load]);
-  return <video ref={ref} autoPlay loop muted playsInline preload="none" poster={poster} src={load ? src : undefined} />;
+  return (
+    <video
+      loop muted playsInline preload="none" poster={poster} src={src}
+      onMouseEnter={(e) => { e.currentTarget.play?.().catch(() => {}); }}
+      onMouseLeave={(e) => { e.currentTarget.pause?.(); }}
+    />
+  );
 }
 
 export function Auth({ onAuthed }: { onAuthed: () => void }) {
-  const [isMobile] = useState(() => typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches);
   const [mode, setMode] = useState<"login" | "register">("login");
   const [login, setLogin] = useState("");
   const [email, setEmail] = useState("");
@@ -86,15 +80,9 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
   return (
     <div className="landing">
       <div className="landing-hero">
-        {/* No CELULAR mostra só a imagem (leve) — o vídeo de 8MB engasgava o cadastro
-            em aparelhos/rede fracos. No desktop toca a intro 1x e congela. */}
-        {isMobile ? (
-          <img className="landing-hero-media" src="/art/logo/logo.jpg" alt="Galactic Wars" />
-        ) : (
-          <video className="landing-hero-media" autoPlay muted playsInline poster="/art/logo/logo.jpg" onEnded={(e) => e.currentTarget.pause()}>
-            <source src="/art/logo/logo.mp4" type="video/mp4" />
-          </video>
-        )}
+        {/* Logo ESTÁTICA (imagem) — o vídeo autoplay de 8MB deixava a landing/cadastro
+            travando (renderizador sem resposta). Fica leve e confiável. */}
+        <img className="landing-hero-media" src="/art/logo/logo.jpg" alt="Galactic Wars" />
         <div className="landing-tagline">
           {IS_RUR ? "RUR — Round Ultra-Rápido. O universo em 100 minutos." : "Conquiste os roids. Domine a galáxia."}
           {!IS_RUR && <span style={{ marginLeft: 10, padding: "2px 8px", borderRadius: 999, background: "#ffb020", color: "#1a1205", fontSize: "0.6em", fontWeight: 800, verticalAlign: "middle", letterSpacing: 1 }}>BETA</span>}
