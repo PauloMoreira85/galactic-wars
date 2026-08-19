@@ -11,8 +11,8 @@ import { snapshotHallOfFame } from "./hall.js";
 // `roundStartAt`: marca o início (08:00) do novo round no GameState. O motor de
 // ticks deriva o tick a partir daí. Se omitido, usa "agora" (uso manual via CLI).
 export async function softResetRound(roundStartAt?: Date) {
-  // Antes de zerar: registra o top-3 do round no Hall da Fama.
-  await snapshotHallOfFame();
+  // Hall da Fama DESLIGADO durante o BETA (estamos em testes). Reative quando lançar.
+  // await snapshotHallOfFame();
 
   // Apaga tabelas de round (mas NÃO users/planets/forum/HallOfFame/AccountIp).
   await prisma.news.deleteMany();

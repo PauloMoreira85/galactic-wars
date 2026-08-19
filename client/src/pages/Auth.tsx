@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, setToken, IS_RUR, MAIN_URL, RUR_URL, type RaceInfo, type HallRound } from "../api";
+import { api, setToken, IS_RUR, MAIN_URL, RUR_URL, type RaceInfo } from "../api";
 import { AdBanner } from "../components/AdBanner";
 
 // Vídeo que NÃO toca sozinho — mostra o poster (imagem leve) e só baixa/toca ao
@@ -25,7 +25,6 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
   const [password, setPassword] = useState("");
   const [races, setRaces] = useState<RaceInfo[]>([]);
   const [race, setRace] = useState<string>("");
-  const [hall, setHall] = useState<HallRound[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [forgot, setForgot] = useState(false);
@@ -45,7 +44,6 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
       setRaces(r.races);
       setRace((prev) => prev || r.races[0]?.key || "");
     }).catch(() => {});
-    api.hall().then((h) => setHall(h.rounds)).catch(() => {});
     api.meta().then(setMeta).catch(() => {});
   }, []);
 
@@ -246,26 +244,7 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
         ))}
       </div>
 
-      {/* Hall da Fama: campeões dos rounds anteriores (some se ainda não houve round). */}
-      {hall.length > 0 && (
-        <div className="landing-hall">
-          <h2 className="landing-h2">🏆 Hall da Fama</h2>
-          <div className="hall-rounds">
-            {hall.map((r) => (
-              <div className="hall-round" key={r.round}>
-                <div className="hall-round-title">Round #{r.round}</div>
-                {r.top.map((c) => (
-                  <div className={`hall-row pos-${c.position}`} key={c.position}>
-                    <span className="hall-medal">{c.position === 1 ? "🥇" : c.position === 2 ? "🥈" : "🥉"}</span>
-                    <span className="hall-name">{c.commander}</span>
-                    <span className="hall-roids">{c.roids.toLocaleString("pt-BR")} roids</span>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Hall da Fama removido durante o BETA (estamos em testes). */}
 
       {/* Anunciantes (gerenciados no admin) — login mostra os de "landing", a aba
           Criar conta mostra os de "cadastro". Ou convite "seu anúncio aqui". */}
