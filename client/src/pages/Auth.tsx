@@ -82,7 +82,7 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
             travando (renderizador sem resposta). Fica leve e confiável. */}
         <img className="landing-hero-media" src="/art/logo/logo.jpg" alt="Galactic Wars" />
         <div className="landing-tagline">
-          {IS_RUR ? "RUR — Round Ultra-Rápido. O universo em 100 minutos." : "Conquiste os roids. Domine a galáxia."}
+          {IS_RUR ? "RUR — Round Ultra-Rápido. O universo em 100 minutos." : "PELA CONQUISTA DO UNIVERSO"}
           {!IS_RUR && <span style={{ marginLeft: 10, padding: "2px 8px", borderRadius: 999, background: "#ffb020", color: "#1a1205", fontSize: "0.6em", fontWeight: 800, verticalAlign: "middle", letterSpacing: 1 }}>BETA</span>}
         </div>
       </div>
