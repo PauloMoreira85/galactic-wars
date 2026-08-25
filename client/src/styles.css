@@ -154,6 +154,44 @@ body::after {
 .landing-tagline { font-family: "Orbitron", sans-serif; letter-spacing: 2px; color: #cfeeff; text-shadow: 0 0 10px var(--glow); margin-top: 10px; font-size: 14px; }
 .landing-h2 { font-family: "Orbitron", sans-serif; text-align: center; letter-spacing: 3px; text-transform: uppercase; color: #eaffff; text-shadow: 0 0 12px var(--glow); margin: 34px 0 18px; }
 
+/* ===== Seção "O que é / Como jogar" (landing) ===== */
+.landing-howto { margin-top: 28px; }
+.howto-intro { max-width: 760px; margin: 0 auto; line-height: 1.7; }
+.howto-intro p { margin: 0 0 12px; color: #d6ecff; font-size: 15px; }
+.howto-intro b { color: #eaffff; }
+
+.howto-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 0 auto; max-width: 960px; }
+.howto-step {
+  position: relative; background: var(--panel); border: 1px solid var(--border);
+  border-radius: 12px; padding: 20px 16px 16px; box-shadow: 0 8px 26px rgba(0,0,0,0.4);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.howto-step:hover { border-color: var(--accent); box-shadow: 0 0 20px var(--glow); }
+.howto-num {
+  display: flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: linear-gradient(180deg, rgba(37,211,255,0.22), rgba(37,211,255,0.05));
+  border: 1px solid var(--accent); color: var(--accent);
+  font-family: "Orbitron", sans-serif; font-weight: 800; font-size: 18px;
+  text-shadow: 0 0 8px var(--glow); box-shadow: 0 0 14px rgba(37,211,255,0.25);
+  margin-bottom: 10px;
+}
+.howto-step h3 { font-family: "Orbitron", sans-serif; font-size: 15px; letter-spacing: 1px; color: #eaffff; margin: 0 0 6px; text-shadow: 0 0 8px var(--glow); }
+.howto-step p { margin: 0; font-size: 13.5px; line-height: 1.55; color: #c6def2; }
+.howto-step b { color: #eaffff; }
+
+.howto-cta {
+  text-align: center; margin: 22px auto 0; max-width: 760px;
+  font-size: 16px; color: #eaffff; padding: 14px;
+  background: linear-gradient(180deg, rgba(37,211,255,0.10), rgba(37,211,255,0.02));
+  border: 1px solid var(--accent-dim, var(--border)); border-radius: 10px;
+}
+
+@media (max-width: 760px) {
+  .howto-steps { grid-template-columns: 1fr; }
+  .howto-intro p { font-size: 14px; }
+}
+
 .race-show { display: flex; gap: 18px; align-items: stretch; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 8px 26px rgba(0,0,0,0.4); }
 .race-show.flip { flex-direction: row-reverse; }
 .race-show-char { flex-shrink: 0; width: 220px; }

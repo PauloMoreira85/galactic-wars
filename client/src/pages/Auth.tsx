@@ -126,6 +126,63 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
         </>
       )}
 
+      {/* O QUE É + COMO JOGAR (só no modo principal) */}
+      {!IS_RUR && (
+        <div className="landing-howto">
+          <div className="howto-intro panel">
+            <h2 className="landing-h2" style={{ marginTop: 0 }}>O que é o Galactic Wars?</h2>
+            <p>
+              Um <b>jogo de estratégia espacial multiplayer</b> em tempo real. Você comanda um planeta,
+              extrai recursos dos <b>roids</b> (asteroides), pesquisa tecnologias, constrói uma <b>frota de guerra</b> e
+              parte pra cima dos outros comandantes: <b>ataca planetas inimigos, saqueia recursos e destrói frotas</b>.
+            </p>
+            <p style={{ marginBottom: 0 }}>
+              A cada <b>tick</b> ({tickLabel}) o universo avança sozinho — sua produção, suas naves e os combates
+              acontecem mesmo com você offline. Sua <b>galáxia</b> é o seu grupo de aliados; o resto do universo é território
+              a conquistar. No fim do round, quem tiver mais poder fica no topo. <b>É de graça.</b>
+            </p>
+          </div>
+
+          <h2 className="landing-h2">Como jogar — passo a passo</h2>
+          <div className="howto-steps">
+            <div className="howto-step">
+              <div className="howto-num">1</div>
+              <h3>Funde seu planeta</h3>
+              <p>Crie sua conta grátis, dê nome ao líder e ao planeta e <b>escolha uma das 5 raças</b> — cada uma com naves e forças diferentes.</p>
+            </div>
+            <div className="howto-step">
+              <div className="howto-num">2</div>
+              <h3>Minere os roids</h3>
+              <p>Roids geram <b>Metalium, Carbonum e Plutonium</b> a cada tick. Conquiste mais roids pra crescer sua economia — é o combustível de tudo.</p>
+            </div>
+            <div className="howto-step">
+              <div className="howto-num">3</div>
+              <h3>Pesquise tecnologia</h3>
+              <p>Gaste recursos em <b>pesquisa</b> pra liberar naves melhores, mineração, deslocamento, espionagem e sabotagem.</p>
+            </div>
+            <div className="howto-step">
+              <div className="howto-num">4</div>
+              <h3>Construa sua frota</h3>
+              <p>Monte <b>naves de ataque, defesa e mineração</b>. Cada raça tem naves únicas — combine-as pra formar um exército letal.</p>
+            </div>
+            <div className="howto-step">
+              <div className="howto-num">5</div>
+              <h3>Ataque e saqueie</h3>
+              <p>Envie frotas pra <b>atacar outros planetas</b>, roubar recursos e roids e destruir a defesa inimiga. Espione e sabote antes de invadir.</p>
+            </div>
+            <div className="howto-step">
+              <div className="howto-num">6</div>
+              <h3>Una-se à sua galáxia</h3>
+              <p>Os planetas da sua galáxia são seus <b>aliados</b>. Defendam-se juntos, elejam ministros e dominem o universo em equipe.</p>
+            </div>
+          </div>
+
+          <div className="howto-cta">
+            ⚔️ Pronto pra conquistar o universo? <b>Crie sua conta grátis abaixo.</b>
+          </div>
+        </div>
+      )}
+
       <div className={`panel ${wide ? "auth-wide" : "auth-wrap"}`} style={wide ? { maxWidth: 760, margin: "4vh auto 0" } : undefined}>
         <div className="auth-tabs">
           <button className={mode === "login" ? "active" : ""} onClick={() => setMode("login")}>
