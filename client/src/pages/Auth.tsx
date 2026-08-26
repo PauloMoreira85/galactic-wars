@@ -80,7 +80,7 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
       <div className="landing-hero">
         {/* Logo ESTÁTICA (imagem) — o vídeo autoplay de 8MB deixava a landing/cadastro
             travando (renderizador sem resposta). Fica leve e confiável. */}
-        <img className="landing-hero-media" src="/art/logo/logo.jpg" alt="Galactic Wars" />
+        <img className="landing-hero-media" src="/art/logo/logo.jpg" alt="Galactic War" />
         <div className="landing-tagline">
           {IS_RUR ? "RUR — Round Ultra-Rápido. O universo em 100 minutos." : "PELA CONQUISTA DO UNIVERSO"}
           {!IS_RUR && <span style={{ marginLeft: 10, padding: "2px 8px", borderRadius: 999, background: "#ffb020", color: "#1a1205", fontSize: "0.6em", fontWeight: 800, verticalAlign: "middle", letterSpacing: 1 }}>BETA</span>}
@@ -92,7 +92,7 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
         <div className="panel" style={{ maxWidth: 760, margin: "12px auto 0", borderColor: "var(--accent)" }}>
           <h2 style={{ marginTop: 0 }}>⚡ Round Ultra-Rápido (RUR)</h2>
           <div className="cost" style={{ lineHeight: 1.7 }}>
-            Esta é a versão <b>turbo</b> do Galactic Wars — universo e contas <b>próprios</b> (separados do jogo principal):
+            Esta é a versão <b>turbo</b> do Galactic War — universo e contas <b>próprios</b> (separados do jogo principal):
             <ul style={{ margin: "8px 0 8px 18px", padding: 0 }}>
               <li><b>Ticks de {meta?.tickIntervalSeconds ?? 5} segundos</b> — produção, frotas e combate acontecem o tempo todo.</li>
               <li>Round inteiro em <b>~{meta?.roundDurationMinutes ?? 100} minutos</b> ({meta ? meta.startTimes.length : 3}x por dia).</li>
@@ -101,14 +101,14 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
             </ul>
             Dá tempo de uma campanha inteira no almoço ou à noite. 🚀
           </div>
-          <a className="link" href={MAIN_URL} target="_blank" rel="noopener noreferrer">🌍 Prefere o jogo clássico? Abrir o Galactic Wars principal ↗</a>
+          <a className="link" href={MAIN_URL} target="_blank" rel="noopener noreferrer">🌍 Prefere o jogo clássico? Abrir o Galactic War principal ↗</a>
         </div>
       ) : (
         <>
           <div className="panel" style={{ maxWidth: 760, margin: "12px auto 0", borderColor: "#ffb020", background: "rgba(255,176,32,0.06)" }}>
             <h2 style={{ marginTop: 0, color: "#ffb020" }}>🧪 BETA — em testes</h2>
             <div className="cost" style={{ lineHeight: 1.7 }}>
-              O Galactic Wars está em <b>fase de testes</b>: estamos validando economia, combate, espionagem, sabotagem e tudo mais <b>antes de lançar o round oficial</b>. Crie sua conta, jogue à vontade e <b>mande seu feedback</b> — os rounds de teste podem ser <b>reiniciados a qualquer momento</b>.
+              O Galactic War está em <b>fase de testes</b>: estamos validando economia, combate, espionagem, sabotagem e tudo mais <b>antes de lançar o round oficial</b>. Crie sua conta, jogue à vontade e <b>mande seu feedback</b> — os rounds de teste podem ser <b>reiniciados a qualquer momento</b>.
               <ul style={{ margin: "8px 0 0 18px", padding: 0 }}>
                 <li><b>Tick de {tickLabel}</b> — produção, frotas e combate avançam a cada tick.</li>
                 <li>Round de <b>{roundTicks} ticks</b> (~{roundHours}h), começando às <b>{startList}</b> (horário de Brasília).</li>
@@ -130,7 +130,7 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
       {!IS_RUR && (
         <div className="landing-howto">
           <div className="howto-intro panel">
-            <h2 className="landing-h2" style={{ marginTop: 0 }}>O que é o Galactic Wars?</h2>
+            <h2 className="landing-h2" style={{ marginTop: 0 }}>O que é o Galactic War?</h2>
             <p>
               Um <b>jogo de estratégia espacial multiplayer</b> em tempo real. Você comanda um planeta,
               extrai recursos dos <b>roids</b> (asteroides), pesquisa tecnologias, constrói uma <b>frota de guerra</b> e
@@ -307,7 +307,7 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
           Criar conta mostra os de "cadastro". Ou convite "seu anúncio aqui". */}
       <AdBanner variant="stack" placement={mode === "register" ? "cadastro" : "landing"} />
 
-      <div className="landing-foot">Galactic Wars · {new Date().getFullYear()}</div>
+      <div className="landing-foot">Galactic War · {new Date().getFullYear()}</div>
     </div>
   );
 }

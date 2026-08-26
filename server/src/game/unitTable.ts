@@ -1,4 +1,4 @@
-// ===== TABELA DE UNIDADES OFICIAL do Galactic Wars =====
+// ===== TABELA DE UNIDADES OFICIAL do Galactic War =====
 // Fonte: snapshot archive.org (testes.galacticwars.com.br/toolkit/tabela_unidades.php, 2007).
 // Dado CANÔNICO — substitui o modelo simplificado de 6 classes genéricas.
 //

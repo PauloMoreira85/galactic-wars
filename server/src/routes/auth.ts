@@ -181,10 +181,10 @@ authRouter.post("/forgot", async (req, res) => {
     await prisma.user.update({ where: { id: user.id }, data: { resetToken: token, resetExpires: expires } });
     const link = `${APP_URL}/reset?token=${token}`;
     const html = `<p>Olá, Comandante <b>${user.username}</b>.</p>
-      <p>Para redefinir sua senha no Galactic Wars, clique no link abaixo (válido por 1 hora):</p>
+      <p>Para redefinir sua senha no Galactic War, clique no link abaixo (válido por 1 hora):</p>
       <p><a href="${link}">${link}</a></p>
       <p>Se não foi você, ignore este e-mail.</p>`;
-    const sent = await sendMail(user.email, "Galactic Wars — recuperação de senha", html);
+    const sent = await sendMail(user.email, "Galactic War — recuperação de senha", html);
     if (!sent) console.log(`[forgot] SMTP off — link de reset de ${user.username}: ${link}`);
   }
   res.json({ ok: true });

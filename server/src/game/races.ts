@@ -1,7 +1,7 @@
 // ===== Racas jogaveis =====
 // Cada raca tem um conjunto de "traits" (modificadores e flags) que as fases
 // de frota (3) e combate (5) consomem. A escolha e feita no registro e e
-// permanente. Descricoes baseadas no lore original do Galactic Wars.
+// permanente. Descricoes baseadas no lore original do Galactic War.
 
 export type RaceKey = "humanos" | "daharan" | "rakshasa" | "mech" | "insecta";
 

@@ -149,7 +149,7 @@ const MENU: MenuItem[][] = [
   ],
   [
     { key: "ferramentas", label: "Ferramentas" },
-    { key: "equipe", label: "Equipe Galactic Wars", soon: true },
+    { key: "equipe", label: "Equipe Galactic War", soon: true },
   ],
 ];
 
@@ -391,7 +391,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
       {/* ===== Barra lateral ===== */}
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <img src="/art/logo/brasao.jpg" alt="Galactic Wars" className="sidebar-logo" />
+          <img src="/art/logo/brasao.jpg" alt="Galactic War" className="sidebar-logo" />
         </div>
 
         <nav className="menu">

@@ -3,12 +3,12 @@ import { prisma } from "../db.js";
 export interface ForumDef { key: string; cat: string; name: string; desc: string }
 
 export const FORUMS: ForumDef[] = [
-  { cat: "Galactic Wars", key: "comunicados", name: "Comunicados", desc: "Comunicados oficiais da equipe." },
-  { cat: "Galactic Wars", key: "geral", name: "Geral", desc: "Assuntos gerais relacionados ao Galactic Wars." },
-  { cat: "Galactic Wars", key: "aliancas", name: "Alianças", desc: "Discussões sobre alianças, recrutamentos..." },
-  { cat: "Galactic Wars", key: "suporte", name: "Suporte", desc: "Dúvidas, bugs e ajuda em geral sobre o jogo." },
-  { cat: "Galactic Wars", key: "estrategia", name: "Estratégia", desc: "Dicas e estratégias sobre o jogo." },
-  { cat: "Galactic Wars", key: "sugestoes", name: "Sugestões", desc: "Sugestões, idéias e temáticas. Evite repetidas." },
+  { cat: "Galactic War", key: "comunicados", name: "Comunicados", desc: "Comunicados oficiais da equipe." },
+  { cat: "Galactic War", key: "geral", name: "Geral", desc: "Assuntos gerais relacionados ao Galactic War." },
+  { cat: "Galactic War", key: "aliancas", name: "Alianças", desc: "Discussões sobre alianças, recrutamentos..." },
+  { cat: "Galactic War", key: "suporte", name: "Suporte", desc: "Dúvidas, bugs e ajuda em geral sobre o jogo." },
+  { cat: "Galactic War", key: "estrategia", name: "Estratégia", desc: "Dicas e estratégias sobre o jogo." },
+  { cat: "Galactic War", key: "sugestoes", name: "Sugestões", desc: "Sugestões, idéias e temáticas. Evite repetidas." },
   { cat: "Lixo Espacial", key: "lixao", name: "Lixão Geral", desc: "Conversas fora do jogo, besteiras, piadas, etc." },
   { cat: "Lixo Espacial", key: "videos", name: "Vídeos", desc: "Vídeos do YouTube ou outro site." },
   { cat: "Lixo Espacial", key: "rpg", name: "RPG", desc: "Histórias, contos e ambientações no universo GW." },
