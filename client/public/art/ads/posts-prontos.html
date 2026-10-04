@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Artes dos posts — Galactic War</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap');
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0a0f1a; color: #c8e6ff; font-family: "Rajdhani", system-ui, sans-serif; padding: 24px; }
+  h1 { font-family: "Orbitron"; font-size: 22px; letter-spacing: 1px; }
+  .hint { color: #5f86ad; font-size: 14px; max-width: 920px; line-height: 1.6; margin-bottom: 24px; }
+  .hint b { color: #25d3ff; }
+  .grid { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+  .item { text-align: center; }
+  .item .lbl { font-family: "Share Tech Mono"; font-size: 13px; color: #25d3ff; margin-top: 8px; letter-spacing: 1px; }
+  .item .dim { color: #5f86ad; font-size: 11px; }
+  svg { border: 1px solid rgba(45,210,255,0.25); border-radius: 12px; display: block; background: #03060e; }
+  .sq { width: 360px; height: 360px; }     /* 1080x1080 exibido a 360 */
+  .vt { width: 324px; height: 405px; }      /* 1080x1350 exibido a 324 */
+</style>
+</head>
+<body>
+<h1>🎨 Artes dos posts — Galactic War</h1>
+<p class="hint">Cada arte abaixo é um quadro em alta resolução (1080×1080 ou 1080×1350). Para postar: dê <b>zoom no navegador</b> (Ctrl +) até a arte ficar grande, tire um <b>print recortado 1:1</b> de cada uma. Todas já usam as cores oficiais do jogo. Combine com as legendas do plano de marketing (botão "Copiar" lá).</p>
+<div class="grid" id="grid"></div>
+
+<script>
+// ---------- helpers de fundo (reusados) ----------
+function space(id, W, H, cx, cy) {
+  return `
+    <defs>
+      <radialGradient id="bg${id}" cx="${cx||50}%" cy="${cy||34}%" r="85%">
+        <stop offset="0%" stop-color="#0c2038"/>
+        <stop offset="58%" stop-color="#061021"/>
+        <stop offset="100%" stop-color="#03060e"/>
+      </radialGradient>
+      <linearGradient id="cy${id}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#25d3ff"/><stop offset="100%" stop-color="#1aa6cc"/>
+      </linearGradient>
+      <radialGradient id="planet${id}" cx="38%" cy="34%" r="72%">
+        <stop offset="0%" stop-color="#3ad0ff"/><stop offset="45%" stop-color="#1b6fa8"/>
+        <stop offset="100%" stop-color="#0a2238"/>
+      </radialGradient>
+    </defs>
+    <rect width="${W}" height="${H}" fill="url(#bg${id})"/>
+    <g fill="#ffffff">
+      <circle cx="${W*0.12}" cy="${H*0.16}" r="2.4" opacity=".9"/><circle cx="${W*0.86}" cy="${H*0.12}" r="2.6" opacity=".8"/>
+      <circle cx="${W*0.76}" cy="${H*0.33}" r="1.7" opacity=".7"/><circle cx="${W*0.2}" cy="${H*0.48}" r="1.6" opacity=".7"/>
+      <circle cx="${W*0.92}" cy="${H*0.6}" r="2.1" opacity=".8"/><circle cx="${W*0.1}" cy="${H*0.76}" r="1.9" opacity=".7"/>
+      <circle cx="${W*0.88}" cy="${H*0.84}" r="1.7" opacity=".7"/><circle cx="${W*0.6}" cy="${H*0.1}" r="1.5" opacity=".6"/>
+      <circle cx="${W*0.38}" cy="${H*0.2}" r="1.4" opacity=".6"/><circle cx="${W*0.7}" cy="${H*0.72}" r="1.6" opacity=".7"/>
+      <circle cx="${W*0.28}" cy="${H*0.88}" r="2" opacity=".8"/><circle cx="${W*0.52}" cy="${H*0.92}" r="1.5" opacity=".6"/>
+    </g>
+    <rect x="26" y="26" width="${W-52}" height="${H-52}" rx="32" fill="none" stroke="#25d3ff" stroke-opacity="0.32" stroke-width="2.5"/>`;
+}
+// nave estilizada (triângulo com asas) — vetor simples
+function ship(x, y, s, color) {
+  return `<g transform="translate(${x},${y}) scale(${s})" fill="${color||'#cfeeff'}" opacity="0.95">
+    <path d="M0 -26 L10 10 L0 2 L-10 10 Z"/>
+    <path d="M0 -10 L22 14 L10 14 Z" opacity="0.7"/>
+    <path d="M0 -10 L-22 14 L-10 14 Z" opacity="0.7"/>
+  </g>`;
+}
+// logo textual GALACTIC WAR (quando não dá pra usar o JPG)
+function wordmark(cx, y, size) {
+  return `<text x="${cx}" y="${y}" text-anchor="middle" font-family="Orbitron,sans-serif" font-weight="900" font-size="${size}" fill="#eafcff" letter-spacing="2" style="paint-order:stroke" stroke="#25d3ff" stroke-width="0" >GALACTIC WAR</text>`;
+}
+
+const ART = [];
+
+// ============ POST 1 — LANÇAMENTO (1080x1080) ============
+ART.push({ cls:"sq", lbl:"Post 1 · Lançamento", dim:"1080×1080 (feed)", svg: `
+<svg viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg">
+  ${space("p1",1080,1080,50,30)}
+  <!-- planeta grande -->
+  <circle cx="540" cy="430" r="150" fill="url(#planetp1)"/>
+  <ellipse cx="540" cy="430" rx="230" ry="60" fill="none" stroke="#25d3ff" stroke-opacity="0.5" stroke-width="5" transform="rotate(-18 540 430)"/>
+  <!-- naves -->
+  ${ship(300,330,2.4,"#cfeeff")} ${ship(790,300,1.8,"#9fe0ff")} ${ship(760,560,2.0,"#cfeeff")}
+  <!-- eyebrow -->
+  <text x="540" y="150" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="30" fill="#25d3ff" letter-spacing="8">O CLÁSSICO VOLTOU</text>
+  ${wordmark(540, 735, 74)}
+  <rect x="340" y="762" width="400" height="4" rx="2" fill="#25d3ff"/>
+  <text x="540" y="828" text-anchor="middle" font-family="Orbitron,sans-serif" font-weight="800" font-size="40" fill="#c08bff" letter-spacing="3">THE UNIVERSE AT WAR</text>
+  <!-- selo GRÁTIS -->
+  <g transform="translate(540,918)">
+    <rect x="-150" y="-34" width="300" height="68" rx="34" fill="#25d3ff"/>
+    <text x="0" y="14" text-anchor="middle" font-family="Orbitron,sans-serif" font-weight="900" font-size="38" fill="#03121f" letter-spacing="2">JOGUE GRÁTIS</text>
+  </g>
+  <text x="540" y="1010" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="30" fill="#9fc4e6" letter-spacing="3">galacticwar.com.br</text>
+</svg>`});
+
+// ============ POST 2 — NOSTALGIA (1080x1080) ============
+ART.push({ cls:"sq", lbl:"Post 2 · Nostalgia", dim:"1080×1080 (feed)", svg: `
+<svg viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg">
+  ${space("p2",1080,1080,50,40)}
+  <text x="540" y="210" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="30" fill="#c08bff" letter-spacing="6">VOCÊ LEMBRA?</text>
+  <!-- aspas gigantes -->
+  <text x="540" y="560" text-anchor="middle" font-family="Orbitron,sans-serif" font-weight="900" font-size="300" fill="#25d3ff" fill-opacity="0.1">★</text>
+  <!-- frase central -->
+  <text x="540" y="440" text-anchor="middle" font-family="Orbitron,sans-serif" font-weight="800" font-size="52" fill="#eafcff" letter-spacing="1">ACORDAR DE</text>
+  <text x="540" y="508" text-anchor="middle" font-family="Orbitron,sans-serif" font-weight="800" font-size="52" fill="#eafcff" letter-spacing="1">MADRUGADA</text>
+  <text x="540" y="596" text-anchor="middle" font-family="Rajdhani,sans-serif" font-weight="700" font-size="46" fill="#25d3ff">só pra atacar o vizinho</text>
+  ${ship(540,710,2.6,"#cfeeff")}
+  <text x="540" y="840" text-anchor="middle" font-family="Rajdhani,sans-serif" font-weight="600" font-size="38" fill="#9fc4e6">O MMO de estratégia espacial</text>
+  <text x="540" y="888" text-anchor="middle" font-family="Rajdhani,sans-serif" font-weight="600" font-size="38" fill="#9fc4e6">dos anos 2000 está de volta</text>
+  <text x="540" y="990" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="30" fill="#25d3ff" letter-spacing="3">galacticwar.com.br · grátis</text>
+</svg>`});
+
+// ============ POST 5 — PROVA SOCIAL (1080x1080) ============
+ART.push({ cls:"sq", lbl:"Post 5 · Prova social", dim:"1080×1080 (feed)", svg: `
+<svg viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg">
+  ${space("p5",1080,1080,50,28)}
+  <text x="540" y="140" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="30" fill="#25d3ff" letter-spacing="7">A GUERRA JÁ COMEÇOU</text>
+  <!-- mock de ranking -->
+  <g transform="translate(140,210)">
+    <rect x="0" y="0" width="800" height="560" rx="18" fill="#0a1a2e" stroke="#25d3ff" stroke-opacity="0.4" stroke-width="2"/>
+    <text x="30" y="56" font-family="Orbitron,sans-serif" font-weight="800" font-size="34" fill="#eafcff" letter-spacing="2">RANKING — TOP COMANDANTES</text>
+    <line x1="30" y1="80" x2="770" y2="80" stroke="#25d3ff" stroke-opacity="0.3" stroke-width="2"/>
+    ${[["1","Mestre_Splinter","1:1:4","59"],["2","Ramb2016","1:3:2","46"],["3","Jah","1:1:1","19"],["4","Nabuco","1:2:1","6"],["5","lythorf","1:1:2","6"]].map((r,i)=>`
+      <g transform="translate(0,${120+i*86})" font-family="Share Tech Mono,monospace">
+        <text x="40" y="0" font-size="34" fill="#25d3ff" font-weight="700">${r[0]}</text>
+        <text x="110" y="0" font-size="32" fill="#eafcff">${r[1]}</text>
+        <text x="540" y="0" font-size="30" fill="#9fc4e6">${r[2]}</text>
+        <text x="700" y="0" font-size="32" fill="#45e6a5">${r[3]} ⬢</text>
+      </g>`).join("")}
+  </g>
+  <text x="540" y="860" text-anchor="middle" font-family="Rajdhani,sans-serif" font-weight="700" font-size="44" fill="#eafcff">Cada planeta é um jogador real.</text>
+  <text x="540" y="916" text-anchor="middle" font-family="Rajdhani,sans-serif" font-weight="600" font-size="40" fill="#c08bff">Falta você nesse mapa.</text>
+  <text x="540" y="1010" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="30" fill="#25d3ff" letter-spacing="3">galacticwar.com.br</text>
+</svg>`});
+
+// ============ POST 6 — RUR / TURBO (1080x1350 vertical) ============
+ART.push({ cls:"vt", lbl:"Post 6 · RUR (turbo)", dim:"1080×1350 (vertical)", svg: `
+<svg viewBox="0 0 1080 1350" xmlns="http://www.w3.org/2000/svg">
+  ${space("p6",1080,1350,50,26)}
+  <text x="540" y="170" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="32" fill="#ff5a6e" letter-spacing="7">⚡ VERSÃO TURBO</text>
+  <text x="540" y="300" text-anchor="middle" font-family="Orbitron,sans-serif" font-weight="900" font-size="88" fill="#eafcff" letter-spacing="2">RUR</text>
+  <text x="540" y="360" text-anchor="middle" font-family="Rajdhani,sans-serif" font-weight="600" font-size="40" fill="#25d3ff">Round Ultra-Rápido</text>
+  <!-- número gigante 100 MIN -->
+  <circle cx="540" cy="640" r="210" fill="none" stroke="#25d3ff" stroke-width="6" stroke-opacity="0.5"/>
+  <circle cx="540" cy="640" r="210" fill="none" stroke="#ff5a6e" stroke-width="10" stroke-dasharray="990 1320" stroke-linecap="round" transform="rotate(-90 540 640)"/>
+  <text x="540" y="636" text-anchor="middle" font-family="Orbitron,sans-serif" font-weight="900" font-size="150" fill="#25d3ff">100</text>
+  <text x="540" y="716" text-anchor="middle" font-family="Orbitron,sans-serif" font-weight="700" font-size="48" fill="#eafcff" letter-spacing="4">MINUTOS</text>
+  <text x="540" y="920" text-anchor="middle" font-family="Rajdhani,sans-serif" font-weight="700" font-size="46" fill="#9fc4e6">Uma partida INTEIRA</text>
+  <text x="540" y="976" text-anchor="middle" font-family="Rajdhani,sans-serif" font-weight="600" font-size="40" fill="#9fc4e6">Ticks de 5 segundos · ação sem parar</text>
+  <!-- horários -->
+  <g transform="translate(540,1120)" font-family="Orbitron,sans-serif" font-weight="800">
+    ${["12h","18h","22h"].map((h,i)=>`
+      <g transform="translate(${-230+i*230},0)">
+        <rect x="-90" y="-44" width="180" height="88" rx="16" fill="#0a1a2e" stroke="#25d3ff" stroke-opacity="0.5" stroke-width="2"/>
+        <text x="0" y="16" text-anchor="middle" font-size="44" fill="#25d3ff">${h}</text>
+      </g>`).join("")}
+  </g>
+  <text x="540" y="1270" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="32" fill="#eafcff" letter-spacing="2">rur.galacticwar.com.br</text>
+</svg>`});
+
+// ============ STORY — vertical 1080x1350 (CTA geral) ============
+ART.push({ cls:"vt", lbl:"Bônus · Story/Vertical", dim:"1080×1350 (stories/feed)", svg: `
+<svg viewBox="0 0 1080 1350" xmlns="http://www.w3.org/2000/svg">
+  ${space("s1",1080,1350,50,30)}
+  <circle cx="540" cy="470" r="170" fill="url(#planets1)"/>
+  <ellipse cx="540" cy="470" rx="260" ry="66" fill="none" stroke="#25d3ff" stroke-opacity="0.5" stroke-width="6" transform="rotate(-16 540 470)"/>
+  ${ship(300,360,2.4)} ${ship(800,400,2.0)}
+  ${wordmark(540, 820, 76)}
+  <text x="540" y="890" text-anchor="middle" font-family="Orbitron,sans-serif" font-weight="800" font-size="40" fill="#c08bff" letter-spacing="3">THE UNIVERSE AT WAR</text>
+  <text x="540" y="978" text-anchor="middle" font-family="Rajdhani,sans-serif" font-weight="700" font-size="46" fill="#9fc4e6">Comande. Ataque. Conquiste.</text>
+  <g transform="translate(540,1130)">
+    <rect x="-220" y="-44" width="440" height="88" rx="44" fill="#25d3ff"/>
+    <text x="0" y="16" text-anchor="middle" font-family="Orbitron,sans-serif" font-weight="900" font-size="40" fill="#03121f" letter-spacing="1">CRIAR CONTA GRÁTIS</text>
+  </g>
+  <text x="540" y="1270" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="32" fill="#eafcff" letter-spacing="2">galacticwar.com.br</text>
+</svg>`});
+
+const grid = document.getElementById("grid");
+ART.forEach(a => {
+  const d = document.createElement("div");
+  d.className = "item";
+  d.innerHTML = a.svg.replace("<svg ", `<svg class="${a.cls}" `) + `<div class="lbl">${a.lbl}</div><div class="dim">${a.dim}</div>`;
+  grid.appendChild(d);
+});
+</script>
+</body>
+</html>
