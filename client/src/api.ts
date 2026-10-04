@@ -31,6 +31,9 @@ export type Resource = "metalium" | "carbonum" | "plutonium";
 // Modos do jogo (instâncias separadas). Detecta o RUR pelo subdomínio.
 export const MAIN_URL = "https://galacticwar.com.br";
 export const RUR_URL = "https://rur.galacticwar.com.br";
+// Link de convite do Discord da comunidade. Deixe "" pra esconder os botões.
+// Quando criar o servidor, cole aqui o link (ex.: "https://discord.gg/abc123").
+export const DISCORD_URL = "";
 export const IS_RUR = typeof window !== "undefined" && window.location.hostname.startsWith("rur.");
 // Intervalo de auto-refresh das telas. No RUR o tick é de 5s, então precisa ser
 // quase em tempo real; no jogo principal (tick 60s) 10s basta.

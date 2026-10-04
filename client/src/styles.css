@@ -239,6 +239,20 @@ body::after {
 
 .landing-foot { text-align: center; color: var(--muted); font-size: 12px; margin-top: 30px; font-family: var(--mono); }
 
+/* Convite pro Discord (landing) */
+.discord-cta { display: flex; justify-content: center; margin-top: 34px; }
+.discord-btn {
+  display: inline-flex; align-items: center; gap: 14px; text-decoration: none;
+  background: linear-gradient(180deg, rgba(88,101,242,0.18), rgba(88,101,242,0.06));
+  border: 1px solid rgba(88,101,242,0.55); border-radius: 12px;
+  padding: 14px 22px; color: #eaffff; transition: all 0.15s;
+  box-shadow: 0 0 22px rgba(88,101,242,0.18);
+}
+.discord-btn:hover { border-color: #5865F2; box-shadow: 0 0 28px rgba(88,101,242,0.4); transform: translateY(-1px); }
+.discord-ico { font-size: 26px; }
+.discord-btn b { display: block; font-family: "Orbitron", sans-serif; font-size: 15px; letter-spacing: 0.5px; }
+.discord-btn small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+
 @media (max-width: 640px) {
   .race-show, .race-show.flip { flex-direction: column; }
   .race-show-char, .race-show-char img, .race-show-char video { width: 100%; }

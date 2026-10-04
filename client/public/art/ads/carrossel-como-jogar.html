@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Carrossel "Como jogar" — Galactic War</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap');
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0a0f1a; color: #c8e6ff; font-family: "Rajdhani", system-ui, sans-serif; padding: 24px; }
+  h1 { font-family: "Orbitron"; font-size: 20px; letter-spacing: 1px; }
+  .hint { color: #5f86ad; font-size: 14px; max-width: 900px; line-height: 1.6; margin-bottom: 20px; }
+  .grid { display: flex; flex-wrap: wrap; gap: 20px; }
+  .item { text-align: center; }
+  .item .lbl { font-family: "Share Tech Mono"; font-size: 12px; color: #25d3ff; margin-top: 8px; letter-spacing: 1px; }
+  /* Cada card sai 1080x1080; aqui exibimos a 360 pra caber na tela. */
+  svg { width: 360px; height: 360px; border: 1px solid rgba(45,210,255,0.25); border-radius: 12px; display: block; }
+  @media print { .hint, h1 { display: none; } }
+</style>
+</head>
+<body>
+<h1>🎠 Carrossel "Como jogar" — 6 cards 1080×1080</h1>
+<p class="hint">Para postar no Instagram: dê zoom no navegador, tire um print de cada card OU clique com o botão direito → "Salvar imagem" não funciona em SVG inline; use um print (recorte 1:1) de cada um. Ordem do carrossel = card 1 → 6. As cores já são as do jogo (ciano neon). Cada card é um quadrado perfeito.</p>
+<div class="grid" id="grid"></div>
+
+<script>
+const CARDS = [
+  { n: "1", ico: "🪐", title: "FUNDE SEU PLANETA", desc: "Crie sua conta grátis e escolha uma das 5 raças" },
+  { n: "2", ico: "⛏️", title: "MINERE OS ROIDS", desc: "Roids geram recursos a cada tick — a base de tudo" },
+  { n: "3", ico: "🔬", title: "PESQUISE TECNOLOGIA", desc: "Libere naves melhores, espionagem e sabotagem" },
+  { n: "4", ico: "🚀", title: "CONSTRUA SUA FROTA", desc: "Cada raça tem naves únicas de ataque e defesa" },
+  { n: "5", ico: "⚔️", title: "ATAQUE E SAQUEIE", desc: "Invada planetas, roube recursos e destrua frotas" },
+  { n: "6", ico: "🛰️", title: "UNA-SE À SUA GALÁXIA", desc: "Os planetas ao seu lado são seus aliados na guerra" },
+];
+
+function card(c, isLast) {
+  // SVG 1080x1080 — fundo espacial, número grande translúcido, ícone, título, descrição.
+  return `
+  <svg viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg" font-family="Orbitron, sans-serif">
+    <defs>
+      <radialGradient id="bg${c.n}" cx="50%" cy="34%" r="80%">
+        <stop offset="0%" stop-color="#0c2038"/>
+        <stop offset="60%" stop-color="#061021"/>
+        <stop offset="100%" stop-color="#03060e"/>
+      </radialGradient>
+      <linearGradient id="ring${c.n}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#25d3ff"/>
+        <stop offset="100%" stop-color="#1aa6cc"/>
+      </linearGradient>
+    </defs>
+    <rect width="1080" height="1080" fill="url(#bg${c.n})"/>
+    <!-- estrelas -->
+    <g fill="#ffffff" opacity="0.7">
+      <circle cx="140" cy="180" r="2.2"/><circle cx="920" cy="140" r="2.6"/><circle cx="820" cy="360" r="1.8"/>
+      <circle cx="220" cy="520" r="1.6"/><circle cx="980" cy="640" r="2.2"/><circle cx="120" cy="820" r="2"/>
+      <circle cx="940" cy="900" r="1.8"/><circle cx="640" cy="120" r="1.6"/><circle cx="420" cy="220" r="1.5"/>
+      <circle cx="760" cy="760" r="1.6"/><circle cx="300" cy="940" r="2"/><circle cx="560" cy="980" r="1.6"/>
+    </g>
+    <!-- borda neon -->
+    <rect x="28" y="28" width="1024" height="1024" rx="34" fill="none" stroke="#25d3ff" stroke-opacity="0.35" stroke-width="2.5"/>
+    <!-- eyebrow -->
+    <text x="540" y="132" fill="#25d3ff" font-family="Share Tech Mono, monospace" font-size="30" letter-spacing="7" text-anchor="middle">COMO JOGAR</text>
+    <!-- número gigante translúcido de fundo -->
+    <text x="540" y="620" fill="#25d3ff" fill-opacity="0.09" font-size="620" font-weight="900" text-anchor="middle">${c.n}</text>
+    <!-- círculo do número -->
+    <circle cx="540" cy="360" r="92" fill="#0a1a30" stroke="url(#ring${c.n})" stroke-width="4"/>
+    <text x="540" y="392" fill="#25d3ff" font-size="94" font-weight="900" text-anchor="middle">${c.n}</text>
+    <!-- ícone -->
+    <text x="540" y="620" font-size="150" text-anchor="middle">${c.ico}</text>
+    <!-- título -->
+    <text x="540" y="770" fill="#eafcff" font-size="60" font-weight="800" letter-spacing="2" text-anchor="middle">${c.title}</text>
+    <!-- linha -->
+    <rect x="440" y="808" width="200" height="4" rx="2" fill="#25d3ff"/>
+    <!-- descrição (Rajdhani) -->
+    <text x="540" y="884" fill="#9fc4e6" font-family="Rajdhani, sans-serif" font-size="42" font-weight="500" text-anchor="middle">${c.desc}</text>
+    <!-- rodapé / CTA -->
+    <text x="540" y="1000" fill="${isLast ? '#25d3ff' : '#5f86ad'}" font-family="Share Tech Mono, monospace" font-size="${isLast ? 34 : 28}" letter-spacing="3" text-anchor="middle" font-weight="${isLast ? 700 : 400}">${isLast ? '⚔ CRIE SUA CONTA · galacticwar.com.br' : 'galacticwar.com.br'}</text>
+  </svg>`;
+}
+
+const grid = document.getElementById("grid");
+CARDS.forEach((c, i) => {
+  const div = document.createElement("div");
+  div.className = "item";
+  div.innerHTML = card(c, i === CARDS.length - 1) + `<div class="lbl">CARD ${c.n} / 6</div>`;
+  grid.appendChild(div);
+});
+</script>
+</body>
+</html>

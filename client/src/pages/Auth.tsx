@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, setToken, IS_RUR, MAIN_URL, RUR_URL, type RaceInfo } from "../api";
+import { api, setToken, IS_RUR, MAIN_URL, RUR_URL, DISCORD_URL, type RaceInfo } from "../api";
 import { AdBanner } from "../components/AdBanner";
 
 // Vídeo que NÃO toca sozinho — mostra o poster (imagem leve) e só baixa/toca ao
@@ -56,6 +56,11 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
         mode === "login"
           ? await api.login({ login, password })
           : await api.register({ email, username, password, planetName, preposition, race, whatsapp });
+      // Meta Pixel: marca o cadastro concluído (só dispara se o Pixel estiver
+      // configurado no index.html). É o evento de conversão que os ads otimizam.
+      if (mode === "register") {
+        try { (window as any).fbq?.("track", "CompleteRegistration"); } catch { /* pixel off */ }
+      }
       setToken(res.token);
       onAuthed();
     } catch (err: any) {
@@ -307,7 +312,22 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
           Criar conta mostra os de "cadastro". Ou convite "seu anúncio aqui". */}
       <AdBanner variant="stack" placement={mode === "register" ? "cadastro" : "landing"} />
 
-      <div className="landing-foot">Galactic War · {new Date().getFullYear()}</div>
+      {DISCORD_URL && (
+        <div className="discord-cta">
+          <a href={DISCORD_URL} target="_blank" rel="noopener noreferrer" className="discord-btn">
+            <span className="discord-ico">💬</span>
+            <span>
+              <b>Entre no Discord da comunidade</b>
+              <small>Avisos de round, alianças, estratégia e feedback</small>
+            </span>
+          </a>
+        </div>
+      )}
+
+      <div className="landing-foot">
+        Galactic War · {new Date().getFullYear()}
+        {DISCORD_URL && <> · <a href={DISCORD_URL} target="_blank" rel="noopener noreferrer" className="link">Discord</a></>}
+      </div>
     </div>
   );
 }

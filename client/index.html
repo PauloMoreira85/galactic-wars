@@ -25,6 +25,28 @@
     <meta name="twitter:title" content="Galactic War — The Universe at War" />
     <meta name="twitter:description" content="MMO de estratégia espacial em tempo real. Crie seu planeta grátis e dispute o topo do round." />
     <meta name="twitter:image" content="https://galacticwar.com.br/art/logo/logo.jpg" />
+
+    <!-- ===== Meta Pixel (Facebook Ads) =====
+         COMO ATIVAR: troque SEU_PIXEL_ID pelo ID do seu Pixel (Gerenciador de
+         Negocios do Facebook -> Gerenciador de Eventos -> seu Pixel, numero de
+         ~15 digitos). Enquanto for "SEU_PIXEL_ID", o Pixel fica desligado (nao
+         quebra o site). O evento de cadastro (CompleteRegistration) e disparado
+         no codigo apos criar a conta. -->
+    <script>
+      window.GW_META_PIXEL_ID = "SEU_PIXEL_ID";
+      (function () {
+        var id = window.GW_META_PIXEL_ID;
+        if (!id || id === "SEU_PIXEL_ID") return; // desligado ate configurar
+        !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+        n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+        n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+        t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+        document,'script','https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', id);
+        fbq('track', 'PageView');
+      })();
+    </script>
+    <!-- ===== fim Meta Pixel ===== -->
   </head>
   <body>
     <div id="root"></div>
