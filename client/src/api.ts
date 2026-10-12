@@ -192,7 +192,7 @@ export const ROLE_LABEL: Record<string, string> = {
 export const ALLIANCE_ROLES = ["lider", "alto_comando", "dc", "scanner", "porta_voz", "recruta"];
 
 export const api = {
-  meta: () => request<{ tickIntervalSeconds: number; roundTicks: number; roundDurationMinutes: number; startTimes: string[] }>("/meta"),
+  meta: () => request<{ tickIntervalSeconds: number; roundTicks: number; roundDurationMinutes: number; startTimes: string[]; dailySchedule?: boolean }>("/meta"),
 
   races: () => request<{ races: RaceInfo[] }>("/auth/races"),
 

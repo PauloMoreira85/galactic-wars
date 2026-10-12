@@ -9,7 +9,11 @@ services:
       NODE_ENV: production
       PORT: "3001"
       DATABASE_URL: "file:/data/prod.db"
-      TICK_INTERVAL_SECONDS: "60"    # TURBO p/ testes (1 min). Produção real: 3600 (1h)
+      # ===== ROUND OFICIAL (tick de 1 HORA, canônico) =====
+      TICK_INTERVAL_SECONDS: "3600"  # 1 hora por tick (produção real)
+      ROUND_TICKS: "1200"            # 1200 ticks × 1h = 50 dias de round (canon: 1200–1500)
+      DAILY_SCHEDULE: "false"        # modo livre: roda contínuo e CONGELA ao fim; reset manual
+      SLOTS_PER_SYSTEM: "5"          # galáxias de 5 planetas (aliados)
       JWT_SECRET: ${JWT_SECRET}   # vem do arquivo .env ao lado deste
       # E-mail (recuperação de senha). Preencha no .env depois de criar a caixa.
       SMTP_HOST: ${SMTP_HOST:-}

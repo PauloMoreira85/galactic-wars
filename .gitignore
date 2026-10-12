@@ -4,6 +4,11 @@ build/
 *.log
 .env
 .env.local
+# Arquivos de segredos/senhas — NUNCA commitar
+senhas.txt
+*.secret
+API.txt
+*.key
 server/prisma/*.db
 server/prisma/*.db-journal
 server/prisma/*.db-wal

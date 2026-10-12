@@ -40,6 +40,7 @@ app.get("/api/meta", (_req, res) => {
     roundTicks: config.roundTicks,
     roundDurationMinutes: Math.round((config.roundTicks * config.tickIntervalSeconds) / 60),
     startTimes: config.roundStartTimes.map((m) => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`),
+    dailySchedule: config.dailySchedule, // true = começa em horário fixo; false = modo livre (round longo)
   });
 });
 

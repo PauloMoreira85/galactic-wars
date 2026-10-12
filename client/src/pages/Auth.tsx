@@ -29,7 +29,7 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
   const [busy, setBusy] = useState(false);
   const [forgot, setForgot] = useState(false);
   const [forgotMsg, setForgotMsg] = useState("");
-  const [meta, setMeta] = useState<{ tickIntervalSeconds: number; roundDurationMinutes: number; startTimes: string[] } | null>(null);
+  const [meta, setMeta] = useState<{ tickIntervalSeconds: number; roundDurationMinutes: number; startTimes: string[]; dailySchedule?: boolean } | null>(null);
 
   async function doForgot() {
     setForgotMsg(""); setError("");
@@ -74,11 +74,18 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
 
   // Regras atuais (derivadas do servidor) para a landing do jogo principal.
   const tickLabel = meta
-    ? (meta.tickIntervalSeconds >= 60 ? `${Math.round(meta.tickIntervalSeconds / 60)} minuto${meta.tickIntervalSeconds >= 120 ? "s" : ""}` : `${meta.tickIntervalSeconds} segundos`)
-    : "1 minuto";
+    ? (meta.tickIntervalSeconds >= 3600
+        ? `${Math.round(meta.tickIntervalSeconds / 3600)} hora${meta.tickIntervalSeconds >= 7200 ? "s" : ""}`
+        : meta.tickIntervalSeconds >= 60
+          ? `${Math.round(meta.tickIntervalSeconds / 60)} minuto${meta.tickIntervalSeconds >= 120 ? "s" : ""}`
+          : `${meta.tickIntervalSeconds} segundos`)
+    : "1 hora";
   const roundTicks = meta ? Math.round((meta.roundDurationMinutes * 60) / meta.tickIntervalSeconds) : 1200;
   const roundHours = meta ? Math.round(meta.roundDurationMinutes / 60) : 20;
+  // Duração "amigável": vira dias quando passa de 48h (round longo de 1h/tick).
+  const roundDur = roundHours >= 48 ? `~${Math.round(roundHours / 24)} dias` : `~${roundHours}h`;
   const startList = meta ? meta.startTimes.join(" · ") : "08:00";
+  const isScheduled = meta ? meta.dailySchedule !== false : true;
 
   return (
     <div className="landing">
@@ -120,7 +127,7 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
               O Galactic War está em <b>fase de testes</b>: estamos validando economia, combate, espionagem, sabotagem e tudo mais <b>antes de lançar o round oficial</b>. Crie sua conta, jogue à vontade e <b>mande seu feedback</b> — os rounds de teste podem ser <b>reiniciados a qualquer momento</b>.
               <ul style={{ margin: "8px 0 0 18px", padding: 0 }}>
                 <li><b>Tick de {tickLabel}</b> — produção, frotas e combate avançam a cada tick.</li>
-                <li>Round de <b>{roundTicks} ticks</b> (~{roundHours}h), começando às <b>{startList}</b> (horário de Brasília).</li>
+                <li>Round de <b>{roundTicks} ticks</b> ({roundDur}){isScheduled ? <>, começando às <b>{startList}</b> (horário de Brasília)</> : <> — roda contínuo até o fim</>}.</li>
                 <li>A cada round você <b>escolhe a raça</b> e recomeça do zero.</li>
               </ul>
             </div>
