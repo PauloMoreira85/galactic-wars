@@ -11,7 +11,7 @@ services:
       DATABASE_URL: "file:/data/prod.db"
       # ===== ROUND OFICIAL (tick de 1 HORA, canônico) =====
       TICK_INTERVAL_SECONDS: "3600"  # 1 hora por tick (produção real)
-      ROUND_TICKS: "1200"            # 1200 ticks × 1h = 50 dias de round (canon: 1200–1500)
+      ROUND_TICKS: "2400"            # 2400 ticks × 1h = 100 dias de round
       DAILY_SCHEDULE: "false"        # modo livre: roda contínuo e CONGELA ao fim; reset manual
       SLOTS_PER_SYSTEM: "5"          # galáxias de 5 planetas (aliados)
       JWT_SECRET: ${JWT_SECRET}   # vem do arquivo .env ao lado deste
