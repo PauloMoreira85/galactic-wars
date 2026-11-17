@@ -87,12 +87,17 @@ function distributeUnits(survivors: UnitMap, contributors: { id: string; units: 
 function fireAt(typeName: string, count: number, enemyActive: UnitMap, enemyLost: UnitMap, enemyPem: UnitMap, log?: LogEvent[], side?: "a" | "d", assimOut?: UnitMap, selfActive?: UnitMap, selfLost?: UnitMap) {
   const A = unitByName(typeName);
   if (!A || A.qarm <= 0 || count <= 0) return;
-  const targets = Object.keys(enemyActive).filter((t) => {
-    if (enemyActive[t] <= 0) return false;
+  // Naves PARALISADAS (enemyPem) são alvos VÁLIDOS pra destruição/assimilação —
+  // estão indefesas. (PEM não pode paralisar quem já está paralisado, então o
+  // disparador PEM continua mirando só as ativas.) Alvejável = ativas + paralisadas.
+  const isPem = A.tipo === "PEM";
+  const pool = (t: string) => (enemyActive[t] || 0) + (isPem ? 0 : (enemyPem[t] || 0));
+  const targets = Object.keys({ ...enemyActive, ...(isPem ? {} : enemyPem) }).filter((t) => {
+    if (pool(t) <= 0) return false;
     const T = unitByName(t); return T ? A.alvos.includes(T.classe) : false;
   });
   if (targets.length === 0) return;
-  const sum = targets.reduce((s, t) => s + enemyActive[t], 0);
+  const sum = targets.reduce((s, t) => s + pool(t), 0);
   const shots = count * A.qarm;
   // Orçamento de assimilação = VALOR total da esquadra assimiladora (custo × qtd).
   // Cada nave inimiga assimilada gasta o custo dela desse orçamento; o Mech perde
@@ -101,7 +106,7 @@ function fireAt(typeName: string, count: number, enemyActive: UnitMap, enemyLost
   let valueBudget = A.tipo === "Assimiladora" ? count * aCost : 0;
   for (const t of targets) {
     const T = unitByName(t)!;
-    const shotsT = shots * (enemyActive[t] / sum);
+    const shotsT = shots * (pool(t) / sum);
     if (A.tipo === "PEM") {
       const hit = Math.max(0, (100 - T.rp) / 100); // RP = chance de resistir
       const par = Math.min(enemyActive[t], Math.floor(shotsT * hit));
@@ -111,8 +116,13 @@ function fireAt(typeName: string, count: number, enemyActive: UnitMap, enemyLost
       // Chance Média de Acerto (oficial): CMA% = 25 + (Varm atacante - Agi defensor)
       const cma = Math.max(0, Math.min(100, 25 + A.varm - T.agi)) / 100;
       const dmg = shotsT * cma * A.pfog;
-      const killed = Math.min(enemyActive[t], Math.floor(dmg / T.fusel));
-      enemyActive[t] -= killed; enemyLost[t] = (enemyLost[t] || 0) + killed;
+      const killed = Math.min(pool(t), Math.floor(dmg / T.fusel));
+      // Abate primeiro as PARALISADAS (indefesas), depois as ativas.
+      const killPem = Math.min(enemyPem[t] || 0, killed);
+      if (killPem > 0) enemyPem[t] -= killPem;
+      const killAct = killed - killPem;
+      if (killAct > 0) enemyActive[t] -= killAct;
+      enemyLost[t] = (enemyLost[t] || 0) + killed;
       // Mech: das naves que ABATE, assimila as que couberem no orçamento de VALOR
       // (luta pelo Mech a partir do próximo tick). Gasta assimiladoras de valor
       // equivalente (selfLost) — o resto abatido é só destruído.
