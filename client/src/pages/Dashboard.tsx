@@ -199,6 +199,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [alerts, setAlerts] = useState({ underAttack: false, incomingDefense: false, galaxyUnderAttack: false });
   const [unreadMsgs, setUnreadMsgs] = useState(0);
   const [newsUnread, setNewsUnread] = useState(0);
+  const [chatUnread, setChatUnread] = useState(0);
   const countdown = useCountdown(view);
   const roundStatus = useRoundStatus(view);
   const [pmTo, setPmTo] = useState(""); // coordenada pré-preenchida ao mandar msg pela Galáxia
@@ -225,6 +226,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         });
       } catch {}
       try { setUnreadMsgs((await api.pmUnread()).unread); } catch {}
+      try { setChatUnread((await api.chatUnread()).unread); } catch {}
     } catch (e: any) {
       // Token inválido/expirado OU conta apagada (ex: depois de um reset de round):
       // o token continua "válido" mas o /me responde "Planeta/Usuário não encontrado".
@@ -245,6 +247,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   // Ao abrir as Notícias, marca como lidas e apaga o aviso amarelo.
   useEffect(() => {
     if (section === "noticias") { setNewsUnread(0); api.newsSeen(); }
+    if (section === "chat") { setChatUnread(0); api.chatSeen?.(); }
   }, [section]);
 
   async function build(resource: Resource) {
@@ -401,12 +404,12 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
               {group.map((it) => (
                 <button
                   key={it.key}
-                  className={`menu-link ${section === it.key ? "active" : ""} ${it.soon ? "soon" : ""} ${it.key === "mensagens" && unreadMsgs > 0 ? "alert-msg" : ""} ${it.key === "noticias" && newsUnread > 0 ? "alert-news" : ""}`}
+                  className={`menu-link ${section === it.key ? "active" : ""} ${it.soon ? "soon" : ""} ${it.key === "mensagens" && unreadMsgs > 0 ? "alert-msg" : ""} ${it.key === "noticias" && newsUnread > 0 ? "alert-news" : ""} ${it.key === "chat" && chatUnread > 0 ? "alert-msg" : ""}`}
                   disabled={it.soon}
                   title={it.soon ? "Em breve" : ""}
                   onClick={() => go(it)}
                 >
-                  {it.label}{it.key === "mensagens" && unreadMsgs > 0 ? ` ✉️ (${unreadMsgs})` : ""}{it.key === "noticias" && newsUnread > 0 ? ` 🔔 (${newsUnread})` : ""}
+                  {it.label}{it.key === "mensagens" && unreadMsgs > 0 ? ` ✉️ (${unreadMsgs})` : ""}{it.key === "noticias" && newsUnread > 0 ? ` 🔔 (${newsUnread})` : ""}{it.key === "chat" && chatUnread > 0 ? ` 💬 (${chatUnread})` : ""}
                 </button>
               ))}
             </div>
@@ -792,7 +795,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
         {section === "forumgalaxia" && <Forum board={{ key: `gal-${planet.coords.split(":")[0]}`, name: `Fórum da Galáxia ${planet.coords.split(":")[0]}` }} />}
 
-        {section === "chat" && <Chat />}
+        {section === "chat" && <Chat myName={view.commander} />}
 
         {section === "mensagens" && <Mensagens initialTo={pmTo} />}
 

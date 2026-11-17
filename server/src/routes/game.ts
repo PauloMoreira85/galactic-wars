@@ -829,6 +829,21 @@ gameRouter.post("/forum/topics/:key", async (req: AuthedRequest, res) => {
 });
 
 // ===== Chat (salas: universo | galaxia | alianca) =====
+// Nº de mensagens novas no chat UNIVERSAL desde a última vez que o jogador abriu
+// o chat (acende o alerta laranja no menu). Universal = sala que todos veem.
+gameRouter.get("/chat/unread", async (req: AuthedRequest, res) => {
+  const planet = await prisma.planet.findUnique({ where: { userId: req.userId! } });
+  if (!planet) return res.json({ unread: 0 });
+  const since = planet.chatSeenAt ?? new Date(0);
+  const unread = await prisma.chatMessage.count({ where: { room: "universo", createdAt: { gt: since } } });
+  res.json({ unread });
+});
+// Marca o chat como lido (zera o alerta).
+gameRouter.post("/chat/seen", async (req: AuthedRequest, res) => {
+  const planet = await prisma.planet.findUnique({ where: { userId: req.userId! } });
+  if (planet) await prisma.planet.update({ where: { id: planet.id }, data: { chatSeenAt: new Date() } }).catch(() => {});
+  res.json({ ok: true });
+});
 gameRouter.get("/chat/:room", async (req: AuthedRequest, res) => {
   const room = await resolveRoom(req.userId!, req.params.room);
   if (!room) return res.status(400).json({ error: "Sala indisponível (entre numa aliança?)" });

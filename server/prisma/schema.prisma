@@ -92,6 +92,9 @@ model Planet {
   // Última vez que o jogador abriu as Notícias (pra contar quantas são novas).
   newsSeenAt DateTime?
 
+  // Última vez que o jogador abriu o Chat (pra acender o alerta de msg nova).
+  chatSeenAt DateTime?
+
   // Auto-exílios restantes (cai em galáxia aleatória não-privada). Máx 3 por planeta.
   autoExiles Int @default(3)
 

@@ -319,6 +319,8 @@ export const api = {
 
   chat: (room: string) => request<{ label: string; messages: { id: string; author: string; body: string; at: string }[] }>(`/game/chat/${room}`),
   chatSend: (room: string, body: string) => request<{ label: string; messages: { id: string; author: string; body: string; at: string }[] }>(`/game/chat/${room}`, { method: "POST", body: JSON.stringify({ body }) }),
+  chatUnread: () => request<{ unread: number }>("/game/chat/unread"),
+  chatSeen: () => request<{ ok: boolean }>("/game/chat/seen", { method: "POST" }).catch(() => {}),
 
   alliance: () => request<AllianceView>("/game/alliance"),
   allianceCreate: (name: string, tag: string) =>

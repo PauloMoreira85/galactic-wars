@@ -239,6 +239,10 @@ body::after {
 
 .landing-foot { text-align: center; color: var(--muted); font-size: 12px; margin-top: 30px; font-family: var(--mono); }
 
+/* Linha do chat: realce sutil no hover (mostra que dá pra responder/mencionar) */
+.chat-line { border-radius: 4px; }
+.chat-line:hover { background: rgba(37,211,255,0.06); }
+
 /* Convite pro Discord (landing) */
 .discord-cta { display: flex; justify-content: center; margin-top: 34px; }
 .discord-btn {

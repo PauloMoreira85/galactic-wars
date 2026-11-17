@@ -15,13 +15,34 @@ const ROOMS: { key: string; label: string }[] = [
   { key: "alianca", label: "🤝 Aliança" },
 ];
 
-export function Chat() {
+// Renderiza o corpo da mensagem destacando menções (@Nome). Se um @ bate com
+// o MEU nome, fica em laranja forte (fui citado).
+function renderBody(body: string, myName: string, onMention: (name: string) => void) {
+  // Divide mantendo os tokens @palavra (nome pode ter letras, números, _ e -).
+  const parts = body.split(/(@[\wÀ-ÿ._-]+)/g);
+  return parts.map((p, i) => {
+    if (p.startsWith("@")) {
+      const name = p.slice(1);
+      const isMe = myName && name.toLowerCase() === myName.toLowerCase();
+      return (
+        <span key={i} onClick={() => onMention(name)} title={`responder ${name}`}
+          style={{ color: isMe ? "#ffb020" : "#5fd0ff", fontWeight: 700, cursor: "pointer", background: isMe ? "rgba(255,176,32,0.15)" : "transparent", borderRadius: 4, padding: isMe ? "0 3px" : 0 }}>
+          {p}
+        </span>
+      );
+    }
+    return <span key={i}>{p}</span>;
+  });
+}
+
+export function Chat({ myName = "" }: { myName?: string }) {
   const [room, setRoom] = useState("universo");
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [label, setLabel] = useState("");
   const [text, setText] = useState("");
   const [error, setError] = useState("");
   const boxRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const atBottom = useRef(true);
 
   async function load() {
@@ -30,12 +51,30 @@ export function Chat() {
   }
   useEffect(() => { atBottom.current = true; load(); const t = setInterval(load, 3000); return () => clearInterval(t); }, [room]);
   useEffect(() => { const el = boxRef.current; if (el && atBottom.current) el.scrollTop = el.scrollHeight; }, [msgs]);
+  // Ao abrir o chat, marca como lido (zera o alerta laranja do menu).
+  useEffect(() => { api.chatSeen?.().catch(() => {}); }, [msgs]);
 
   async function send() {
     if (!text.trim()) return;
     setError("");
     try { const r = await api.chatSend(room, text); setMsgs(r.messages); setText(""); atBottom.current = true; }
     catch (e: any) { setError(e.message ?? "Falha"); }
+  }
+
+  // Inserir "@Nome " no input e focar (usado por "responder" e por clicar numa menção).
+  function mention(name: string) {
+    setText((t) => {
+      const sep = t && !t.endsWith(" ") ? " " : "";
+      return `${t}${sep}@${name} `;
+    });
+    inputRef.current?.focus();
+  }
+  // Quote: cita a frase e já menciona o autor.
+  function quote(m: Msg) {
+    const trecho = m.body.length > 60 ? m.body.slice(0, 60) + "…" : m.body;
+    setText(`@${m.author} "${trecho}" `);
+    inputRef.current?.focus();
+    atBottom.current = true;
   }
 
   return (
@@ -46,6 +85,9 @@ export function Chat() {
         ))}
       </div>
       <h2>Chat — {label || "..."}</h2>
+      <div className="cost" style={{ marginBottom: 8, fontSize: 12 }}>
+        Clique em <b>↩</b> pra responder alguém, ou digite <b>@</b> pra mencionar um planeta (fica laranja pra quem for citado).
+      </div>
       <div
         ref={boxRef}
         onScroll={(e) => { const el = e.currentTarget; atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40; }}
@@ -53,16 +95,21 @@ export function Chat() {
       >
         {error ? <div className="roid-count">{error}</div>
           : msgs.length === 0 ? <div className="roid-count">Sem mensagens nesta sala ainda. 👋</div>
-          : msgs.map((m) => (
-            <div key={m.id}>
-              <span style={{ color: "var(--muted)" }}>[{hhmm(m.at)}] </span>
-              <span style={{ color: nickColor(m.author), fontWeight: 700 }}>&lt;{m.author}&gt;</span>{" "}
-              <span style={{ color: "var(--text)" }}>{m.body}</span>
-            </div>
-          ))}
+          : msgs.map((m) => {
+            const citedMe = myName && new RegExp(`@${myName}\\b`, "i").test(m.body);
+            return (
+              <div key={m.id} className="chat-line" style={citedMe ? { background: "rgba(255,176,32,0.08)", borderRadius: 4, padding: "1px 4px", margin: "0 -4px" } : undefined}>
+                <button title={`responder ${m.author}`} onClick={() => quote(m)}
+                  style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", padding: "0 4px 0 0", margin: 0, fontSize: 12 }}>↩</button>
+                <span style={{ color: "var(--muted)" }}>[{hhmm(m.at)}] </span>
+                <span onClick={() => mention(m.author)} title={`mencionar ${m.author}`} style={{ color: nickColor(m.author), fontWeight: 700, cursor: "pointer" }}>&lt;{m.author}&gt;</span>{" "}
+                <span style={{ color: "var(--text)" }}>{renderBody(m.body, myName, mention)}</span>
+              </div>
+            );
+          })}
       </div>
       <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
-        <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(); }}
+        <input ref={inputRef} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(); }}
           placeholder={error ? "sala indisponível" : "digite e Enter para enviar..."} maxLength={400} disabled={!!error}
           style={{ flex: 1, margin: 0 }} />
         <button onClick={send} disabled={!!error}>enviar</button>
