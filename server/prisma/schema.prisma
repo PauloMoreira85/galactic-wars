@@ -305,6 +305,22 @@ model DonationCooldown {
   lastTick Int
 }
 
+// Livro caixa das doações do fundo da galáxia (feitas pelo ME). Histórico pra
+// transparência: quem (ME) doou, pra quem, quanto e quando.
+model DonationLog {
+  id         String   @id @default(cuid())
+  galaxy     Int      // id da galáxia (galaxyId)
+  fromName   String   // nome do planeta do ME que doou
+  toName     String   // nome do planeta que recebeu
+  metalium   Int      @default(0)
+  carbonum   Int      @default(0)
+  plutonium  Int      @default(0)
+  tick       Int
+  createdAt  DateTime @default(now())
+
+  @@index([galaxy])
+}
+
 // Mensagem privada (1-a-1, com opção anônima).
 model PrivateMessage {
   id         String   @id @default(cuid())

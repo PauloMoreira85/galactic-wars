@@ -175,6 +175,7 @@ export interface GovView {
   iAmCG: boolean; iAmME: boolean; iAmMG: boolean; iAmMD: boolean;
   myVote: string | null;
   members: GovMember[];
+  donations?: { from: string; to: string; metalium: number; carbonum: number; plutonium: number; tick: number }[];
 }
 
 export interface AllianceMemberView { planetId: string; role: string; name: string; commander: string; coords: string }

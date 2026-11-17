@@ -13,8 +13,8 @@ function coordLabel(id: number): string {
 
 export const MAX_TAX = 25;            // teto do imposto (%)
 export const MAX_MARKET_FEE = 25;     // teto da taxa de troca do mercado (%)
-export const DONATION_MAX_PCT = 20;   // máximo do fundo por doação a 1 planeta
-export const DONATION_WINDOW = 100;   // ticks de cooldown entre doações ao mesmo planeta
+export const DONATION_MAX_PCT = 50;   // máximo do fundo por doação a 1 planeta
+export const DONATION_WINDOW = 72;    // ticks de cooldown entre doações ao mesmo planeta
 
 async function ensureGalaxy(galaxy: number) {
   return prisma.galaxyState.upsert({ where: { galaxy }, update: {}, create: { galaxy } });
@@ -211,10 +211,17 @@ export async function donate(mePlanetId: string, toPlanetId: string, amounts: { 
     throw new Error(`Esse planeta so pode receber outra doacao em ${DONATION_WINDOW - (tick - cd.lastTick)} ticks`);
   }
 
+  // Nomes dos planetas (ME e destino) pro livro caixa.
+  const [meP, toP] = await Promise.all([
+    prisma.planet.findUnique({ where: { id: mePlanetId }, select: { name: true } }),
+    prisma.planet.findUnique({ where: { id: toPlanetId }, select: { name: true } }),
+  ]);
   await prisma.$transaction([
     prisma.galaxyState.update({ where: { galaxy: g }, data: { fundMetalium: { decrement: m }, fundCarbonum: { decrement: c }, fundPlutonium: { decrement: p } } }),
     prisma.planet.update({ where: { id: toPlanetId }, data: { metalium: { increment: m }, carbonum: { increment: c }, plutonium: { increment: p } } }),
     prisma.donationCooldown.upsert({ where: { planetId: toPlanetId }, update: { lastTick: tick }, create: { planetId: toPlanetId, lastTick: tick } }),
+    // Livro caixa: registra a doação (transparência pra galáxia).
+    prisma.donationLog.create({ data: { galaxy: g, fromName: meP?.name ?? "ME", toName: toP?.name ?? "?", metalium: m, carbonum: c, plutonium: p, tick } }),
   ]);
   await addNews(toPlanetId, tick, `💰 Recebeu doação do Ministro da Economia: ${m} M · ${c} C · ${p} P`);
 }
@@ -271,6 +278,9 @@ export async function govView(planetId: string) {
     iAmCG: st.cgPlanetId === planetId, iAmME: st.mePlanetId === planetId, iAmMG: st.mgPlanetId === planetId, iAmMD: st.mdPlanetId === planetId,
     myVote,
     members: planets.map((p) => ({ id: p.id, name: p.name, commander: p.user.username, coords: `${p.galaxy}:${p.system}:${p.slot}`, votes: tally[p.id] || 0 })),
+    // Livro caixa: últimas 30 doações do fundo desta galáxia (mais recentes primeiro).
+    donations: (await prisma.donationLog.findMany({ where: { galaxy: g }, orderBy: { createdAt: "desc" }, take: 30 }))
+      .map((d) => ({ from: d.fromName, to: d.toName, metalium: d.metalium, carbonum: d.carbonum, plutonium: d.plutonium, tick: d.tick })),
   };
 }
 
