@@ -203,6 +203,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   const countdown = useCountdown(view);
   const roundStatus = useRoundStatus(view);
   const [pmTo, setPmTo] = useState(""); // coordenada pré-preenchida ao mandar msg pela Galáxia
+  const [galaxyGoto, setGalaxyGoto] = useState(""); // coord p/ abrir direto ao clicar no ranking
 
   useEffect(() => {
     if (!zoom) return;
@@ -577,7 +578,12 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                       <td className="rank-num">{i + 1}</td>
                       <td>{r.username}</td>
                       <td>{r.planet}</td>
-                      <td>{r.coords}</td>
+                      <td>
+                        <button className="coord-link" title={`Ver a galáxia ${r.coords}`}
+                          onClick={() => { setGalaxyGoto(r.coords + "#" + Date.now()); setSection("galaxia"); }}>
+                          {r.coords}
+                        </button>
+                      </td>
                       <td>{r.roids}</td>
                     </tr>
                   ))}
@@ -774,7 +780,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
           </>
         )}
 
-        {section === "galaxia" && <Galaxy view={view} onChanged={refresh} onMessage={(c) => { setPmTo(c); setSection("mensagens"); }} />}
+        {section === "galaxia" && <Galaxy view={view} gotoCoords={galaxyGoto} onChanged={refresh} onMessage={(c) => { setPmTo(c); setSection("mensagens"); }} />}
 
         {section === "frotas" && <Frotas view={view} onChanged={refresh} />}
 

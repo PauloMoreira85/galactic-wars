@@ -11,7 +11,7 @@ const ROLE_COLOR: Record<string, string> = { cg: "#ffd23f", mg: "#ff5050", me: "
 const ROLE_TAG: Record<string, string> = { cg: "(CG)", mg: "(MG)", me: "(ME)", md: "(MD)" };
 const ROLE_LABEL: Record<string, string> = { cg: "Comandante da Galáxia", mg: "Ministro da Guerra", me: "Ministro da Economia", md: "Ministro da Diplomacia" };
 
-export function Galaxy({ view, onChanged, onMessage }: { view: PlanetView; onChanged: () => void; onMessage?: (coords: string) => void }) {
+export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: PlanetView; onChanged: () => void; onMessage?: (coords: string) => void; gotoCoords?: string }) {
   // Coordenadas do proprio planeta como ponto de partida da navegacao.
   const [g, s] = view.planet.coords.split(":").map(Number);
   const [galaxy, setGalaxy] = useState(g || 1);
@@ -42,6 +42,15 @@ export function Galaxy({ view, onChanged, onMessage }: { view: PlanetView; onCha
       setFleets((await api.fleets()).fleets);
     } catch {}
   }
+
+  // Ao clicar numa coordenada do ranking (gotoCoords = "setor:paralelo:slot#ts"),
+  // pula direto pra aquela galáxia. O #ts garante re-navegar na mesma coord.
+  useEffect(() => {
+    if (!gotoCoords) return;
+    const [gg, ss] = gotoCoords.split("#")[0].split(":").map(Number);
+    if (gg >= 1 && gg <= 5) setGalaxy(gg);
+    if (ss >= 1 && ss <= 6) setSystem(ss);
+  }, [gotoCoords]);
 
   useEffect(() => {
     loadSystem();
