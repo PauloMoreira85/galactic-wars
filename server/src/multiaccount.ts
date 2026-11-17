@@ -40,18 +40,20 @@ async function list() {
     return allowed.some((p) => p.aId === k.aId && p.bId === k.bId);
   };
 
+  // Ordena por nº de contas no IP (os maiores grupos = mais suspeitos primeiro).
+  shared.sort((a, b) => b[1].size - a[1].size);
   console.log(`⚠️  ${shared.length} IP(s) compartilhado(s) entre contas:\n`);
   for (const [ip, set] of shared) {
     const ids = [...set];
-    console.log(`IP ${ip}:`);
-    for (const id of ids) console.log(`   - ${name.get(id) ?? "?"}  (${id})`);
-    // Mostra o status de cada par.
-    for (let i = 0; i < ids.length; i++) {
-      for (let j = i + 1; j < ids.length; j++) {
-        const ok = isAllowed(ids[i], ids[j]);
-        console.log(`     ${name.get(ids[i])} ↔ ${name.get(ids[j])}: ${ok ? "LIBERADO ✅" : "BLOQUEADO 🚫"}`);
-      }
-    }
+    console.log(`IP ${ip} — ${ids.length} contas:`);
+    for (const id of ids) console.log(`   • ${name.get(id) ?? "?"}`);
+    // Resumo dos pares (sem listar todos quando são muitos).
+    let blocked = 0, allow = 0;
+    for (let i = 0; i < ids.length; i++)
+      for (let j = i + 1; j < ids.length; j++)
+        (isAllowed(ids[i], ids[j]) ? allow++ : blocked++);
+    console.log(`   → ${blocked} par(es) BLOQUEADO(s) 🚫${allow ? `, ${allow} liberado(s) ✅` : ""}`);
+    if (ids.length >= 5) console.log(`   ⚠️  ${ids.length} contas no MESMO IP — forte indício de multi-conta em massa.`);
     console.log("");
   }
 }
