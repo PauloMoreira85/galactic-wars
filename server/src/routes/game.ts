@@ -33,7 +33,7 @@ import {
 } from "../game/tech.js";
 import { config } from "../config.js";
 import { nextScheduledStart } from "../game/tick.js";
-import { clientIp, trackIp, isLinked, MULTI_BLOCK_MSG } from "../game/ipguard.js";
+import { clientIp, trackIp, isLinked, linkedUserIds, MULTI_BLOCK_MSG } from "../game/ipguard.js";
 import bcrypt from "bcryptjs";
 
 export const gameRouter = Router();
@@ -407,6 +407,24 @@ gameRouter.post("/fleets/:id/dispatch", async (req: AuthedRequest, res) => {
   const target = await prisma.planet.findUnique({ where: { galaxy_system_slot: { galaxy, system, slot } }, select: { userId: true } });
   if (target && target.userId !== req.userId && (await isLinked(req.userId!, target.userId))) {
     return res.status(403).json({ error: MULTI_BLOCK_MSG });
+  }
+  // Anti multi-conta: não pode ATACAR nem DEFENDER o mesmo planeta que uma conta
+  // do mesmo IP já está mirando (evita coordenar ataque/defesa em grupo com clones).
+  const linked = await linkedUserIds(req.userId!);
+  if (linked.length) {
+    const linkedPlanets = await prisma.planet.findMany({ where: { userId: { in: linked } }, select: { id: true } });
+    const linkedIds = linkedPlanets.map((p) => p.id);
+    if (linkedIds.length) {
+      const clash = await prisma.fleet.findFirst({
+        where: {
+          ownerPlanetId: { in: linkedIds },
+          status: { in: ["outbound", "engaged", "garrison"] },
+          targetGalaxy: galaxy, targetSystem: system, targetSlot: slot,
+        },
+        select: { id: true },
+      });
+      if (clash) return res.status(403).json({ error: "Interação bloqueada: uma conta do mesmo IP já está atacando/defendendo este planeta (proteção anti multi-conta)." });
+    }
   }
   try { await dispatchFleet(planet.id, req.params.id, { galaxy, system, slot }, mission, ticks ?? 3, !!fake); }
   catch (e: any) { return res.status(400).json({ error: e.message ?? "Falha ao enviar frota" }); }
