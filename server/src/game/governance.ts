@@ -191,12 +191,18 @@ export async function donate(mePlanetId: string, toPlanetId: string, amounts: { 
   const c = Math.max(0, Math.floor(amounts.carbonum));
   const p = Math.max(0, Math.floor(amounts.plutonium));
   if (m + c + p <= 0) throw new Error("Informe um valor para doar");
-  if (m > st.fundMetalium || c > st.fundCarbonum || p > st.fundPlutonium) throw new Error("Fundo insuficiente");
+  if (st.fundMetalium + st.fundCarbonum + st.fundPlutonium <= 0) {
+    throw new Error("O fundo da galáxia está vazio. Defina um imposto (% da produção) pra abastecê-lo antes de doar.");
+  }
+  if (m > st.fundMetalium || c > st.fundCarbonum || p > st.fundPlutonium) {
+    throw new Error(`Fundo insuficiente. Disponível no fundo: ${st.fundMetalium} M · ${st.fundCarbonum} C · ${st.fundPlutonium} P.`);
+  }
   // Cap de 20% do fundo (por recurso) numa doação.
-  if (m > Math.floor(st.fundMetalium * DONATION_MAX_PCT / 100) ||
-      c > Math.floor(st.fundCarbonum * DONATION_MAX_PCT / 100) ||
-      p > Math.floor(st.fundPlutonium * DONATION_MAX_PCT / 100)) {
-    throw new Error(`Maximo ${DONATION_MAX_PCT}% do fundo por doacao`);
+  const maxM = Math.floor(st.fundMetalium * DONATION_MAX_PCT / 100);
+  const maxC = Math.floor(st.fundCarbonum * DONATION_MAX_PCT / 100);
+  const maxP = Math.floor(st.fundPlutonium * DONATION_MAX_PCT / 100);
+  if (m > maxM || c > maxC || p > maxP) {
+    throw new Error(`Máximo ${DONATION_MAX_PCT}% do fundo por doação. Limite agora: ${maxM} M · ${maxC} C · ${maxP} P.`);
   }
   // Cooldown por planeta.
   const tick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
