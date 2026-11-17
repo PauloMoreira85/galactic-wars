@@ -456,6 +456,8 @@ export const api = {
     request<GovView>("/game/galaxy/market-lock", { method: "POST", body: JSON.stringify({ locked }) }),
   govDonate: (toPlanetId: string, metalium: number, carbonum: number, plutonium: number) =>
     request<GovView>("/game/galaxy/donate", { method: "POST", body: JSON.stringify({ toPlanetId, metalium, carbonum, plutonium }) }),
+  govContribute: (metalium: number, carbonum: number, plutonium: number) =>
+    request<GovView>("/game/galaxy/contribute", { method: "POST", body: JSON.stringify({ metalium, carbonum, plutonium }) }),
   mgFleets: () =>
     request<{ planets: MgPlanet[] }>("/game/galaxy/mg-fleets"),
 

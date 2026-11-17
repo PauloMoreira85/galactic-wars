@@ -23,6 +23,7 @@ export function Governo() {
   const treatyGalId = (treatySetor - 1) * 6 + treatySistema; // = galaxyId(setor, sistema)
   const [donTo, setDonTo] = useState("");
   const [don, setDon] = useState({ metalium: 0, carbonum: 0, plutonium: 0 });
+  const [contrib, setContrib] = useState({ metalium: 0, carbonum: 0, plutonium: 0 });
   const [mgFleets, setMgFleets] = useState<MgPlanet[]>([]);
 
   async function load() {
@@ -115,6 +116,16 @@ export function Governo() {
             </div>
           </div>
         )}
+        {/* Doar PRA o fundo — qualquer planeta da galáxia pode contribuir. */}
+        <div style={{ marginTop: 10 }}>
+          <div className="cost" style={{ marginBottom: 4 }}>🤝 Doar recursos PRA o fundo da galáxia (o ME distribui depois):</div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+            <input type="number" min={0} placeholder="M" value={contrib.metalium || ""} onChange={(e) => setContrib({ ...contrib, metalium: Math.max(0, Math.floor(Number(e.target.value) || 0)) })} style={{ width: 90, margin: 0, padding: "4px 6px" }} />
+            <input type="number" min={0} placeholder="C" value={contrib.carbonum || ""} onChange={(e) => setContrib({ ...contrib, carbonum: Math.max(0, Math.floor(Number(e.target.value) || 0)) })} style={{ width: 90, margin: 0, padding: "4px 6px" }} />
+            <input type="number" min={0} placeholder="P" value={contrib.plutonium || ""} onChange={(e) => setContrib({ ...contrib, plutonium: Math.max(0, Math.floor(Number(e.target.value) || 0)) })} style={{ width: 90, margin: 0, padding: "4px 6px" }} />
+            <button onClick={() => act(async () => { const r = await api.govContribute(contrib.metalium, contrib.carbonum, contrib.plutonium); setContrib({ metalium: 0, carbonum: 0, plutonium: 0 }); return r; })}>doar ao fundo</button>
+          </div>
+        </div>
         {error && <div className="error" style={{ marginTop: 8 }}>{error}</div>}
       </div>
 

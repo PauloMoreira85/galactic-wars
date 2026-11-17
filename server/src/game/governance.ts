@@ -180,6 +180,31 @@ export async function setMarketLocked(mePlanetId: string, locked: boolean) {
 }
 
 // ME doa recursos do fundo para um planeta (cap 20% do fundo, cooldown por planeta).
+// QUALQUER planeta da galáxia doa recursos PRA o fundo (voluntário). O ME depois
+// distribui com donate(). Desconta do planeta e soma no fundo; registra no livro
+// caixa (from = planeta, to = "Fundo da galáxia").
+export async function contributeToFund(planetId: string, amounts: { metalium: number; carbonum: number; plutonium: number }) {
+  const g = await planetGalaxy(planetId);
+  if (g == null) throw new Error("Planeta nao encontrado");
+  await ensureGalaxy(g);
+  const planet = await prisma.planet.findUnique({ where: { id: planetId }, select: { name: true, metalium: true, carbonum: true, plutonium: true } });
+  if (!planet) throw new Error("Planeta nao encontrado");
+
+  const m = Math.max(0, Math.floor(amounts.metalium));
+  const c = Math.max(0, Math.floor(amounts.carbonum));
+  const p = Math.max(0, Math.floor(amounts.plutonium));
+  if (m + c + p <= 0) throw new Error("Informe um valor para doar ao fundo");
+  if (m > planet.metalium || c > planet.carbonum || p > planet.plutonium) {
+    throw new Error(`Recursos insuficientes. Você tem: ${planet.metalium} M · ${planet.carbonum} C · ${planet.plutonium} P.`);
+  }
+  const tick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
+  await prisma.$transaction([
+    prisma.planet.update({ where: { id: planetId }, data: { metalium: { decrement: m }, carbonum: { decrement: c }, plutonium: { decrement: p } } }),
+    prisma.galaxyState.update({ where: { galaxy: g }, data: { fundMetalium: { increment: m }, fundCarbonum: { increment: c }, fundPlutonium: { increment: p } } }),
+    prisma.donationLog.create({ data: { galaxy: g, fromName: planet.name, toName: "Fundo da galáxia", metalium: m, carbonum: c, plutonium: p, tick } }),
+  ]);
+}
+
 export async function donate(mePlanetId: string, toPlanetId: string, amounts: { metalium: number; carbonum: number; plutonium: number }) {
   const g = await planetGalaxy(mePlanetId);
   if (g == null) throw new Error("Planeta nao encontrado");

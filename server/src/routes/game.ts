@@ -17,7 +17,7 @@ import { autoExile } from "../game/relocation.js";
 import { randomBytes } from "node:crypto";
 import { createPrivateGalaxy, invitePrivate, joinPrivate, privateView } from "../game/privategalaxy.js";
 import { effectiveTec, galaxyPenalty, travelTime } from "../game/travel.js";
-import { vote, appoint, setTax, setMarketFee, setMarketLocked, donate, govView, mgFleets, setGalaxyName, setGalaxyFlag, proposeTreaty, acceptTreaty, cancelTreaty } from "../game/governance.js";
+import { vote, appoint, setTax, setMarketFee, setMarketLocked, donate, contributeToFund, govView, mgFleets, setGalaxyName, setGalaxyFlag, proposeTreaty, acceptTreaty, cancelTreaty } from "../game/governance.js";
 import { planetScore } from "../game/score.js";
 import { clampMorale, moraleMult } from "../game/morale.js";
 import { addNews, recentNews } from "../game/news.js";
@@ -680,6 +680,17 @@ gameRouter.post("/galaxy/donate", async (req: AuthedRequest, res) => {
   if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
   try { await donate(planet.id, parsed.data.toPlanetId, parsed.data); }
   catch (e: any) { return res.status(400).json({ error: e.message ?? "Falha ao doar" }); }
+  res.json(await govView(planet.id));
+});
+
+// QUALQUER planeta da galáxia doa recursos PRA o fundo (voluntário).
+gameRouter.post("/galaxy/contribute", async (req: AuthedRequest, res) => {
+  const parsed = z.object({ metalium: z.number().int().min(0), carbonum: z.number().int().min(0), plutonium: z.number().int().min(0) }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "Pedido invalido" });
+  const planet = await myPlanet(req.userId!);
+  if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
+  try { await contributeToFund(planet.id, parsed.data); }
+  catch (e: any) { return res.status(400).json({ error: e.message ?? "Falha ao doar ao fundo" }); }
   res.json(await govView(planet.id));
 });
 
