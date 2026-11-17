@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, REFRESH_MS, type GovView, type MgPlanet } from "../api";
+import { CoordLink } from "../components/CoordLink";
 
 // "Caça ×10 · Hela ×5" a partir do mapa de naves.
 function fmtUnits(u: Record<string, number>): string {
@@ -116,7 +117,7 @@ export function Governo() {
               <tr key={m.id} style={{ background: gov.myVote === m.id ? "rgba(111,227,176,0.1)" : undefined }}>
                 <td><b>{m.name}</b>{gov.cgId === m.id && " 👑"}</td>
                 <td>{m.commander}</td>
-                <td>{m.coords}</td>
+                <td><CoordLink c={m.coords} /></td>
                 <td>{m.votes}</td>
                 <td>
                   {gov.myVote === m.id
@@ -248,7 +249,7 @@ export function Governo() {
             <div className="roid-count">Nenhum planeta na galáxia.</div>
           ) : mgFleets.map((p, i) => (
             <div key={i} className="roid-row" style={{ display: "block" }}>
-              <div><b>{p.planet}</b> <span className="roid-count">{p.coords} · {p.commander}</span></div>
+              <div><b>{p.planet}</b> <span className="roid-count"><CoordLink c={p.coords} /> · {p.commander}</span></div>
               <div className="roid-count" style={{ marginTop: 2 }}>
                 🏠 Base ({p.baseTotal} naves): <span style={{ color: "var(--text)" }}>{fmtUnits(p.base)}</span>
               </div>

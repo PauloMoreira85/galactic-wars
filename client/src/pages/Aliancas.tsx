@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, REFRESH_MS, type AllianceView, ROLE_LABEL, ALLIANCE_ROLES } from "../api";
+import { CoordLink } from "../components/CoordLink";
 
 export function Aliancas() {
   const [a, setA] = useState<AllianceView | null>(null);
@@ -80,7 +81,7 @@ export function Aliancas() {
               <tr key={m.planetId}>
                 <td>{m.commander}</td>
                 <td>{m.name}</td>
-                <td>{m.coords}</td>
+                <td><CoordLink c={m.coords} /></td>
                 <td>
                   {a.isLeader && m.role !== "lider" ? (
                     <select value={m.role} onChange={(e) => act(() => api.allianceRole(m.planetId, e.target.value))}

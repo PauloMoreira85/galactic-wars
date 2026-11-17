@@ -1,5 +1,6 @@
 import { useEffect, useState, Fragment } from "react";
 import { api } from "../api";
+import { CoordLink } from "../components/CoordLink";
 import { IntelReport } from "../components/IntelReport";
 
 function fmt(n: number) {
@@ -115,7 +116,7 @@ function RankingGalaxias() {
           {ranking.map((g, i) => (
             <tr key={g.galaxy}>
               <td className="rank-num">{i + 1}º</td>
-              <td><b>{g.name ?? `Galáxia ${g.coord}`}</b> <span className="roid-count">({g.coord})</span></td>
+              <td><b>{g.name ?? `Galáxia ${g.coord}`}</b> <span className="roid-count">(<CoordLink c={g.coord} />)</span></td>
               <td>{g.planets}</td>
               <td>
                 {fmt(g.score)}
@@ -352,7 +353,7 @@ function Universo() {
         <thead><tr><th className="rank-num">#</th><th>Comandante</th><th>Planeta</th><th>Coord.</th><th>Pontuação</th></tr></thead>
         <tbody>
           {data.planets.slice(0, 10).map((p, i) => (
-            <tr key={p.coords}><td className="rank-num">{i + 1}º</td><td>{p.commander}</td><td><b>{p.name}</b></td><td>{p.coords}</td><td>{fmt(p.score)}</td></tr>
+            <tr key={p.coords}><td className="rank-num">{i + 1}º</td><td>{p.commander}</td><td><b>{p.name}</b></td><td><CoordLink c={p.coords} /></td><td>{fmt(p.score)}</td></tr>
           ))}
         </tbody>
       </table>
@@ -420,7 +421,7 @@ function ProcuraPlanetas() {
         <thead><tr><th>Planeta</th><th>Comandante</th><th>Coord.</th><th>Roids</th><th>Pontuação</th></tr></thead>
         <tbody>
           {shown.slice(0, 100).map((p) => (
-            <tr key={p.coords}><td><b>{p.name}</b>{p.protected && " 🛡️"}</td><td>{p.commander}</td><td>{p.coords}</td><td>{fmt(p.roids)}</td><td>{fmt(p.score)}</td></tr>
+            <tr key={p.coords}><td><b>{p.name}</b>{p.protected && " 🛡️"}</td><td>{p.commander}</td><td><CoordLink c={p.coords} /></td><td>{fmt(p.roids)}</td><td>{fmt(p.score)}</td></tr>
           ))}
         </tbody>
       </table>
@@ -440,7 +441,7 @@ function Graficos() {
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
         {top.map((p) => (
           <div key={p.coords}>
-            <div className="roid-count" style={{ display: "flex", justifyContent: "space-between" }}><span>{p.commander} <span style={{ opacity: 0.6 }}>({p.coords})</span></span><b>{fmt(p.score)}</b></div>
+            <div className="roid-count" style={{ display: "flex", justifyContent: "space-between" }}><span>{p.commander} <span style={{ opacity: 0.6 }}>(<CoordLink c={p.coords} />)</span></span><b>{fmt(p.score)}</b></div>
             <div style={{ height: 14, background: "rgba(255,255,255,0.06)", borderRadius: 4 }}>
               <div style={{ width: `${Math.max(2, Math.round((p.score / maxv) * 100))}%`, height: "100%", background: "linear-gradient(90deg, var(--accent-dim), var(--accent))", borderRadius: 4 }} />
             </div>
@@ -486,7 +487,7 @@ function Espionagem() {
         {err && <div className="error" style={{ marginTop: 8 }}>{err}</div>}
         {looked.map((lk, i) => (
           <div key={i} style={{ marginTop: 12 }}>
-            <div className="combat-ini">{lk.targetName} ({lk.targetCoords}) · agente {AGENT[lk.agent] ?? lk.agent} · tick #{lk.tick}</div>
+            <div className="combat-ini">{lk.targetName} (<CoordLink c={lk.targetCoords} />) · agente {AGENT[lk.agent] ?? lk.agent} · tick #{lk.tick}</div>
             <div style={{ marginTop: 6 }}><IntelReport intel={lk.intel} /></div>
           </div>
         ))}
@@ -503,7 +504,7 @@ function Espionagem() {
               {reports.map((r) => (
                 <Fragment key={r.id}>
                   <tr>
-                    <td className="rank-num">#{r.tick}</td><td><b>{r.targetName}</b></td><td>{r.targetCoords}</td><td>{AGENT[r.agent] ?? r.agent}</td>
+                    <td className="rank-num">#{r.tick}</td><td><b>{r.targetName}</b></td><td><CoordLink c={r.targetCoords} /></td><td>{AGENT[r.agent] ?? r.agent}</td>
                     <td><b style={{ color: "var(--accent)", letterSpacing: 1 }}>{r.hash}</b> <button className="link" onClick={() => navigator.clipboard?.writeText(r.hash)}>copiar</button></td>
                     <td><button onClick={() => setOpen(open === r.id ? null : r.id)}>{open === r.id ? "fechar" : "ver"}</button></td>
                   </tr>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, clearToken, IS_RUR, MAIN_URL, RUR_URL, REFRESH_MS, type PlanetView, type Resource, type TechItem } from "../api";
+import { CoordNavContext, CoordLink } from "../components/CoordLink";
 import { Galaxy } from "./Galaxy";
 import { Trafego } from "./Trafego";
 import { Frotas } from "./Frotas";
@@ -391,6 +392,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   }
 
   return (
+    <CoordNavContext.Provider value={(c) => { setGalaxyGoto(c + "#" + Date.now()); setSection("galaxia"); }}>
     <div className="layout">
       {/* ===== Barra lateral ===== */}
       <aside className="sidebar">
@@ -439,7 +441,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
       <main className="content">
         {game.roundEnded && (
           <div className="panel round-ended">
-            🏆 <b>Round encerrado!</b>{ranking[0] && <> Campeão: <b>{ranking[0].username}</b> — {ranking[0].planet} ({ranking[0].coords})</>}. As ações estão congeladas.{roundStatus ? <> Próximo round em <b>{roundStatus.time}</b>.</> : " Aguarde o próximo round."}
+            🏆 <b>Round encerrado!</b>{ranking[0] && <> Campeão: <b>{ranking[0].username}</b> — {ranking[0].planet} (<CoordLink c={ranking[0].coords} />)</>}. As ações estão congeladas.{roundStatus ? <> Próximo round em <b>{roundStatus.time}</b>.</> : " Aguarde o próximo round."}
           </div>
         )}
 
@@ -822,5 +824,6 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         </div>
       )}
     </div>
+    </CoordNavContext.Provider>
   );
 }

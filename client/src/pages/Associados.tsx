@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, type AssociadoView, type PrivateView } from "../api";
+import { CoordLink } from "../components/CoordLink";
 
 // Associados: status premium (grátis no início). Benefícios: trocar nome 3x,
 // galáxia privada (em breve).
@@ -95,7 +96,7 @@ function GalaxiaPrivada({ onChanged }: { onChanged: () => void }) {
           <div className="cost">Membros ({pv.owned.members.length}):</div>
           <table><tbody>
             {pv.owned.members.map((m) => (
-              <tr key={m.coords}><td><b>{m.name}</b></td><td>{m.commander}</td><td className="roid-count">{m.coords}</td></tr>
+              <tr key={m.coords}><td><b>{m.name}</b></td><td>{m.commander}</td><td><CoordLink c={m.coords} /></td></tr>
             ))}
           </tbody></table>
         </>

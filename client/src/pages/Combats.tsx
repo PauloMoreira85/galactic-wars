@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, REFRESH_MS } from "../api";
+import { CoordLink } from "../components/CoordLink";
 
 function fmt(n: number) {
   return n.toLocaleString("pt-BR");
@@ -50,11 +51,11 @@ export function Combats() {
         <div className="panel" style={{ marginTop: 10 }}>
           <h2>Relatório de Combate</h2>
           <div className="cost">
-            Combate ocorrido no tick <b>#{detail.tick}</b> ({d.ticks ?? 3} ticks), em órbita de <b>{detail.defenderName}</b> ({detail.defenderCoords}).
+            Combate ocorrido no tick <b>#{detail.tick}</b> ({d.ticks ?? 3} ticks), em órbita de <b>{detail.defenderName}</b> (<CoordLink c={detail.defenderCoords} />).
           </div>
           <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginTop: 8 }}>
-            <div><div className="roid-count">Atacante {iAmAtk && "(você)"}</div><b style={{ color: "var(--danger)" }}>{detail.attackerName}</b> <span className="roid-count">({detail.attackerCoords}) · {d.attackerRace}</span></div>
-            <div><div className="roid-count">Defensor {!iAmAtk && "(você)"}</div><b style={{ color: "var(--carbonum)" }}>{detail.defenderName}</b> <span className="roid-count">({detail.defenderCoords}) · {d.defenderRace}</span></div>
+            <div><div className="roid-count">Atacante {iAmAtk && "(você)"}</div><b style={{ color: "var(--danger)" }}>{detail.attackerName}</b> <span className="roid-count">(<CoordLink c={detail.attackerCoords} />) · {d.attackerRace}</span></div>
+            <div><div className="roid-count">Defensor {!iAmAtk && "(você)"}</div><b style={{ color: "var(--carbonum)" }}>{detail.defenderName}</b> <span className="roid-count">(<CoordLink c={detail.defenderCoords} />) · {d.defenderRace}</span></div>
           </div>
           {((d.attackers?.length ?? 0) > 1 || (d.defenders?.length ?? 0) > 1) && (
             <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginTop: 10, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
@@ -192,7 +193,7 @@ export function Combats() {
                 <td className="rank-num">#{c.tick}</td>
                 <td>{c.role === "attacker" ? "⚔️ ataque" : "🛡️ defesa"}</td>
                 <td>{c.opponent}</td>
-                <td>{c.opponentCoords}</td>
+                <td><CoordLink c={c.opponentCoords} /></td>
                 <td style={{ color: c.myLost > 0 ? "var(--danger)" : undefined }}>{fmt(c.myLost)}</td>
                 <td style={{ color: c.oppLost > 0 ? "var(--carbonum)" : undefined }}>{fmt(c.oppLost)}</td>
                 <td className="roid-count">{fmt(c.captured.metalium)}/{fmt(c.captured.carbonum)}/{fmt(c.captured.plutonium)}</td>

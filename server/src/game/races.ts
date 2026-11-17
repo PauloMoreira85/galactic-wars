@@ -16,7 +16,7 @@ export interface RaceTraits {
   weaponMode: "destroy" | "disable";
   // Naves invisiveis no radar inimigo (exceto frotas que roubam roids).
   stealth: boolean;
-  // Ao acertar uma nave inimiga, ha chance de clonar a propria nave.
+  // Ao destruir uma nave inimiga, o Mech a ASSIMILA para a própria frota.
   cloneOnHit: boolean;
   // Pode construir naves de todas as racas.
   canBuildAllRaces: boolean;
@@ -73,8 +73,8 @@ export const RACES: Record<RaceKey, RaceDef> = {
   mech: {
     key: "mech",
     name: "c-Mech",
-    tagline: "Clonam a nave inimiga ao acertá-la em combate",
-    lore: "Seres mecanicos auto-replicantes. Quando uma nave c-Mech acerta uma nave inimiga, ela e CLONADA para a frota c-Mech. E assim que os c-Mech acabam com naves de todas as racas: nao constroem, capturam replicando em pleno combate.",
+    tagline: "Assimilam a nave inimiga ao destruí-la em combate",
+    lore: "Seres mecanicos auto-replicantes. Quando uma nave c-Mech destroi uma nave inimiga, ela e ASSIMILADA para a frota c-Mech. E assim que os c-Mech acabam com naves de todas as racas: nao constroem, capturam assimilando em pleno combate.",
     strengths: ["Assimilam (roubam) naves inimigas em combate", "Ganham pontuação assimilando", "Crescem com a frota do inimigo"],
     weaknesses: ["Difícil de dominar", "Perdem a própria nave ao assimilar"],
     traits: { ...NEUTRAL, cloneOnHit: true, canBuildAllRaces: false },

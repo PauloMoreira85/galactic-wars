@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, REFRESH_MS, type PlanetView } from "../api";
+import { CoordLink } from "../components/CoordLink";
 import { IntelReport } from "../components/IntelReport";
 
 function fmt(n: number) {
@@ -221,7 +222,7 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
       {spy && (
         <div className="panel">
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <h2>🛰️ Espionagem [{spy.agent}] — {spy.name} ({spy.coords})</h2>
+            <h2>🛰️ Espionagem [{spy.agent}] — {spy.name} (<CoordLink c={spy.coords} />)</h2>
             <button className="link" onClick={() => setSpy(null)}>fechar</button>
           </div>
           {spy._hash && (

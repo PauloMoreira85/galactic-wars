@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
+import { CoordLink } from "../components/CoordLink";
 import { IntelReport } from "../components/IntelReport";
 
 function fmt(n: number) { return n.toLocaleString("pt-BR"); }
@@ -132,7 +133,7 @@ export function Inteligencia() {
 
       {spy && (
         <div className="panel">
-          <h2>🛰️ [{spy.agent}] {spy.name} ({spy.coords})</h2>
+          <h2>🛰️ [{spy.agent}] {spy.name} (<CoordLink c={spy.coords} />)</h2>
           <IntelReport intel={spy} />
         </div>
       )}
