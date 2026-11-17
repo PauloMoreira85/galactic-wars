@@ -8,9 +8,15 @@ function fmt(n: number) {
 const STATUS: Record<string, string> = { outbound: "indo", engaged: "em combate", returning: "voltando", garrison: "defendendo" };
 
 // Tráfego: frotas chegando na sua galáxia. Ataque = vermelho, defesa/transporte = verde.
-export function Trafego() {
+export function Trafego({ onGoto }: { onGoto?: (coords: string) => void }) {
   const [data, setData] = useState<Awaited<ReturnType<typeof api.traffic>> | null>(null);
   const [error, setError] = useState("");
+
+  // Coordenada clicável → abre a galáxia daquele planeta (quando onGoto existe).
+  const Coord = ({ c }: { c: string }) =>
+    onGoto
+      ? <button className="coord-link" title={`Ver a galáxia ${c}`} onClick={() => onGoto(c)}>{c}</button>
+      : <span className="roid-count">{c}</span>;
 
   async function load() {
     try {
@@ -51,8 +57,8 @@ export function Trafego() {
               const color = atk ? "var(--danger)" : "var(--carbonum)";
               return (
                 <tr key={i} style={f.toMe ? { background: "rgba(255,80,80,0.10)" } : undefined}>
-                  <td><b>{f.targetName ?? "—"}</b> <span className="roid-count">{f.target}</span>{f.toMe && " 🎯"}</td>
-                  <td className="roid-count">{f.origin}</td>
+                  <td><b>{f.targetName ?? "—"}</b> <Coord c={f.target} />{f.toMe && " 🎯"}</td>
+                  <td><Coord c={f.origin} /></td>
                   <td>{f.owner}</td>
                   <td style={{ color }}>{atk ? "🔴 ataque" : "🟢 defesa"}{f.status === "engaged" ? " (em combate)" : ""}</td>
                   <td>{fmt(f.ships)}</td>
@@ -72,7 +78,7 @@ export function Trafego() {
         <div className="roid-count">Nenhuma frota em movimento na galáxia.</div>
       ) : data.movements.map((m, i) => (
         <div key={i} style={{ marginBottom: 14 }}>
-          <div className="combat-ini"><b>{m.planet}</b> <span className="roid-count">({m.coords}) · {m.owner}</span></div>
+          <div className="combat-ini"><b>{m.planet}</b> <span className="roid-count">(<Coord c={m.coords} />) · {m.owner}</span></div>
           <table>
             <thead><tr><th>Frota</th><th>Tipo</th><th>Destino</th><th>Naves</th><th>Espólio (M/C/P)</th><th>Estado</th></tr></thead>
             <tbody>
@@ -83,7 +89,7 @@ export function Trafego() {
                   <tr key={j}>
                     <td>{f.name}</td>
                     <td style={{ color: atk ? "var(--danger)" : "var(--carbonum)" }}>{atk ? "🔴 ataque" : "🟢 defesa"}</td>
-                    <td className="roid-count">{f.target}</td>
+                    <td><Coord c={f.target} /></td>
                     <td>{fmt(f.ships)}</td>
                     <td className="roid-count" style={has ? { color: "var(--carbonum)" } : undefined}>{has ? `${fmt(c.metalium)}/${fmt(c.carbonum)}/${fmt(c.plutonium)}` : "—"}</td>
                     <td>{STATUS[f.status] ?? f.status}{f.status !== "engaged" && f.ticks > 0 ? ` · ${f.ticks}t` : ""}</td>

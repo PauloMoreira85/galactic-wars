@@ -785,7 +785,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
         {section === "frotas" && <Frotas view={view} onChanged={refresh} />}
 
-        {section === "trafego" && <Trafego />}
+        {section === "trafego" && <Trafego onGoto={(c) => { setGalaxyGoto(c + "#" + Date.now()); setSection("galaxia"); }} />}
 
         {section === "combates" && <Combats />}
 
