@@ -140,6 +140,7 @@ export function Combats() {
                   <div>• Limite do tick: <b>{d.raid.ratePct}%</b> dos roids do alvo = <b>{fmt(Math.floor(d.raid.targetRoids * d.raid.ratePct / 100))}</b> <span style={{ opacity: 0.7 }}>(alvo tem {fmt(d.raid.targetRoids)} roids; {d.raid.ratePct}% por recurso, por tick)</span></div>
                 )}
                 <div style={{ marginTop: 2 }}>→ <b style={{ color: "var(--carbonum)" }}>Capturado neste tick: {fmt(d.raid.captured)} roids</b></div>
+                <div style={{ marginTop: 2, opacity: 0.7 }}>O combate dura até 3 ticks — você saqueia a cada tick, então o total do ataque é a soma dos ticks.</div>
               </div>
             </div>
           )}
