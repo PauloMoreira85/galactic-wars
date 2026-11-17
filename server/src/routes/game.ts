@@ -497,7 +497,12 @@ gameRouter.post("/spy", async (req: AuthedRequest, res) => {
     await addNews(target.id, tkNow, `🛡️ Sua contra-espionagem barrou um ${AGENT_FULL_NAME[agent]} de ${myCoords}`);
     return res.json({ failed: true, error: `Espionagem barrada (chance de sucesso ${Math.round(succ * 100)}% — seu AE ${myAE} vs AC ${tgtCE} do alvo). Perdeu 1 agente ${agent} — treine mais AE.` });
   }
+  // Naves do alvo = base (hangar) + TODAS as frotas dele (idle/atacando/defendendo).
+  // (Sem isso, a pontuação/força espionada saía MUITO menor que a real quando o
+  // alvo tinha a frota fora da base.)
   const units = parseUnits(target.units);
+  const tgtFleets = await prisma.fleet.findMany({ where: { ownerPlanetId: target.id }, select: { units: true } });
+  for (const f of tgtFleets) { const fu = parseUnits(f.units); for (const n of Object.keys(fu)) units[n] = (units[n] || 0) + fu[n]; }
   const intel: any = { agent, coords: `${galaxy}:${system}:${slot}`, name: target.name, commander: target.user.username, race: RACES[raceKey].name };
 
   if (agent === "P") {
@@ -510,15 +515,9 @@ gameRouter.post("/spy", async (req: AuthedRequest, res) => {
     intel.totalShips = radarVisibleCount(units);
     intel.online = Date.now() - new Date(target.user.lastSeen).getTime() < 5 * 60 * 1000;
   } else if (agent === "M") {
-    // Militar: QUAIS e quantas naves — TODAS do alvo (base + todas as frotas,
-    // inclusive em trânsito). Rakshasa: só roiders aparecem.
-    const fleets = await prisma.fleet.findMany({ where: { ownerPlanetId: target.id }, select: { units: true } });
-    const all: Record<string, number> = { ...units };
-    for (const f of fleets) {
-      const fu = parseUnits(f.units);
-      for (const n of Object.keys(fu)) all[n] = (all[n] || 0) + fu[n];
-    }
-    const u = raceKey === "rakshasa" ? Object.fromEntries(Object.entries(all).filter(([n]) => unitByName(n)?.roider)) : all;
+    // Militar: QUAIS e quantas naves — TODAS do alvo (base + todas as frotas, já
+    // somadas em `units` acima). Rakshasa: só roiders aparecem.
+    const u = raceKey === "rakshasa" ? Object.fromEntries(Object.entries(units).filter(([n]) => unitByName(n)?.roider)) : units;
     intel.ships = Object.keys(u).map((name) => ({ name, count: u[name] }));
   } else if (agent === "T") {
     // Transmissão: notícias recentes do alvo.
