@@ -570,7 +570,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
               <h2>Ranking — comandantes do universo ({ranking.length})</h2>
               <table>
                 <thead>
-                  <tr><th className="rank-num">#</th><th>Comandante</th><th>Planeta</th><th>Coord.</th><th>Roids</th></tr>
+                  <tr><th className="rank-num">#</th><th>Comandante</th><th>Planeta</th><th>Coord.</th><th>Pontuação</th><th>Roids</th></tr>
                 </thead>
                 <tbody>
                   {ranking.map((r, i) => (
@@ -584,6 +584,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                           {r.coords}
                         </button>
                       </td>
+                      <td><b>{(r.score ?? 0).toLocaleString("pt-BR")}</b></td>
                       <td>{r.roids}</td>
                     </tr>
                   ))}

@@ -910,12 +910,22 @@ gameRouter.get("/combats/:id", async (req: AuthedRequest, res) => {
 
 gameRouter.get("/ranking", async (_req, res) => {
   const planets = await prisma.planet.findMany({ include: { user: { select: { username: true } } } });
+  // Soma as naves de TODAS as frotas de cada planeta (hangar + atacando + defendendo
+  // + voando + voltando), pra pontuação bater com /me e com a espionagem.
+  const allF = await prisma.fleet.findMany({ select: { ownerPlanetId: true, units: true } });
+  const fleetUnitsBy: Record<string, Record<string, number>> = {};
+  for (const f of allF) { const fu = parseUnits(f.units); const m = (fleetUnitsBy[f.ownerPlanetId] ??= {}); for (const n of Object.keys(fu)) m[n] = (m[n] || 0) + fu[n]; }
   const ranked = planets
-    .map((p) => ({
-      username: p.user.username,
-      planet: p.name, coords: `${p.galaxy}:${p.system}:${p.slot}`, roids: totalRoids(p),
-    }))
-    .sort((a, b) => b.roids - a.roids); // todos os planetas (ninguém fica de fora)
+    .map((p) => {
+      const u: Record<string, number> = { ...parseUnits(p.units) };
+      const fl = fleetUnitsBy[p.id] ?? {}; for (const n of Object.keys(fl)) u[n] = (u[n] || 0) + fl[n];
+      return {
+        username: p.user.username,
+        planet: p.name, coords: `${p.galaxy}:${p.system}:${p.slot}`,
+        score: planetScore(p, u), roids: totalRoids(p),
+      };
+    })
+    .sort((a, b) => b.score - a.score); // todos os planetas, por PONTUAÇÃO
   res.json({ ranking: ranked });
 });
 

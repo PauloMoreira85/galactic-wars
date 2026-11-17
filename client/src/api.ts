@@ -460,7 +460,7 @@ export const api = {
 
   ranking: () =>
     request<{
-      ranking: { username: string; planet: string; coords: string; roids: number }[];
+      ranking: { username: string; planet: string; coords: string; roids: number; score: number }[];
     }>("/game/ranking"),
 
   toolUnits: () =>
