@@ -48,7 +48,7 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
   useEffect(() => {
     if (!gotoCoords) return;
     const [gg, ss] = gotoCoords.split("#")[0].split(":").map(Number);
-    if (gg >= 1 && gg <= 5) setGalaxy(gg);
+    if (gg >= 1 && gg <= 10) setGalaxy(gg);
     if (ss >= 1 && ss <= 6) setSystem(ss);
   }, [gotoCoords]);
 
@@ -144,9 +144,9 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
             </div>
           </div>
           <div className="galnav">
-            <button className="galnav-vert" title="Setor +1" onClick={() => setGalaxy((v) => Math.min(5, v + 1))}>∧</button>
+            <button className="galnav-vert" title="Setor +1" onClick={() => setGalaxy((v) => Math.min(10, v + 1))}>∧</button>
             <div className="galnav-coords">
-              <input type="number" min={1} max={5} value={galaxy} title="Setor (1-5)" onChange={(e) => setGalaxy(Math.max(1, Math.min(5, Number(e.target.value))))} />
+              <input type="number" min={1} max={10} value={galaxy} title="Setor (1-5 públicos · 6-10 privados)" onChange={(e) => setGalaxy(Math.max(1, Math.min(10, Number(e.target.value))))} />
               <input type="number" min={1} max={6} value={system} title="Paralelo (1-6)" onChange={(e) => setSystem(Math.max(1, Math.min(6, Number(e.target.value))))} />
             </div>
             <div className="galnav-row">
