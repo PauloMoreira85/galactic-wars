@@ -567,7 +567,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             </div>
 
             <div className="panel">
-              <h2>Ranking — top comandantes</h2>
+              <h2>Ranking — comandantes do universo ({ranking.length})</h2>
               <table>
                 <thead>
                   <tr><th className="rank-num">#</th><th>Comandante</th><th>Planeta</th><th>Coord.</th><th>Roids</th></tr>

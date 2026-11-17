@@ -916,7 +916,7 @@ gameRouter.get("/ranking", async (_req, res) => {
       username: p.user.username,
       planet: p.name, coords: `${p.galaxy}:${p.system}:${p.slot}`, roids: totalRoids(p),
     }))
-    .sort((a, b) => b.roids - a.roids).slice(0, 50);
+    .sort((a, b) => b.roids - a.roids); // todos os planetas (ninguém fica de fora)
   res.json({ ranking: ranked });
 });
 
