@@ -356,6 +356,9 @@ export const api = {
     request<PlanetView>("/game/fleets/create", { method: "POST" }),
   loadFleet: (id: string, units: Record<string, number>) =>
     request<PlanetView>(`/game/fleets/${id}/load`, { method: "POST", body: JSON.stringify({ units }) }),
+  // Transfere naves direto entre frotas (ou base <-> frota). from/to = id da frota ou "base".
+  transferFleet: (from: string, to: string, units: Record<string, number>) =>
+    request<PlanetView>("/game/fleets/transfer", { method: "POST", body: JSON.stringify({ from, to, units }) }),
   renameFleet: (id: string, name: string) =>
     request<{ ok: true }>(`/game/fleets/${id}/rename`, { method: "POST", body: JSON.stringify({ name }) }),
   dispatchFleet: (id: string, body: { galaxy: number; system: number; slot: number; mission: "attack" | "transport"; ticks?: number; fake?: boolean }) =>
@@ -426,7 +429,7 @@ export const api = {
         defenderRace: string;
         ticks: number;
         captured: Record<Resource, number>;
-        raid?: { capacity: number; ratePct: number; captured: number; rows: { name: string; active: number; cargo: number; capacity: number }[] };
+        raid?: { capacity: number; ratePct: number; targetRoids?: number; captured: number; rows: { name: string; active: number; cargo: number; capacity: number }[] };
         attacker: { name: string; before: number; lost: number; pem: number; assim: number; survivors: number }[];
         defender: { name: string; before: number; lost: number; pem: number; assim: number; survivors: number }[];
         attackers?: { name: string; ships: number }[];

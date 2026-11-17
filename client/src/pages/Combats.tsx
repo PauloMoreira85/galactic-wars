@@ -131,8 +131,15 @@ export function Combats() {
               ) : (
                 <div className="roid-count">Nenhum roider ativo neste tick (todos paralisados ou ausentes).</div>
               )}
-              <div className="roid-count" style={{ marginTop: 6 }}>
-                Capacidade total: <b>{fmt(d.raid.capacity)}</b> roids · limite do round: <b>{d.raid.ratePct}%</b> dos roids do alvo · capturado: <b>{fmt(d.raid.captured)}</b>
+              <div className="roid-count" style={{ marginTop: 6, lineHeight: 1.6 }}>
+                Você captura o <b>MENOR</b> entre a capacidade dos seus roiders e o limite do tick:
+                <div style={{ marginTop: 2 }}>
+                  • Capacidade dos roiders: <b>{fmt(d.raid.capacity)}</b> roids
+                </div>
+                {d.raid.targetRoids != null && (
+                  <div>• Limite do tick: <b>{d.raid.ratePct}%</b> dos roids do alvo = <b>{fmt(Math.floor(d.raid.targetRoids * d.raid.ratePct / 100))}</b> <span style={{ opacity: 0.7 }}>(alvo tem {fmt(d.raid.targetRoids)} roids; {d.raid.ratePct}% por recurso, por tick)</span></div>
+                )}
+                <div style={{ marginTop: 2 }}>→ <b style={{ color: "var(--carbonum)" }}>Capturado neste tick: {fmt(d.raid.captured)} roids</b></div>
               </div>
             </div>
           )}

@@ -286,6 +286,7 @@ export async function resolveSiege(target: { galaxy: number; system: number; slo
 
   // Roids: roiders atacantes ativos × cap% × roids do alvo (por tick).
   const roids = { metalium: def.roidMetalium, carbonum: def.roidCarbonum, plutonium: def.roidPlutonium };
+  const targetRoidsTotal = def.roidMetalium + def.roidCarbonum + def.roidPlutonium; // roids do alvo ANTES do saque
   const capacity = raidCapacity(st.aActive);
   let room = capacity; const roundCap = { metalium: 0, carbonum: 0, plutonium: 0 };
   for (const r of ["metalium", "carbonum", "plutonium"] as const) {
@@ -317,7 +318,7 @@ export async function resolveSiege(target: { galaxy: number; system: number; slo
     defenderRace: raceTable(raceOf(def.user.race)),
     attacker: rows(st.atkInit, st.aLost, st.aPem, dAssim),
     defender: rows(st.defInit, st.dLost, st.dPem, aAssim),
-    captured: roundCap, raid: { capacity, ratePct: Math.round(st.rate * 100), rows: raidRows, captured: roundCap.metalium + roundCap.carbonum + roundCap.plutonium },
+    captured: roundCap, raid: { capacity, ratePct: Math.round(st.rate * 100), targetRoids: targetRoidsTotal, rows: raidRows, captured: roundCap.metalium + roundCap.carbonum + roundCap.plutonium },
     attackers, defenders,
     round: 1, ticks: 1, log: st.log ?? [],
   };

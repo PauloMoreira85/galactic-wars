@@ -26,6 +26,26 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
   const [dTicks, setDTicks] = useState(3);
   const [dFake, setDFake] = useState(false);
   const [dFleet, setDFleet] = useState("");
+  // Transferência direta entre frotas (ou base): origem, destino e qtd por nave.
+  const [tFrom, setTFrom] = useState("base");
+  const [tTo, setTTo] = useState("");
+  const [tUnits, setTUnits] = useState<Record<string, number>>({});
+
+  async function doTransfer() {
+    if (!tTo || tFrom === tTo) { setError("Escolha origem e destino diferentes."); return; }
+    const units = Object.fromEntries(Object.entries(tUnits).filter(([, n]) => n > 0));
+    if (Object.keys(units).length === 0) { setError("Informe quantas naves transferir."); return; }
+    setBusy(true); setError("");
+    try {
+      await api.transferFleet(tFrom, tTo, units);
+      setTUnits({});
+      await load(); onChanged();
+    } catch (e: any) { setError(e.message ?? "Falha ao transferir"); }
+    finally { setBusy(false); }
+  }
+  // Quantas naves de `name` existem na origem escolhida (base ou frota).
+  const availAt = (where: string, name: string) =>
+    where === "base" ? baseOf(name) : (fleets.find((f) => f.id === where)?.units[name] ?? 0);
 
   async function dispatch() {
     if (!dFleet) { setError("Escolha uma frota carregada."); return; }
@@ -153,6 +173,52 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
         )}
         {error && <div className="error" style={{ marginTop: 10 }}>{error}</div>}
       </div>
+
+      {fleets.length > 0 && (
+        <div className="panel">
+          <h2>🔀 Transferir naves direto</h2>
+          <div className="cost" style={{ marginBottom: 10 }}>
+            Mova naves <b>direto de uma frota pra outra</b> (ou da Base), sem precisar descarregar antes. Escolha a origem e o destino e quantas naves de cada tipo.
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 10 }}>
+            <span className="roid-count">De:</span>
+            <select value={tFrom} onChange={(e) => { setTFrom(e.target.value); setTUnits({}); }}
+              style={{ width: "auto", margin: 0, background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
+              <option value="base">🏠 Base</option>
+              {fleets.filter((f) => f.idle).map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+            </select>
+            <span style={{ fontSize: 18 }}>➜</span>
+            <span className="roid-count">Para:</span>
+            <select value={tTo} onChange={(e) => setTTo(e.target.value)}
+              style={{ width: "auto", margin: 0, background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
+              <option value="">destino...</option>
+              <option value="base">🏠 Base</option>
+              {fleets.filter((f) => f.idle && f.id !== tFrom).map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+            </select>
+          </div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {shipNames.filter((name) => availAt(tFrom, name) > 0).map((name) => (
+              <div key={name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, border: "1px solid var(--border)", borderRadius: 8, padding: "6px 8px" }}>
+                <span style={{ fontSize: 12 }}><b>{name}</b></span>
+                <span className="roid-count">tem {fmt(availAt(tFrom, name))}</span>
+                <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
+                  <input type="number" min={0} max={availAt(tFrom, name)} placeholder="0" value={tUnits[name] || ""}
+                    onChange={(e) => setTUnits({ ...tUnits, [name]: Math.max(0, Math.min(availAt(tFrom, name), Math.floor(Number(e.target.value) || 0))) })}
+                    style={{ width: 60, margin: 0, padding: "3px 4px", textAlign: "center" }} />
+                  <button title="transferir tudo desta nave" disabled={busy} onClick={() => setTUnits({ ...tUnits, [name]: availAt(tFrom, name) })}
+                    style={{ padding: "2px 6px", margin: 0, fontSize: 11, lineHeight: 1 }}>máx</button>
+                </div>
+              </div>
+            ))}
+            {shipNames.filter((name) => availAt(tFrom, name) > 0).length === 0 && (
+              <div className="roid-count">A origem escolhida não tem naves.</div>
+            )}
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <button disabled={busy || !tTo} onClick={doTransfer}>{busy ? "..." : "🔀 transferir"}</button>
+          </div>
+        </div>
+      )}
 
       <div className="panel">
         <h2>🚀 Enviar frota</h2>

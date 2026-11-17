@@ -95,6 +95,51 @@ export async function setFleetComposition(planetId: string, fleetId: string, des
   }, TX_OPTS));
 }
 
+// Transfere naves DIRETO entre duas frotas (ou base <-> frota) do mesmo planeta,
+// sem precisar descarregar na base antes. `fromId`/`toId` = id da frota ou "base".
+// `units` = quantidades a MOVER de `from` para `to`.
+export async function transferUnits(planetId: string, fromId: string, toId: string, units: UnitMap) {
+  if (fromId === toId) throw new Error("Origem e destino iguais");
+  return withWrite(() => prisma.$transaction(async (tx) => {
+    const planet = await tx.planet.findUnique({ where: { id: planetId } });
+    if (!planet) throw new Error("Planeta nao encontrado");
+
+    // Sob ataque: não dá pra mexer nas frotas (naves contariam 2x na defesa).
+    const inBattle = await tx.fleet.count({ where: { status: "engaged", targetGalaxy: planet.galaxy, targetSystem: planet.system, targetSlot: planet.slot } });
+    if (inBattle > 0) throw new Error("Seu planeta está em combate — não dá pra mexer nas frotas até a batalha acabar");
+
+    // Carrega a composição atual da origem e do destino (base = hangar do planeta).
+    async function load(id: string): Promise<UnitMap> {
+      if (id === "base") return parseUnits(planet!.units);
+      const f = await tx.fleet.findUnique({ where: { id } });
+      if (!f || f.ownerPlanetId !== planetId) throw new Error("Frota nao encontrada");
+      if (f.status !== "idle") throw new Error("Só dá pra mexer em frotas paradas na base");
+      return parseUnits(f.units);
+    }
+    const from = await load(fromId);
+    const to = await load(toId);
+
+    // Move cada tipo pedido (clampando ao que a origem tem).
+    for (const name of Object.keys(units)) {
+      const move = Math.max(0, Math.floor(units[name] || 0));
+      if (move <= 0) continue;
+      const have = from[name] || 0;
+      if (move > have) throw new Error(`Naves insuficientes de ${name} (tem ${have})`);
+      from[name] = have - move;
+      if (from[name] <= 0) delete from[name];
+      to[name] = (to[name] || 0) + move;
+    }
+
+    async function save(id: string, map: UnitMap) {
+      if (id === "base") await tx.planet.update({ where: { id: planetId }, data: { units: stringifyUnits(map) } });
+      else await tx.fleet.update({ where: { id }, data: { units: stringifyUnits(map) } });
+    }
+    await save(fromId, from);
+    await save(toId, to);
+    return { ok: true };
+  }, TX_OPTS));
+}
+
 // Envia uma frota IDLE (já carregada) para um destino.
 export async function dispatchFleet(planetId: string, fleetId: string, target: Coords, mission: "attack" | "transport", ticks = 3, fake = false) {
   const engageTicks = Math.max(1, Math.min(3, Math.floor(ticks)));

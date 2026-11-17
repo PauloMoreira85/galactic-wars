@@ -7,7 +7,7 @@ import { buildRoid, totalRoids } from "../game/roids.js";
 import { RACES, isRaceKey, RACE_KEYS } from "../game/races.js";
 import { startUpgrade, buildUnit, buildAgent, parseTech, cancelOrder } from "../game/fleet.js";
 import { AGENTS, AGENT_KEYS, AGENT_FULL_NAME, isAgentKey, parseAgents, stringifyAgents, isShielded, ceNeeded, spySuccessChance, ROIDS_POR_CE } from "../game/agents.js";
-import { createFleet, setFleetComposition, renameFleet, dispatchFleet, fuelCost, viewSystem, galaxyTraffic, type ShipCounts } from "../game/galaxy.js";
+import { createFleet, setFleetComposition, transferUnits, renameFleet, dispatchFleet, fuelCost, viewSystem, galaxyTraffic, type ShipCounts } from "../game/galaxy.js";
 import { galaxyId, galaxyDecompose } from "../game/geo.js";
 import { recallFleet, BATTLE_TICKS, simulateCombat } from "../game/combat.js";
 import { unitsOfRace, isUnitUnlocked, CLASS_LABEL, unitByName, shipImage, radarVisibleCount } from "../game/catalog.js";
@@ -362,6 +362,22 @@ gameRouter.post("/fleets/:id/load", async (req: AuthedRequest, res) => {
   if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
   try { await setFleetComposition(planet.id, req.params.id, parsed.data.units as ShipCounts); }
   catch (e: any) { return res.status(400).json({ error: e.message ?? "Falha ao carregar" }); }
+  res.json(await planetView(req.userId!));
+});
+
+// Transfere naves DIRETO entre frotas (ou base <-> frota), sem descarregar antes.
+const transferSchema = z.object({
+  from: z.string().min(1), // id da frota ou "base"
+  to: z.string().min(1),
+  units: z.record(z.string(), z.number().int().min(0)),
+});
+gameRouter.post("/fleets/transfer", async (req: AuthedRequest, res) => {
+  const parsed = transferSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "Pedido invalido" });
+  const planet = await prisma.planet.findUnique({ where: { userId: req.userId! } });
+  if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
+  try { await transferUnits(planet.id, parsed.data.from, parsed.data.to, parsed.data.units as ShipCounts); }
+  catch (e: any) { return res.status(400).json({ error: e.message ?? "Falha ao transferir" }); }
   res.json(await planetView(req.userId!));
 });
 
