@@ -86,6 +86,36 @@ async function main() {
     console.log(`${nivel} (${h.score})${tag}  ${h.a}  ⇄  ${h.b}`);
     console.log(`         ${h.reasons.join(" · ")}\n`);
   }
+  // ===== CLUSTERS por IP (responde "uma pessoa criou várias?") =====
+  const byId = new Map(list.map((u) => [u.id, u]));
+  const ipGroups = new Map<string, string[]>();
+  for (const [uid, set] of ipByUser) for (const ip of set) {
+    if (!ipGroups.has(ip)) ipGroups.set(ip, []);
+    ipGroups.get(ip)!.push(uid);
+  }
+  const clusters = [...ipGroups.entries()].filter(([, ids]) => ids.length > 1).sort((a, b) => b[1].length - a[1].length);
+  if (clusters.length) {
+    console.log("\n=== CLUSTERS DE MULTI-CONTA (contas no MESMO IP) ===\n");
+    for (const [ip, ids] of clusters) {
+      const us = ids.map((id) => byId.get(id)!).filter(Boolean);
+      const times = us.map((u) => u.createdAt.getTime());
+      const janela = Math.round((Math.max(...times) - Math.min(...times)) / 60000); // min
+      const whats = us.map((u) => norm(u.whatsapp)).filter(Boolean);
+      const pixes = us.map((u) => norm(u.pixKey)).filter(Boolean);
+      const sameWhats = new Set(whats).size === 1 && whats.length > 1;
+      const samePix = new Set(pixes).size === 1 && pixes.length > 1;
+      console.log(`IP ${ip} — ${us.length} contas criadas numa janela de ${janela} min:`);
+      for (const u of us.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()))
+        console.log(`   • ${u.username.padEnd(20)} criada ${u.createdAt.toISOString().slice(0, 16).replace("T", " ")}`);
+      const veredito: string[] = [];
+      if (sameWhats) veredito.push("MESMO WhatsApp em todas");
+      if (samePix) veredito.push("MESMA chave PIX em todas");
+      if (janela < 60 && us.length >= 5) veredito.push(`${us.length} contas no mesmo IP em <1h = quase certamente 1 pessoa só`);
+      else if (us.length >= 5) veredito.push(`${us.length} contas no mesmo IP = forte indício de 1 dono`);
+      console.log(`   ⚠️  ${veredito.join(" · ") || "mesmo IP"}\n`);
+    }
+  }
+
   console.log("Obs: pares legítimos (irmãos/mesma casa) podem ser liberados com:");
   console.log("  node server/dist/multiaccount.js allow <conta1> <conta2>");
 }
