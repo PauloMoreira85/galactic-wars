@@ -43,6 +43,7 @@ services:
       ROUND_START_TIMES: "12:00,18:00,22:00"
       RESET_LEAD_MINUTES: "10"              # zera (soft) 10 min antes de cada início
       SLOTS_PER_SYSTEM: "3"                 # galáxias de 3 planetas no RUR
+      ALLOW_MULTI_ACCOUNT: "true"           # RUR: libera interação entre contas do mesmo IP (round descartável)
       JWT_SECRET: ${JWT_SECRET}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}

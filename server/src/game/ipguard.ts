@@ -5,6 +5,10 @@ import { prisma, withWrite } from "../db.js";
 export const MULTI_BLOCK_MSG =
   "Interação bloqueada: estas contas acessam do mesmo IP (proteção anti multi-conta). Se for engano, fale com a administração.";
 
+// Permite interação entre contas do mesmo IP (desliga a trava anti multi-conta).
+// Usado no RUR (round rápido/descartável, sem premiação) via env ALLOW_MULTI_ACCOUNT=true.
+export const MULTI_ACCOUNT_ALLOWED = (process.env.ALLOW_MULTI_ACCOUNT ?? "") === "true";
+
 // IP real do cliente. Atrás do Caddy, req.ip já vem do X-Forwarded-For
 // (exige app.set("trust proxy", true) no index). Normaliza IPv4 mapeado (::ffff:).
 export function clientIp(req: Request): string {
@@ -46,6 +50,7 @@ function pairKey(a: string, b: string) {
 // Contas que compartilham ao menos um IP com `userId` (exceto ela mesma),
 // já descontando os pares liberados manualmente pelo admin.
 export async function linkedUserIds(userId: string): Promise<string[]> {
+  if (MULTI_ACCOUNT_ALLOWED) return []; // RUR: trava desligada — ninguém é "linkado"
   const mine = await prisma.accountIp.findMany({ where: { userId }, select: { ip: true } });
   const ips = mine.map((r) => r.ip);
   if (!ips.length) return [];
