@@ -411,11 +411,11 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     <div className="layout">
       {/* ===== Barra mobile: só aparece no celular — logo + ☰ + seção atual ===== */}
       <div className="mobile-bar">
-        <img src="/art/logo/brasao.jpg" alt="GW" className="mobile-bar-logo" onClick={() => { setSection("planeta"); setMenuOpen(false); }} />
-        <span className="mobile-bar-title">{TITLES[section]}</span>
         <button className="mobile-bar-menu" onClick={() => setMenuOpen((o) => !o)} aria-label="Menu">
           {menuOpen ? "✕" : "☰"}
         </button>
+        <img src="/art/logo/brasao.jpg" alt="GW" className="mobile-bar-logo" onClick={() => { setSection("planeta"); setMenuOpen(false); }} />
+        <span className="mobile-bar-title">{TITLES[section]}</span>
       </div>
       {/* Fundo escuro ao abrir o menu no celular (toca fora pra fechar) */}
       {menuOpen && <div className="menu-backdrop" onClick={() => setMenuOpen(false)} />}
@@ -464,7 +464,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
       </aside>
 
       {/* ===== Conteúdo ===== */}
-      <main className="content">
+      <main className={`content sec-${section}`}>
         {game.roundEnded && (
           <div className="panel round-ended">
             🏆 <b>Round encerrado!</b>{ranking[0] && <> Campeão: <b>{ranking[0].username}</b> — {ranking[0].planet} (<CoordLink c={ranking[0].coords} />)</>}. As ações estão congeladas.{roundStatus ? <> Próximo round em <b>{roundStatus.time}</b>.</> : " Aguarde o próximo round."}

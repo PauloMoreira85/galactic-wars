@@ -516,6 +516,11 @@ td { font-family: var(--mono); }
   table { font-size: 12px; }
   .panel h2 { font-size: 14px; }
 
+  /* O cabeçalho do comandante + ações rápidas só aparecem na PÁGINA PRINCIPAL
+     no celular (nas outras seções, somem pra ganhar espaço). */
+  .content:not(.sec-planeta) > .status-header,
+  .content:not(.sec-planeta) > .action-tabs { display: none; }
+
   /* Cabeçalho de status BEM compacto no celular (ocupava quase meia tela) */
   .status-header { padding: 8px 10px; gap: 6px; }
   .sh-commander { padding-right: 0; border-right: none; width: 100%; gap: 8px; }
