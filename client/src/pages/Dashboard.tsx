@@ -196,6 +196,11 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [fgAmt, setFgAmt] = useState(0);
   const [fgErr, setFgErr] = useState("");
   const [fgBusy, setFgBusy] = useState(false);
+  // Doação do ME direto da aba Recursos (destino por coordenada).
+  const [meGov, setMeGov] = useState<Awaited<ReturnType<typeof api.gov>> | null>(null);
+  const [donTo, setDonTo] = useState("");
+  const [donAmt, setDonAmt] = useState({ metalium: 0, carbonum: 0, plutonium: 0 });
+  const [donErr, setDonErr] = useState("");
   const [zoom, setZoom] = useState<{ src: string; alt: string } | null>(null);
   const [alerts, setAlerts] = useState({ underAttack: false, incomingDefense: false, galaxyUnderAttack: false });
   const [unreadMsgs, setUnreadMsgs] = useState(0);
@@ -250,6 +255,8 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   useEffect(() => {
     if (section === "noticias") { setNewsUnread(0); api.newsSeen(); }
     if (section === "chat") { setChatUnread(0); api.chatSeen?.(); }
+    // ME abrindo Recursos: carrega o governo (pra listar os planetas destino da doação).
+    if (section === "recursos" && view?.galaxyFund.iAmME) { api.gov().then(setMeGov).catch(() => {}); }
   }, [section]);
 
   async function build(resource: Resource) {
@@ -658,6 +665,33 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             </div>
             {fgErr && <div className="error" style={{ marginTop: 10 }}>{fgErr}</div>}
           </div>
+
+          {/* Doação do fundo — só o ME vê (atalho aqui na aba Recursos). */}
+          {view.galaxyFund.iAmME && (
+            <div className="panel">
+              <h2>💰 Doar do fundo (Ministro da Economia)</h2>
+              <div className="cost" style={{ marginBottom: 6 }}>
+                Fundo disponível: <b>{fmt(view.galaxyFund.metalium)}</b> M · <b>{fmt(view.galaxyFund.carbonum)}</b> C · <b>{fmt(view.galaxyFund.plutonium)}</b> P
+                <div style={{ marginTop: 2 }}>Limite por doação (50%): <b style={{ color: "#3aa0ff" }}>{fmt(Math.floor(view.galaxyFund.metalium * 0.5))}</b> M · <b style={{ color: "#3aa0ff" }}>{fmt(Math.floor(view.galaxyFund.carbonum * 0.5))}</b> C · <b style={{ color: "#3aa0ff" }}>{fmt(Math.floor(view.galaxyFund.plutonium * 0.5))}</b> P · 1 doação a cada 72 ticks por planeta</div>
+              </div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                <select value={donTo} onChange={(e) => setDonTo(e.target.value)}
+                  style={{ background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
+                  <option value="">planeta destino...</option>
+                  {(meGov?.members ?? []).map((m) => <option key={m.id} value={m.id}>{m.name} ({m.coords})</option>)}
+                </select>
+                <input type="number" min={0} placeholder="M" value={donAmt.metalium || ""} onChange={(e) => setDonAmt({ ...donAmt, metalium: Math.max(0, Math.floor(Number(e.target.value) || 0)) })} style={{ width: 90, margin: 0, padding: "6px 8px" }} />
+                <input type="number" min={0} placeholder="C" value={donAmt.carbonum || ""} onChange={(e) => setDonAmt({ ...donAmt, carbonum: Math.max(0, Math.floor(Number(e.target.value) || 0)) })} style={{ width: 90, margin: 0, padding: "6px 8px" }} />
+                <input type="number" min={0} placeholder="P" value={donAmt.plutonium || ""} onChange={(e) => setDonAmt({ ...donAmt, plutonium: Math.max(0, Math.floor(Number(e.target.value) || 0)) })} style={{ width: 90, margin: 0, padding: "6px 8px" }} />
+                <button disabled={!donTo} onClick={async () => {
+                  setDonErr("");
+                  try { await api.govDonate(donTo, donAmt.metalium, donAmt.carbonum, donAmt.plutonium); setDonAmt({ metalium: 0, carbonum: 0, plutonium: 0 }); setMeGov(await api.gov()); refresh(); }
+                  catch (e: any) { setDonErr(e.message ?? "Falha ao doar"); }
+                }}>doar</button>
+              </div>
+              {donErr && <div className="error" style={{ marginTop: 10 }}>{donErr}</div>}
+            </div>
+          )}
 
           <div className="panel">
             <h2>🕳️ Mercado Negro</h2>
