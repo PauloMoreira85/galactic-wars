@@ -319,10 +319,24 @@ export async function processFleets(uptoTick: number) {
     if (targetPlanet) {
       await prisma.fleet.update({ where: { id: fleet.id }, data: { status: "garrison", arriveTick: fleet.arriveTick + Math.max(1, fleet.engageTicks ?? 1) } });
       // Avisa o planeta defendido que chegou reforço (se não for a própria frota dele).
+      const sender = await prisma.planet.findUnique({ where: { id: fleet.ownerPlanetId }, select: { name: true, galaxy: true, system: true, slot: true } });
       if (targetPlanet.id !== fleet.ownerPlanetId) {
-        const sender = await prisma.planet.findUnique({ where: { id: fleet.ownerPlanetId }, select: { name: true } });
         await prisma.news.create({ data: { planetId: targetPlanet.id, tick: uptoTick, message: `🛡️ Reforço chegou: a frota de ${sender?.name ?? "um aliado"} está defendendo seu planeta (${totalUnits(parseUnits(fleet.units))} nave[s])` } });
       }
+      // Registro de DEFESA no menu Combates (mesmo sem combate): comprova que a
+      // frota chegou e guarneceu. role "defense" (atacante = quem defendeu).
+      const defUnits = parseUnits(fleet.units);
+      const defRows = Object.keys(defUnits).filter((n) => defUnits[n] > 0)
+        .map((n) => ({ name: n, before: defUnits[n], lost: 0, pem: 0, assim: 0, survivors: defUnits[n] }));
+      await prisma.battleReport.create({ data: {
+        tick: uptoTick,
+        attackerPlanetId: fleet.ownerPlanetId, defenderPlanetId: targetPlanet.id,
+        attackerName: sender?.name ?? "?", defenderName: targetPlanet.name,
+        attackerCoords: sender ? `${sender.galaxy}:${sender.system}:${sender.slot}` : "?",
+        defenderCoords: `${targetPlanet.galaxy}:${targetPlanet.system}:${targetPlanet.slot}`,
+        winner: "defense",
+        report: JSON.stringify({ defense: true, attacker: defRows, defender: [], ticks: Math.max(1, fleet.engageTicks ?? 1) }),
+      } });
       continue;
     }
     await scheduleReturn(fleet.id, fleet, parseUnits(fleet.units));

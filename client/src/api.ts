@@ -413,7 +413,7 @@ export const api = {
       combats: {
         id: string;
         tick: number;
-        role: "attacker" | "defender";
+        role: "attacker" | "defender" | "defense-sent" | "defense-received";
         opponent: string;
         opponentCoords: string;
         myLost: number;

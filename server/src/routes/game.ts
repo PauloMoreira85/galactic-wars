@@ -931,12 +931,15 @@ gameRouter.get("/combats", async (req: AuthedRequest, res) => {
     const iAmAttacker = r.attackerPlanetId === planet.id;
     const detail = JSON.parse(r.report);
     const sumLost = (rows: { lost: number }[]) => rows.reduce((s, x) => s + x.lost, 0);
+    // Registro de DEFESA (sem combate): atacante = quem defendeu; defensor = planeta protegido.
+    const isDefense = r.winner === "defense";
+    const role = isDefense ? (iAmAttacker ? "defense-sent" : "defense-received") : (iAmAttacker ? "attacker" : "defender");
     return {
-      id: r.id, tick: r.tick, role: iAmAttacker ? "attacker" : "defender",
+      id: r.id, tick: r.tick, role,
       opponent: iAmAttacker ? r.defenderName : r.attackerName,
       opponentCoords: iAmAttacker ? r.defenderCoords : r.attackerCoords,
-      myLost: sumLost(iAmAttacker ? detail.attacker : detail.defender),
-      oppLost: sumLost(iAmAttacker ? detail.defender : detail.attacker),
+      myLost: isDefense ? 0 : sumLost(iAmAttacker ? detail.attacker : detail.defender),
+      oppLost: isDefense ? 0 : sumLost(iAmAttacker ? detail.defender : detail.attacker),
       captured: { metalium: r.capturedMetalium, carbonum: r.capturedCarbonum, plutonium: r.capturedPlutonium },
     };
   });

@@ -191,13 +191,18 @@ export function Combats() {
             {list.map((c) => (
               <tr key={c.id}>
                 <td className="rank-num">#{c.tick}</td>
-                <td>{c.role === "attacker" ? "⚔️ ataque" : "🛡️ defesa"}</td>
+                <td>{
+                  c.role === "attacker" ? "⚔️ ataque" :
+                  c.role === "defender" ? "🛡️ defesa" :
+                  c.role === "defense-sent" ? "🛡️ defendi" :
+                  c.role === "defense-received" ? "🛡️ fui defendido" : "🛡️ defesa"
+                }</td>
                 <td>{c.opponent}</td>
                 <td><CoordLink c={c.opponentCoords} /></td>
                 <td style={{ color: c.myLost > 0 ? "var(--danger)" : undefined }}>{fmt(c.myLost)}</td>
                 <td style={{ color: c.oppLost > 0 ? "var(--carbonum)" : undefined }}>{fmt(c.oppLost)}</td>
                 <td className="roid-count">{fmt(c.captured.metalium)}/{fmt(c.captured.carbonum)}/{fmt(c.captured.plutonium)}</td>
-                <td><button onClick={() => open(c.id)}>ver</button></td>
+                <td>{(c.role === "defense-sent" || c.role === "defense-received") ? <span className="roid-count">—</span> : <button onClick={() => open(c.id)}>ver</button>}</td>
               </tr>
             ))}
           </tbody>
