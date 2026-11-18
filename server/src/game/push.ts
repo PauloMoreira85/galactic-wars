@@ -1,5 +1,8 @@
-import webpush from "web-push";
+import * as webpushNs from "web-push";
 import { prisma } from "../db.js";
+
+// web-push é CommonJS: em ESM o default pode vir sob .default ou no próprio ns.
+const webpush: typeof import("web-push") = (webpushNs as any).default ?? webpushNs;
 
 // ===== Web Push (notificações com o app fechado) =====
 // Chaves VAPID: a PÚBLICA é exposta ao cliente (/api/push/key); a PRIVADA vem do
