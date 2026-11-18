@@ -44,13 +44,43 @@ export function Chat({ myName = "" }: { myName?: string }) {
   const boxRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const atBottom = useRef(true);
+  const [loadingOld, setLoadingOld] = useState(false);
+  const noMoreOld = useRef(false);
 
   async function load() {
-    try { const r = await api.chat(room); setMsgs(r.messages); setLabel(r.label); setError(""); }
+    try {
+      const r = await api.chat(room);
+      // Só substitui se chegou msg nova (evita apagar o histórico que o usuário já rolou).
+      setMsgs((prev) => {
+        const last = r.messages[r.messages.length - 1]?.id;
+        const prevLast = prev[prev.length - 1]?.id;
+        if (prev.length > r.messages.length && last === prevLast) return prev; // já tenho isso + histórico antigo
+        return r.messages;
+      });
+      setLabel(r.label); setError("");
+    }
     catch (e: any) { setMsgs([]); setError(e.message ?? "Falha"); }
   }
-  useEffect(() => { atBottom.current = true; load(); const t = setInterval(load, 3000); return () => clearInterval(t); }, [room]);
+  useEffect(() => { atBottom.current = true; noMoreOld.current = false; load(); const t = setInterval(load, 3000); return () => clearInterval(t); }, [room]);
   useEffect(() => { const el = boxRef.current; if (el && atBottom.current) el.scrollTop = el.scrollHeight; }, [msgs]);
+
+  // Rolar pra trás: carrega mensagens antigas quando chega perto do topo.
+  async function loadOlder() {
+    if (loadingOld || noMoreOld.current || msgs.length === 0) return;
+    setLoadingOld(true);
+    const el = boxRef.current;
+    const prevHeight = el?.scrollHeight ?? 0;
+    try {
+      const r = await api.chatOlder(room, msgs[0].id);
+      if (r.messages.length === 0) { noMoreOld.current = true; }
+      else {
+        setMsgs((prev) => [...r.messages, ...prev]);
+        // Mantém a posição de leitura (não "pula" ao inserir no topo).
+        requestAnimationFrame(() => { const e2 = boxRef.current; if (e2) e2.scrollTop = e2.scrollHeight - prevHeight; });
+      }
+    } catch { /* ignora */ }
+    finally { setLoadingOld(false); }
+  }
   // Ao abrir o chat, marca como lido (zera o alerta laranja do menu).
   useEffect(() => { api.chatSeen?.().catch(() => {}); }, [msgs]);
 
@@ -90,9 +120,14 @@ export function Chat({ myName = "" }: { myName?: string }) {
       </div>
       <div
         ref={boxRef}
-        onScroll={(e) => { const el = e.currentTarget; atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40; }}
+        onScroll={(e) => { const el = e.currentTarget; atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40; if (el.scrollTop < 60) loadOlder(); }}
         style={{ height: 400, overflowY: "auto", background: "rgba(2,8,18,0.7)", border: "1px solid var(--border)", borderRadius: 6, padding: "10px 12px", fontFamily: "var(--mono)", fontSize: 13, lineHeight: 1.6 }}
       >
+        {!error && msgs.length > 0 && (
+          <div className="roid-count" style={{ textAlign: "center", padding: "2px 0 6px", opacity: 0.6 }}>
+            {loadingOld ? "carregando mensagens antigas…" : noMoreOld.current ? "— início do histórico —" : "↑ role pra cima pra ver mensagens antigas"}
+          </div>
+        )}
         {error ? <div className="roid-count">{error}</div>
           : msgs.length === 0 ? <div className="roid-count">Sem mensagens nesta sala ainda. 👋</div>
           : msgs.map((m) => {

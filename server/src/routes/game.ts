@@ -23,7 +23,7 @@ import { clampMorale, moraleMult } from "../game/morale.js";
 import { addNews, recentNews } from "../game/news.js";
 import { createAlliance, invitePlayer, acceptInvite, leaveAlliance, kickMember, setMemberRole, allianceView } from "../game/alliance.js";
 import { forumIndex, listTopics, createTopic, getTopic, reply as forumReply, isForum } from "../game/forum.js";
-import { sendChat, recentChat, resolveRoom } from "../game/chat.js";
+import { sendChat, recentChat, olderChat, resolveRoom } from "../game/chat.js";
 import { sendPM, inbox, sentbox, markRead, unreadCount } from "../game/pm.js";
 import { SABOTAGES, availableSabotages, executeSabotage, sabotageOdds, sabotageCatalog } from "../game/sabotage.js";
 import { parseUnits, totalUnits } from "../game/unitmap.js";
@@ -876,7 +876,10 @@ gameRouter.post("/chat/seen", async (req: AuthedRequest, res) => {
 gameRouter.get("/chat/:room", async (req: AuthedRequest, res) => {
   const room = await resolveRoom(req.userId!, req.params.room);
   if (!room) return res.status(400).json({ error: "Sala indisponível (entre numa aliança?)" });
-  res.json({ label: room.label, messages: await recentChat(room.key) });
+  // ?before=<id> → carrega mensagens ANTIGAS (rolar pra trás). Sem isso, as recentes.
+  const before = typeof req.query.before === "string" ? req.query.before : "";
+  const messages = before ? await olderChat(room.key, before) : await recentChat(room.key);
+  res.json({ label: room.label, messages });
 });
 gameRouter.post("/chat/:room", async (req: AuthedRequest, res) => {
   const p = z.object({ body: z.string() }).safeParse(req.body);
