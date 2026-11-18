@@ -561,7 +561,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                   <li><b>Pesquise</b> (🔬) pra desbloquear e depois <b>construa</b> (🛠️). Em <b>Naves, Inteligência e Sabotagem</b> a cadeia é: pesquisa → construção → libera a próxima.</li>
                   <li>Construa <b>naves</b> (em Naves) e monte uma <b>frota</b> em <b>Frotas</b>, com as coordenadas do alvo.</li>
                   <li>Você pode <b>atacar ou defender</b> de 1 a 3 ticks: na <b>sua galáxia</b> só dá pra <b>defender</b> (aliados); em <b>outras galáxias</b> dá pra <b>atacar e defender</b>. Seus <b>roiders</b> ativos roubam os roids do alvo.</li>
-                  <li><b>Inteligência</b>: treine agentes <b>P/M/T/D</b> pra espionar (gasta 1 por missão) e agentes de <b>Contra-Espionagem (CE)</b> pra se proteger — você fica blindado quando <b>CE ≥ seus roids ÷ 2</b>.</li>
+                  <li><b>Inteligência</b>: treine agentes <b>P/M/T/D</b> pra espionar (gasta 1 por missão). Pra se defender, treine <b>Contra-Espionagem (CE)</b>: a disputa é <b>AE do atacante vs seu CE</b> — quanto mais CE acima do AE dele, menor a chance de ele passar (com o dobro de CE você bloqueia a grande maioria; nunca é 100%). Sabotagem tem <b>cooldown de 5 ticks</b> entre tentativas.</li>
                   <li><b>Sabotagem</b> prejudica o alvo (atrasa produção, rouba recurso/tecnologia…) — também é barrada pelo CE de quem você ataca.</li>
                   <li>Você tem <b>proteção de novato por 72 ticks</b> — ninguém te ataca. Cresça à vontade.</li>
                 </ol>

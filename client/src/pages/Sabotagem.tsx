@@ -29,7 +29,7 @@ export function Sabotagem() {
   return (
     <div className="panel">
       <h2>Sabotagem</h2>
-      <div className="cost">Escolha o alvo (outra galáxia) e a sabotagem que você desbloqueou. Pode ser repelida pela contra-espionagem do alvo.</div>
+      <div className="cost">Escolha o alvo (outra galáxia) e a sabotagem que você desbloqueou. Pode ser repelida pela contra-espionagem do alvo. <b>Sem Agente de Espionagem (AE) a sabotagem não funciona.</b> Há um <b>cooldown de 5 ticks</b> entre tentativas de sabotagem.</div>
       <div style={{ display: "flex", gap: 6, alignItems: "center", margin: "8px 0", flexWrap: "wrap" }}>
         <span className="roid-count">Alvo</span>
         <input type="text" inputMode="numeric" maxLength={3} placeholder="set" title="Setor" value={g} onChange={(e) => setG(e.target.value.replace(/\D/g, ""))} style={{ width: 60, margin: 0, padding: "6px 8px" }} />
