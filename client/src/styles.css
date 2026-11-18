@@ -528,7 +528,9 @@ td { font-family: var(--mono); }
 
   .action-tabs { gap: 6px; }
   .action-tab { padding: 6px 10px; font-size: 12px; }
-  .resource-bar { gap: 12px; padding: 10px 12px; }
+  /* No celular a barra de recursos NÃO fica fixa (sticky quebrava em linhas e só
+     o Plutonium "grudava"). Rola normal junto com o conteúdo. */
+  .resource-bar { gap: 12px; padding: 10px 12px; position: static; }
 
   /* Faixa "Desenvolvido por" ocupa a largura toda no celular */
   .ads-strip .ad-card { max-width: 100%; }
