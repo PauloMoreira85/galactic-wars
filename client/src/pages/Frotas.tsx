@@ -85,6 +85,12 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
     ...fleets.flatMap((f) => Object.keys(f.units)),
   ]));
   const baseOf = (name: string) => view.units.find((u) => u.name === name)?.count ?? 0;
+  // Alvos de uma nave (texto curto) — pra não ter que consultar a tabela de unidades.
+  const alvosOf = (name: string) => {
+    const u = view.units.find((x) => x.name === name);
+    if (!u) return "";
+    return u.roider ? "rouba roids" : (u.alvos.join(", ") || "—");
+  };
   const nextCost = view.planet.nextFleetSlotCost;
 
   return (
@@ -110,7 +116,7 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
               <tbody>
                 {shipNames.map((name) => (
                   <tr key={name}>
-                    <td className="fg-name"><b>{name}</b></td>
+                    <td className="fg-name"><b>{name}</b><div className="roid-count" style={{ fontSize: 10.5, opacity: 0.85 }}>🎯 {alvosOf(name)}</div></td>
                     <td>{fmt(baseOf(name))}</td>
                     {fleets.map((f) => (
                       <td key={f.id} className={!f.idle && !(f.units[name]) ? "fg-zero" : ""}>

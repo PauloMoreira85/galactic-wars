@@ -197,12 +197,13 @@ function Calculadora() {
 
       <div style={{ overflowX: "auto" }}>
         <table>
-          <thead><tr><th>Nave</th><th>Classe</th><th>⚔️ Ataque</th><th>🛡️ Defesa</th></tr></thead>
+          <thead><tr><th>Nave</th><th>Classe</th><th>Alvos</th><th>⚔️ Ataque</th><th>🛡️ Defesa</th></tr></thead>
           <tbody>
             {shown.map((u) => (
               <tr key={u.name}>
                 <td><b>{u.name}</b>{u.roider && " ⛏️"}</td>
                 <td className="roid-count">{u.classe}</td>
+                <td className="roid-count">{u.roider ? "rouba roids" : (u.alvos.join(", ") || "—")}</td>
                 <td><input type="text" inputMode="numeric" value={atk[u.name] ?? ""} placeholder="0" onChange={(e) => setQty("a", u.name, e.target.value.replace(/\D/g, ""))} style={{ width: 90, margin: 0, padding: "4px 6px" }} /></td>
                 <td><input type="text" inputMode="numeric" value={def[u.name] ?? ""} placeholder="0" onChange={(e) => setQty("d", u.name, e.target.value.replace(/\D/g, ""))} style={{ width: 90, margin: 0, padding: "4px 6px" }} /></td>
               </tr>
