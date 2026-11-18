@@ -309,7 +309,9 @@ gameRouter.get("/fleets", async (req: AuthedRequest, res) => {
   if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
   const state = await prisma.gameState.findUnique({ where: { id: 1 } });
   const tick = state?.tickNumber ?? 0;
-  const prop = levelOf(parseTech(planet.tech), "propulsao");
+  // Redução de propulsão = nº de construções de deslocamento feitas (NÃO existe
+  // tech "propulsao" — isso retornava 0 e a tela mostrava TEC sem redução).
+  const prop = travelReductionTicks(parseTech(planet.tech));
   const fleets = await prisma.fleet.findMany({ where: { ownerPlanetId: planet.id }, orderBy: { name: "asc" } });
   const out = fleets.map((f) => {
     const units = parseUnits(f.units);
