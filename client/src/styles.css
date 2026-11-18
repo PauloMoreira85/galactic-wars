@@ -251,6 +251,18 @@ body::after {
 }
 .coord-link:hover { color: #eafcff; text-shadow: 0 0 8px var(--glow); }
 
+/* Instalar como app (PWA) — landing */
+.install-app { margin-top: 38px; }
+.install-cols { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+.install-card {
+  flex: 1; min-width: 280px; max-width: 420px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+  padding: 18px 20px; box-shadow: 0 8px 26px rgba(0,0,0,0.4);
+}
+.install-os { font-family: "Orbitron", sans-serif; font-size: 15px; letter-spacing: 1px; color: var(--accent); text-shadow: 0 0 8px var(--glow); margin-bottom: 10px; }
+.install-card ol { margin: 0; padding-left: 20px; color: var(--text); font-size: 14.5px; line-height: 1.8; }
+.install-card ol b { color: #eaffff; }
+
 /* Convite pro Discord (landing) */
 .discord-cta { display: flex; justify-content: center; margin-top: 34px; }
 .discord-btn {

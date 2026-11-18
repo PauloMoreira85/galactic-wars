@@ -281,6 +281,36 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
         </form>
       </div>
 
+      {/* Instalar como APP no celular (PWA) */}
+      {!IS_RUR && (
+        <div className="install-app">
+          <h2 className="landing-h2" style={{ marginBottom: 10 }}>📱 Jogue como um App no celular</h2>
+          <p style={{ textAlign: "center", color: "var(--muted)", margin: "0 auto 18px", maxWidth: "60ch" }}>
+            Adicione o Galactic War à tela inicial e jogue em tela cheia, com ícone próprio — igual a um aplicativo. É grátis e não ocupa espaço.
+          </p>
+          <div className="install-cols">
+            <div className="install-card">
+              <div className="install-os">🤖 Android (Chrome)</div>
+              <ol>
+                <li>Abra <b>galacticwar.com.br</b> no Chrome</li>
+                <li>Toque no menu <b>⋮</b> (canto superior direito)</li>
+                <li>Toque em <b>“Instalar app”</b> ou <b>“Adicionar à tela inicial”</b></li>
+                <li>Confirme — o ícone aparece na sua tela 🚀</li>
+              </ol>
+            </div>
+            <div className="install-card">
+              <div className="install-os"> iPhone (Safari)</div>
+              <ol>
+                <li>Abra <b>galacticwar.com.br</b> no Safari</li>
+                <li>Toque no botão <b>Compartilhar</b> <span style={{ fontSize: "1.1em" }}>⬆️</span> (embaixo)</li>
+                <li>Role e toque em <b>“Adicionar à Tela de Início”</b></li>
+                <li>Toque em <b>“Adicionar”</b> — pronto! 🪐</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Showcase das raças */}
       <div className="landing-races">
         <h2 className="landing-h2">As 5 Raças do Universo</h2>
