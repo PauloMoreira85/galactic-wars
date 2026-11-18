@@ -47,27 +47,40 @@ export function Trafego({ onGoto }: { onGoto?: (coords: string) => void }) {
       {data.fleets.length === 0 ? (
         <div className="roid-count">Nenhuma frota em trânsito para a sua galáxia.</div>
       ) : (
-        <table>
-          <thead>
-            <tr><th>Destino</th><th>Origem</th><th>Comandante</th><th>Tipo</th><th>Naves</th><th>Chega em</th></tr>
-          </thead>
-          <tbody>
-            {data.fleets.map((f, i) => {
-              const atk = f.mission === "attack";
-              const color = atk ? "var(--danger)" : "var(--carbonum)";
-              return (
-                <tr key={i} style={f.toMe ? { background: "rgba(255,80,80,0.10)" } : undefined}>
-                  <td><b>{f.targetName ?? "—"}</b> <Coord c={f.target} />{f.toMe && " 🎯"}</td>
-                  <td><Coord c={f.origin} /></td>
-                  <td>{f.owner}</td>
-                  <td style={{ color }}>{atk ? "🔴 ataque" : "🟢 defesa"}{f.status === "engaged" ? " (em combate)" : ""}</td>
-                  <td>{fmt(f.ships)}</td>
-                  <td>{f.status === "engaged" ? "—" : `${f.ticks} tick(s)`}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        // Agrupa as frotas chegando POR PLANETA DE DESTINO (igual a Movimentação).
+        Object.values(
+          data.fleets.reduce((acc, f) => {
+            const k = f.target;
+            (acc[k] ??= { target: f.target, targetName: f.targetName, toMe: f.toMe, fleets: [] }).fleets.push(f);
+            return acc;
+          }, {} as Record<string, { target: string; targetName: string | null; toMe: boolean; fleets: typeof data.fleets }>)
+        )
+        .sort((a, b) => (b.toMe ? 1 : 0) - (a.toMe ? 1 : 0)) // o SEU planeta primeiro
+        .map((grp, gi) => (
+          <div key={gi} style={{ marginBottom: 14 }}>
+            <div className="combat-ini" style={grp.toMe ? { color: "var(--danger)" } : undefined}>
+              <b>{grp.targetName ?? "—"}</b> <span className="roid-count">(<Coord c={grp.target} />)</span>{grp.toMe && " 🎯 você"}
+            </div>
+            <table>
+              <thead><tr><th>Origem</th><th>Comandante</th><th>Tipo</th><th>Naves</th><th>Chega em</th></tr></thead>
+              <tbody>
+                {grp.fleets.sort((a, b) => a.ticks - b.ticks).map((f, i) => {
+                  const atk = f.mission === "attack";
+                  const color = atk ? "var(--danger)" : "var(--carbonum)";
+                  return (
+                    <tr key={i} style={grp.toMe ? { background: "rgba(255,80,80,0.10)" } : undefined}>
+                      <td><Coord c={f.origin} /></td>
+                      <td>{f.owner}</td>
+                      <td style={{ color }}>{atk ? "🔴 ataque" : "🟢 defesa"}{f.status === "engaged" ? " (em combate)" : ""}</td>
+                      <td>{fmt(f.ships)}</td>
+                      <td>{f.status === "engaged" ? "—" : `${f.ticks} tick(s)`}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ))
       )}
     </div>
 
