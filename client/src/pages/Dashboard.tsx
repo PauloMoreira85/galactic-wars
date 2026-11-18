@@ -260,6 +260,9 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     if (section === "chat") { setChatUnread(0); api.chatSeen?.(); }
     // ME abrindo Recursos: carrega o governo (pra listar os planetas destino da doação).
     if (section === "recursos" && view?.galaxyFund.iAmME) { api.gov().then(setMeGov).catch(() => {}); }
+    // Ao SAIR da Galáxia, limpa a coord guardada (do link do ranking/tráfego) pra que
+    // abrir a aba de novo pelo menu comece sempre na galáxia do próprio jogador.
+    if (section !== "galaxia" && galaxyGoto) setGalaxyGoto("");
   }, [section]);
 
   async function build(resource: Resource) {
