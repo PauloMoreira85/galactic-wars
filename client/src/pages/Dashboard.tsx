@@ -261,9 +261,6 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     if (section === "chat") { setChatUnread(0); api.chatSeen?.(); }
     // ME abrindo Recursos: carrega o governo (pra listar os planetas destino da doação).
     if (section === "recursos" && view?.galaxyFund.iAmME) { api.gov().then(setMeGov).catch(() => {}); }
-    // Ao SAIR da Galáxia, limpa a coord guardada (do link do ranking/tráfego) pra que
-    // abrir a aba de novo pelo menu comece sempre na galáxia do próprio jogador.
-    if (section !== "galaxia" && galaxyGoto) setGalaxyGoto("");
   }, [section]);
 
   async function build(resource: Resource) {
@@ -298,7 +295,9 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     finally { setFgBusy(false); }
   }
 
-  async function doCancel(id: string) {
+  async function doCancel(id: string, label?: string) {
+    const what = label ? `"${label}"` : "este item";
+    if (!window.confirm(`Cancelar ${what}? O reembolso é proporcional ao tempo que ainda falta (parte dos recursos é perdida).`)) return;
     setError("");
     try { setView(await api.cancelOrder(id)); } catch (e: any) { setError(e.message ?? "Falha ao cancelar"); }
   }
@@ -332,6 +331,9 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     if (it.soon) return;
     if (it.key === "ferramentas") { window.open("/ferramentas", "_blank", "noopener"); return; }
     if (it.key === "forum") { window.open("https://forum.galacticwar.com.br", "_blank", "noopener"); return; }
+    // Abrir a Galáxia pelo MENU sempre começa na galáxia do próprio jogador
+    // (limpa a coord de um link anterior). Links de coordenada passam por fora daqui.
+    if (it.key === "galaxia") setGalaxyGoto("");
     setSection(it.key as Section);
     setMenuOpen(false); // fecha o menu retrátil ao escolher uma seção (celular)
   }
@@ -767,7 +769,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                     <div>{t.icon} <span className="roid-count" style={{ color: t.color }}>{t.tag}:</span> {q.label}</div>
                     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                       <span className="roid-count">{q.ticksRemaining} tick(s)</span>
-                      <button onClick={() => doCancel(q.id)} title="Cancelar — reembolso proporcional ao tempo que falta" style={{ padding: "2px 8px", fontSize: 11 }}>cancelar</button>
+                      <button onClick={() => doCancel(q.id, q.label)} title="Cancelar — reembolso proporcional ao tempo que falta" style={{ padding: "2px 8px", fontSize: 11 }}>cancelar</button>
                     </div>
                   </div>
                 ); })}
@@ -844,7 +846,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                     <div>{t.icon} <span className="roid-count" style={{ color: t.color }}>{t.tag}:</span> {q.label}</div>
                     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                       <span className="roid-count">{q.ticksRemaining} tick(s) restante(s)</span>
-                      <button onClick={() => doCancel(q.id)} title="Cancelar — reembolso proporcional ao tempo que falta" style={{ padding: "2px 8px", fontSize: 11 }}>cancelar</button>
+                      <button onClick={() => doCancel(q.id, q.label)} title="Cancelar — reembolso proporcional ao tempo que falta" style={{ padding: "2px 8px", fontSize: 11 }}>cancelar</button>
                     </div>
                   </div>
                 ); })}

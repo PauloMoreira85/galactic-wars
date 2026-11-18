@@ -44,10 +44,11 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
     } catch {}
   }
 
-  // Ao clicar numa coordenada do ranking (gotoCoords = "setor:paralelo:slot#ts"),
-  // pula direto pra aquela galáxia. O #ts garante re-navegar na mesma coord.
+  // gotoCoords = "setor:paralelo:slot#ts" (link do ranking/tráfego) → pula pra essa
+  // galáxia. Vazio (aberto pelo menu) → volta pra galáxia do próprio jogador.
+  // O #ts garante re-navegar mesmo clicando na mesma coord.
   useEffect(() => {
-    if (!gotoCoords) return;
+    if (!gotoCoords) { setGalaxy(g || 1); setSystem(s || 1); return; }
     const [gg, ss] = gotoCoords.split("#")[0].split(":").map(Number);
     if (gg >= 1 && gg <= 10) setGalaxy(gg);
     if (ss >= 1 && ss <= 6) setSystem(ss);
