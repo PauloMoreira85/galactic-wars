@@ -541,9 +541,19 @@ td { font-family: var(--mono); }
   .action-tabs { gap: 5px; margin-bottom: 10px; }
   .action-tab { padding: 5px 9px; font-size: 11.5px; }
   .section-title { margin-top: 2px; }
-  /* No celular a barra de recursos NÃO fica fixa (sticky quebrava em linhas e só
-     o Plutonium "grudava"). Rola normal junto com o conteúdo. */
-  .resource-bar { gap: 12px; padding: 10px 12px; position: static; }
+  /* Recursos FIXOS no topo (abaixo da barra do menu) — a galera quer ver o saldo
+     sempre pra decidir gastos. Compacta pra caber os 3 numa linha só, sem quebrar
+     (antes quebrava e "só o Plutonium grudava"). */
+  .resource-bar {
+    gap: 8px; padding: 7px 10px; margin-bottom: 10px;
+    flex-wrap: nowrap; justify-content: space-between;
+    position: sticky; top: calc(50px + env(safe-area-inset-top, 0px)); z-index: 55;
+  }
+  .resbar-item { gap: 4px; flex: 1; min-width: 0; justify-content: center; }
+  .resbar-label { display: none; }          /* o dot colorido já identifica o recurso */
+  .resbar-value { font-size: 13px; }
+  .resbar-prod { font-size: 9.5px; }
+  .dot { width: 10px; height: 10px; flex-shrink: 0; }
 
   /* Faixa "Desenvolvido por" ocupa a largura toda no celular */
   .ads-strip .ad-card { max-width: 100%; }
