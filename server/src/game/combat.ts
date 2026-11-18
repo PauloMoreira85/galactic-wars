@@ -323,22 +323,33 @@ export async function resolveSiege(target: { galaxy: number; system: number; slo
     round: 1, ticks: 1, log: st.log ?? [],
   };
 
-  // Aplica sobreviventes + espólio em cada frota atacante; finaliza quem acabou.
+  // Aplica sobreviventes em cada frota atacante; finaliza quem acabou.
+  // Os roids saqueados são creditados DIRETO no planeta do atacante NESTE tick
+  // (roidar instantâneo): se a frota morrer no caminho de volta, os roids NÃO se
+  // perdem — já estão em casa. (capMetalium/etc. fica sempre 0.)
   const atkOwners = new Set<string>();
+  const roidGain: Record<string, { m: number; c: number; p: number }> = {};
   for (const f of engaged) {
     const surv = aDist[f.id] ?? {};
     const my = caps.find((x) => x.id === f.id);
     const share = my && totalRoiderCap > 0 ? my.cap / totalRoiderCap : 0;
     const done = (f.battleTicksDone ?? 0) + 1;
     const maxT = Math.max(1, Math.min(BATTLE_TICKS, f.engageTicks ?? BATTLE_TICKS));
-    await prisma.fleet.update({ where: { id: f.id }, data: {
-      units: stringifyUnits(surv), battleTicksDone: done,
-      capMetalium: f.capMetalium + Math.floor(roundCap.metalium * share),
-      capCarbonum: f.capCarbonum + Math.floor(roundCap.carbonum * share),
-      capPlutonium: f.capPlutonium + Math.floor(roundCap.plutonium * share),
-    } });
+    await prisma.fleet.update({ where: { id: f.id }, data: { units: stringifyUnits(surv), battleTicksDone: done } });
+    // Acumula o espólio desta frota pro planeta dono (credita de uma vez abaixo).
+    const g = (roidGain[f.ownerPlanetId] ??= { m: 0, c: 0, p: 0 });
+    g.m += Math.floor(roundCap.metalium * share);
+    g.c += Math.floor(roundCap.carbonum * share);
+    g.p += Math.floor(roundCap.plutonium * share);
     atkOwners.add(f.ownerPlanetId);
     if (done >= maxT || totalUnits(surv) <= 0) await finalize(f.id, tick);
+  }
+  // Credita os roids saqueados nos planetas atacantes AGORA (instantâneo).
+  for (const [ownerId, g] of Object.entries(roidGain)) {
+    if (g.m + g.c + g.p <= 0) continue;
+    await prisma.planet.update({ where: { id: ownerId }, data: {
+      roidMetalium: { increment: g.m }, roidCarbonum: { increment: g.c }, roidPlutonium: { increment: g.p },
+    } });
   }
 
   // 1 relatório por planeta atacante (cada um vê o combate COMBINADO).
@@ -382,11 +393,12 @@ export async function finalize(fleetId: string, tick: number) {
     if (atkP) await addNews(atkP.id, tick, `💥 Sua frota foi dizimada no combate em ${fleet.targetGalaxy}:${fleet.targetSystem}:${fleet.targetSlot}`);
     return;
   }
-  const cap = fleet.capMetalium + fleet.capCarbonum + fleet.capPlutonium;
   await prisma.fleet.update({ where: { id: fleetId }, data: {
     status: "returning", battleState: null, departTick: tick, arriveTick: tick + back, units: stringifyUnits(atkSurv),
   }});
-  if (atkP && arrived) await addNews(atkP.id, tick, `⚔️ Sua frota terminou o combate em ${fleet.targetGalaxy}:${fleet.targetSystem}:${fleet.targetSlot} e está voltando${cap > 0 ? ` (capturou ${cap} roid[s])` : ""}`);
+  // Os roids saqueados já foram creditados no planeta (roidar instantâneo), então
+  // aqui a notícia só avisa que a frota está voltando.
+  if (atkP && arrived) await addNews(atkP.id, tick, `⚔️ Sua frota terminou o combate em ${fleet.targetGalaxy}:${fleet.targetSystem}:${fleet.targetSlot} e está voltando`);
 }
 
 export async function recallFleet(fleetId: string, ownerPlanetId: string, tick: number) {
