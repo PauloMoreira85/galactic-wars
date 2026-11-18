@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, type PlanetView, type RaceInfo } from "../api";
+import { enablePush, disablePush, pushSupported, pushPermission } from "../push";
 
 // Redimensiona uma imagem (File) para um data URL pequeno (máx ~160px, JPEG).
 function fileToAvatar(file: File): Promise<string> {
@@ -29,6 +30,19 @@ function fileToAvatar(file: File): Promise<string> {
 // Minha Conta: avatar, e-mail, contato p/ premiação, senha + auto-exílio.
 export function Preferencias({ view, onChanged }: { view: PlanetView; onChanged: () => void }) {
   const [error, setError] = useState("");
+
+  // ===== Notificações push =====
+  const [pushOn, setPushOn] = useState(pushPermission() === "granted");
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushMsg, setPushMsg2] = useState("");
+  async function togglePush() {
+    setPushBusy(true); setPushMsg2("");
+    try {
+      if (pushOn) { await disablePush(); setPushOn(false); setPushMsg2("Notificações desativadas."); }
+      else { await enablePush(); setPushOn(true); setPushMsg2("✅ Pronto! Você será avisado de ataques e mensagens, mesmo com o jogo fechado."); }
+    } catch (e: any) { setPushMsg2(e.message ?? "Falha ao configurar notificações."); }
+    finally { setPushBusy(false); }
+  }
 
   // ===== Senha =====
   const [cur, setCur] = useState("");
@@ -132,6 +146,24 @@ export function Preferencias({ view, onChanged }: { view: PlanetView; onChanged:
 
   return (
     <>
+      {/* ===== Notificações (Web Push) ===== */}
+      <div className="panel">
+        <h2>🔔 Notificações</h2>
+        <div className="cost" style={{ marginBottom: 10 }}>
+          Receba um aviso no celular/computador quando <b>chegar um ataque</b> ou uma <b>mensagem</b> — mesmo com o jogo fechado. Pra funcionar melhor no celular, <b>instale o app</b> na tela inicial antes (veja a página inicial).
+        </div>
+        {!pushSupported() ? (
+          <div className="roid-count">Seu navegador não suporta notificações push.</div>
+        ) : (
+          <>
+            <button disabled={pushBusy} onClick={togglePush}>
+              {pushBusy ? "..." : pushOn ? "🔕 Desativar notificações" : "🔔 Ativar notificações"}
+            </button>
+            {pushMsg && <div className="roid-count" style={{ marginTop: 8, color: pushOn ? "var(--carbonum)" : "var(--muted)" }}>{pushMsg}</div>}
+          </>
+        )}
+      </div>
+
       {/* ===== Raça do round (trocável só na proteção de novato) ===== */}
       <div className="panel">
         <h2>🧬 Raça</h2>

@@ -24,6 +24,7 @@ import { addNews, recentNews } from "../game/news.js";
 import { createAlliance, invitePlayer, acceptInvite, leaveAlliance, kickMember, setMemberRole, allianceView } from "../game/alliance.js";
 import { forumIndex, listTopics, createTopic, getTopic, reply as forumReply, isForum } from "../game/forum.js";
 import { sendChat, recentChat, olderChat, resolveRoom } from "../game/chat.js";
+import { pushPublicKey, saveSubscription, removeSubscription, PUSH_ENABLED } from "../game/push.js";
 import { sendPM, inbox, sentbox, markRead, unreadCount } from "../game/pm.js";
 import { SABOTAGES, availableSabotages, executeSabotage, sabotageOdds, sabotageCatalog } from "../game/sabotage.js";
 import { parseUnits, totalUnits } from "../game/unitmap.js";
@@ -868,6 +869,21 @@ gameRouter.get("/chat/unread", async (req: AuthedRequest, res) => {
   res.json({ unread });
 });
 // Marca o chat como lido (zera o alerta).
+// ===== Notificações push (Web Push) =====
+// Chave pública VAPID (cliente usa pra se inscrever). enabled=false = push off.
+gameRouter.get("/push/key", (_req, res) => {
+  res.json({ key: pushPublicKey(), enabled: PUSH_ENABLED });
+});
+gameRouter.post("/push/subscribe", async (req: AuthedRequest, res) => {
+  try { await saveSubscription(req.userId!, req.body?.subscription ?? req.body); res.json({ ok: true }); }
+  catch (e: any) { res.status(400).json({ error: e.message ?? "Falha ao inscrever" }); }
+});
+gameRouter.post("/push/unsubscribe", async (req: AuthedRequest, res) => {
+  const ep = req.body?.endpoint;
+  if (ep) await removeSubscription(ep);
+  res.json({ ok: true });
+});
+
 gameRouter.post("/chat/seen", async (req: AuthedRequest, res) => {
   const planet = await prisma.planet.findUnique({ where: { userId: req.userId! } });
   if (planet) await prisma.planet.update({ where: { id: planet.id }, data: { chatSeenAt: new Date() } }).catch(() => {});

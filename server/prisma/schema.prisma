@@ -305,6 +305,19 @@ model DonationCooldown {
   lastTick Int
 }
 
+// Inscrição de notificações push (Web Push) de um usuário/dispositivo.
+// endpoint é único por dispositivo; guardamos as chaves p/ cifrar o push.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
 // Livro caixa das doações do fundo da galáxia (feitas pelo ME). Histórico pra
 // transparência: quem (ME) doou, pra quem, quanto e quando.
 model DonationLog {

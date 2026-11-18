@@ -23,6 +23,10 @@ services:
       MAIL_FROM: ${MAIL_FROM:-contato@galacticwar.com.br}
       APP_URL: ${APP_URL:-https://galacticwar.com.br}
       ADMIN_USERS: ${ADMIN_USERS:-}   # nomes de líder admin (vírgula). Ex.: ADMIN_USERS=Paulo
+      # Web Push (notificações). Chaves no .env — sem elas, o push fica desligado.
+      VAPID_PUBLIC: ${VAPID_PUBLIC:-}
+      VAPID_PRIVATE: ${VAPID_PRIVATE:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:contato@galacticwar.com.br}
     volumes:
       - gw-data:/data             # SQLite persiste aqui (sobrevive a deploys)
     expose:
@@ -52,6 +56,9 @@ services:
       MAIL_FROM: ${MAIL_FROM:-contato@galacticwar.com.br}
       APP_URL: ${APP_URL_RUR:-https://rur.galacticwar.com.br}
       ADMIN_USERS: ${ADMIN_USERS:-}
+      VAPID_PUBLIC: ${VAPID_PUBLIC:-}
+      VAPID_PRIVATE: ${VAPID_PRIVATE:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:contato@galacticwar.com.br}
     volumes:
       - gw-rur-data:/data         # SQLite do RUR (separado do jogo principal)
     expose:

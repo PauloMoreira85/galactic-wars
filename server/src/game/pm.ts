@@ -1,6 +1,7 @@
 import { prisma } from "../db.js";
 import { addNews } from "./news.js";
 import { isLinked, MULTI_BLOCK_MSG } from "./ipguard.js";
+import { pushToUser } from "./push.js";
 
 // Envia uma mensagem privada. `to` pode ser uma COORDENADA "g:s:slot" (forma
 // principal) ou um username (usado ao responder uma mensagem recebida).
@@ -30,6 +31,8 @@ export async function sendPM(fromUserId: string, fromName: string, to: string, s
     const tick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
     await addNews(target.planet.id, tick, `📩 Nova mensagem privada de ${anonymous ? "Anônimo" : fromName}`);
   }
+  // Push: avisa o destinatário da mensagem (best-effort).
+  pushToUser(target.id, { title: "📩 Nova mensagem", body: `Você recebeu uma mensagem de ${anonymous ? "Anônimo" : fromName}`, tag: "pm", url: "/" }).catch(() => {});
 }
 
 export async function inbox(userId: string) {

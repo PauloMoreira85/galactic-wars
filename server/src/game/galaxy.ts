@@ -1,4 +1,5 @@
 import { prisma, TX_OPTS, withWrite } from "../db.js";
+import { pushToUser } from "./push.js";
 import { startEngagement, resolveSiege } from "./combat.js";
 import { parseUnits, stringifyUnits, totalUnits, addUnits, type UnitMap } from "./unitmap.js";
 import { type Coords, galaxyId, galaxyWhere } from "./geo.js";
@@ -143,7 +144,7 @@ export async function transferUnits(planetId: string, fromId: string, toId: stri
 // Envia uma frota IDLE (já carregada) para um destino.
 export async function dispatchFleet(planetId: string, fleetId: string, target: Coords, mission: "attack" | "transport", ticks = 3, fake = false) {
   const engageTicks = Math.max(1, Math.min(3, Math.floor(ticks)));
-  return withWrite(() => prisma.$transaction(async (tx) => {
+  const result = await withWrite(() => prisma.$transaction(async (tx) => {
     const planet = await tx.planet.findUnique({ where: { id: planetId } });
     if (!planet) throw new Error("Planeta nao encontrado");
     const fleet = await tx.fleet.findUnique({ where: { id: fleetId } });
@@ -221,17 +222,26 @@ export async function dispatchFleet(planetId: string, fleetId: string, target: C
 
     // Avisa o ALVO na hora do envio. Ataque = radar (Rakshasa mostra só roiders;
     // 100% invisível NÃO dispara aviso — surpresa total). Defesa = avisa o aliado.
-    const tgtP = await tx.planet.findUnique({ where: { galaxy_system_slot: { galaxy: target.galaxy, system: target.system, slot: target.slot } }, select: { id: true } });
+    const tgtP = await tx.planet.findUnique({ where: { galaxy_system_slot: { galaxy: target.galaxy, system: target.system, slot: target.slot } }, select: { id: true, userId: true } });
+    let pushMsg: { userId: string; title: string; body: string; tag: string } | null = null;
     if (tgtP && tgtP.id !== planetId) {
       if (mission === "attack") {
         const visible = radarVisibleCount(fleetUnits);
-        if (visible > 0) await tx.news.create({ data: { planetId: tgtP.id, tick, message: `🚨 ATAQUE! ${planet.name} está te atacando com ${visible} nave(s) — chega em ${tt} tick(s)!` } });
+        if (visible > 0) {
+          await tx.news.create({ data: { planetId: tgtP.id, tick, message: `🚨 ATAQUE! ${planet.name} está te atacando com ${visible} nave(s) — chega em ${tt} tick(s)!` } });
+          pushMsg = { userId: tgtP.userId, title: "🚨 ATAQUE a caminho!", body: `${planet.name} está te atacando com ${visible} nave(s) — chega em ${tt} tick(s)!`, tag: "ataque" };
+        }
       } else {
         await tx.news.create({ data: { planetId: tgtP.id, tick, message: `🛡️ Reforço a caminho: ${planet.name} mandou ${totalUnits(fleetUnits)} nave(s) pra te defender — chega em ${tt} tick(s).` } });
       }
     }
-    return { ok: true, arriveIn: tt };
+    return { ok: true, arriveIn: tt, pushMsg };
   }, TX_OPTS));
+  // Notificação push FORA da transação (best-effort, não bloqueia o envio).
+  if (result.pushMsg) {
+    pushToUser(result.pushMsg.userId, { title: result.pushMsg.title, body: result.pushMsg.body, tag: result.pushMsg.tag, url: "/" }).catch(() => {});
+  }
+  return result;
 }
 
 // Frota volta pra base: vira IDLE mantendo as naves; espólio (roids) vai pro planeta.
