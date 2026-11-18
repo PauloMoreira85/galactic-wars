@@ -70,17 +70,31 @@ export function isShielded(targetCE: number, targetRoids: number, targetRace: st
   return effectiveCE(targetCE, targetRace) * ROIDS_POR_CE >= targetRoids;
 }
 
-// Chance de uma espionagem/sabotagem DAR CERTO: disputa entre a força ofensiva
-// do atacante (AE) e a contra-espionagem efetiva do alvo (AC), medidas em
-// "densidade por roid" — a cobertura cheia é roids ÷ 2 (cada agente cobre ~2 roids).
-//   off = AE / (roids/2)   ·   def = AC_efetivo / (roids/2)   ·   net = off − def
-//   chance = 50% + 45% × net  (limitada a 5%–95%, nunca 0 nem 100%)
-// → quanto mais roids o alvo tem, mais AE você precisa pra furar (e mais AC ele
-//   precisa pra blindar). Sem ninguém investindo, ~50%.
-export function spySuccessChance(attackerAE: number, targetCE: number, targetRoids: number, targetRace: string): number {
-  const cover = Math.max(1, targetRoids / ROIDS_POR_CE); // roids/2 = cobertura "cheia"
-  const off = Math.max(0, attackerAE) / cover;
-  const def = effectiveCE(targetCE, targetRace) / cover;
-  const chance = 0.5 + 0.45 * (off - def);
-  return Math.max(0.05, Math.min(0.95, chance));
+// Chance de uma espionagem/sabotagem DAR CERTO (Fase 1 do rebalanceamento da
+// inteligência — proposta do bgnweb no fórum). Disputa a força ofensiva do
+// atacante (AE) contra a contra-espionagem EFETIVA do alvo (AC), ambas ajustadas
+// pela quantidade de roids do alvo (quanto mais roids, mais CE o alvo precisa).
+//
+// Fórmula CÚBICA — a superioridade numérica pesa muito:
+//   espionagem: chance = AE³ / (AE³ + CE_ef³)
+//   sabotagem : chance = AE³ / (AE³ + 2 × CE_ef³)   (defesa pesa o dobro)
+// onde CE_ef = contra-espionagem efetiva "escalada pelos roids" (≈ roids/2 pra
+// cobertura cheia, + bônus de raça). Regras importantes:
+//   • SEM AE (atacante com 0 agentes) → chance 0 (não dá pra operar no vácuo).
+//   • SEM piso de 5%: defesa muito superior derruba a chance pra <1%.
+//   • Com 10× mais CE que AE, o defensor barra ~99,9% das espionagens.
+export function spySuccessChance(attackerAE: number, targetCE: number, targetRoids: number, targetRace: string, isSabotage = false): number {
+  const ae = Math.max(0, attackerAE);
+  if (ae <= 0) return 0; // sem agente de espionagem, não há operação
+  // CE efetivo escalado pelos roids do alvo: a defesa "cheia" cobre roids/2.
+  // Somamos a cobertura-base de roids pra que um alvo cheio de roids e sem CE
+  // ainda ofereça alguma resistência proporcional ao tamanho (não é 100% fácil).
+  const ceRaw = effectiveCE(targetCE, targetRace);
+  const ceScaled = ceRaw + Math.max(0, targetRoids) / (ROIDS_POR_CE * 4); // roids dão defesa passiva leve
+  const a3 = ae ** 3;
+  const c3 = ceScaled ** 3;
+  const weight = isSabotage ? 2 : 1; // sabotagem: CE pesa o dobro
+  const chance = a3 / (a3 + weight * c3);
+  // Teto 95% (nunca certeza absoluta); piso 0 (defesa pode blindar quase tudo).
+  return Math.max(0, Math.min(0.95, chance));
 }

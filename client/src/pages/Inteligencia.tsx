@@ -60,7 +60,7 @@ export function Inteligencia() {
         <div className="panel">
           <h2>🛡️ Minha contra-espionagem</h2>
           <div className="cost">
-            Mais CE = maior chance de <b>bloquear</b> espião/sabotador. Cobertura cheia (<b>CE ≥ roids ÷ {prot.roidsPerCE}</b>) bloqueia <b>~85%</b> — nunca 100% (sempre dá pra furar mandando vários agentes).
+            Mais CE = maior chance de <b>bloquear</b> espião/sabotador. A disputa é <b>AE vs CE ao cubo</b>: ter o <b>dobro</b> de CE que o atacante de AE já bloqueia a grande maioria; com <b>10× mais</b> CE você barra <b>~99,9%</b>. Investir em defesa protege de verdade — e quem quiser furar precisa de muito AE. Sem AE, o atacante não consegue nada.
           </div>
           <div className="roid-row" style={{ marginTop: 6 }}>
             <div className="roid-label"><div>

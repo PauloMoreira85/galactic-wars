@@ -38,7 +38,7 @@ function raceOf(r: string) { return isRaceKey(r) ? r : "humanos"; }
 export function sabotageOdds(key: string, attackerAE: number, targetRoids: number, targetRace: string, targetCE: number) {
   const def = SAB_BY_KEY[key];
   if (!def) return null;
-  const success = spySuccessChance(attackerAE, targetCE, targetRoids, targetRace);
+  const success = spySuccessChance(attackerAE, targetCE, targetRoids, targetRace, true);
   return { key, name: def.name, plut: def.plut, ticks: def.ticks, success };
 }
 export function sabotageCatalog() {
@@ -86,7 +86,7 @@ export async function executeSabotage(saboteurPlanetId: string, target: { galaxy
   const tgtCE = parseAgents(tgt.agents)["CE"] ?? 0;
   const tgtRoids = tgt.roidMetalium + tgt.roidCarbonum + tgt.roidPlutonium;
   const myAE = parseAgents(me.agents)["AE"] ?? 0;
-  const succ = spySuccessChance(myAE, tgtCE, tgtRoids, tgt.user.race);
+  const succ = spySuccessChance(myAE, tgtCE, tgtRoids, tgt.user.race, true);
   if (Math.random() > succ) {
     await addNews(tgt.id, tick, `🛡️ Sua contra-espionagem barrou uma tentativa de sabotagem (${def.name})`);
     return { success: false, message: `A sabotagem falhou (chance de sucesso ${Math.round(succ * 100)}% — AE ${myAE} vs AC ${tgtCE} do alvo). Custou ${def.plut} de plutônio.` };
