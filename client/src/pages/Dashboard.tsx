@@ -201,6 +201,9 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [donTo, setDonTo] = useState("");
   const [donAmt, setDonAmt] = useState({ metalium: 0, carbonum: 0, plutonium: 0 });
   const [donErr, setDonErr] = useState("");
+  // Contribuir PRA o fundo (qualquer planeta).
+  const [contrib, setContrib] = useState({ metalium: 0, carbonum: 0, plutonium: 0 });
+  const [contribErr, setContribErr] = useState("");
   const [zoom, setZoom] = useState<{ src: string; alt: string } | null>(null);
   const [alerts, setAlerts] = useState({ underAttack: false, incomingDefense: false, galaxyUnderAttack: false });
   const [unreadMsgs, setUnreadMsgs] = useState(0);
@@ -664,6 +667,23 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
               Você recebe: <b style={{ color: "var(--text)" }}>{fmt(Math.floor(fgAmt * (1 - view.galaxyFund.marketFee / 100)))}</b> de {RES_META.find((r) => r.key === fgTo)?.label} · fundo tem <b>{fmt(view.galaxyFund[fgTo])}</b>
             </div>
             {fgErr && <div className="error" style={{ marginTop: 10 }}>{fgErr}</div>}
+
+            {/* Doar PRA o fundo — qualquer planeta da galáxia pode contribuir. */}
+            <div style={{ borderTop: "1px solid var(--border)", margin: "12px 0 10px" }} />
+            <div className="cost" style={{ marginBottom: 8 }}>
+              🤝 <b>Doar recursos PRA o fundo</b> (o ME distribui depois aos planetas):
+            </div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+              <input type="number" min={0} placeholder="M" value={contrib.metalium || ""} onChange={(e) => setContrib({ ...contrib, metalium: Math.max(0, Math.floor(Number(e.target.value) || 0)) })} style={{ width: 100, margin: 0, padding: "6px 8px" }} />
+              <input type="number" min={0} placeholder="C" value={contrib.carbonum || ""} onChange={(e) => setContrib({ ...contrib, carbonum: Math.max(0, Math.floor(Number(e.target.value) || 0)) })} style={{ width: 100, margin: 0, padding: "6px 8px" }} />
+              <input type="number" min={0} placeholder="P" value={contrib.plutonium || ""} onChange={(e) => setContrib({ ...contrib, plutonium: Math.max(0, Math.floor(Number(e.target.value) || 0)) })} style={{ width: 100, margin: 0, padding: "6px 8px" }} />
+              <button disabled={contrib.metalium + contrib.carbonum + contrib.plutonium <= 0} onClick={async () => {
+                setContribErr("");
+                try { await api.govContribute(contrib.metalium, contrib.carbonum, contrib.plutonium); setContrib({ metalium: 0, carbonum: 0, plutonium: 0 }); await refresh(); }
+                catch (e: any) { setContribErr(e.message ?? "Falha ao doar ao fundo"); }
+              }}>🤝 doar ao fundo</button>
+            </div>
+            {contribErr && <div className="error" style={{ marginTop: 10 }}>{contribErr}</div>}
           </div>
 
           {/* Doação do fundo — só o ME vê (atalho aqui na aba Recursos). */}
