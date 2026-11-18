@@ -10,12 +10,12 @@ import { addMorale } from "./morale.js";
 
 // ===== Balanceamento =====
 export const BATTLE_TICKS = 3;
-// % de roids saqueados por tick. Equilíbrio (ataque ≈ defesa) = MAX (15%). Quanto
-// MAIOR a diferença de força, MENOR a % — mas com decaimento SUAVE (rate = MIN +
-// (MAX−MIN)/ratio): só chega perto do mínimo quando o atacante é MUITO maior
-// (ex: 15× → ~5,7%). Antes travava em 5% já no 3×, o que frustrava.
-const CAP_MIN = 0.05;   // piso (atacante esmaga um alvo muito menor)
+// % de roids saqueados por tick, LINEAR pela diferença de força (ratio atk/def):
+// 1× (equilíbrio) = 15% · 2× = 12,5% · 3× = 10% · 4× = 7,5% · 5× = 5% · ≥5× trava em 5%.
+// rate = MAX − (MAX−MIN)·(ratio−1)/4, limitado entre MIN e MAX.
+const CAP_MIN = 0.05;   // piso (a partir de 5× de diferença)
 const CAP_MAX = 0.15;   // teto (combate equilibrado / azarão)
+const CAP_RATIO_FULL = 5; // ratio em que chega no piso
 // Mech: a assimilação CONSOME a assimiladora e é equilibrada por VALOR (custo),
 // não 1:1. Pra assimilar naves inimigas de valor V, gasta V em assimiladoras.
 
@@ -206,7 +206,7 @@ export function simulateCombat(attacker0: UnitMap, defender0: UnitMap, ticks = B
   for (let t = 1; t <= N; t++) {
     if (totalUnits(aCur) <= 0 || totalUnits(dCur) <= 0) break;
     const ratio = fleetScore(aCur) / Math.max(1, fleetScore(dCur));
-    const rate = ratio <= 1 ? CAP_MAX : Math.max(CAP_MIN, CAP_MIN + (CAP_MAX - CAP_MIN) / ratio);
+    const rate = Math.max(CAP_MIN, Math.min(CAP_MAX, CAP_MAX - (CAP_MAX - CAP_MIN) * (ratio - 1) / (CAP_RATIO_FULL - 1)));
     const st: BattleState = { atkInit: { ...aCur }, defInit: { ...dCur }, aActive: { ...aCur }, dActive: { ...dCur }, aLost: {}, dLost: {}, aPem: {}, dPem: {}, rate };
     const { aAssim, dAssim } = oneRound(st); // aAssim = atacantes assimilados pela DEFESA; dAssim = defensores assimilados pelo ATACANTE
     const aSurv = survivors(st.aActive, st.aPem);
@@ -283,7 +283,7 @@ export async function resolveSiege(target: { galaxy: number; system: number; slo
   const dActive: UnitMap = {}; for (const c of defContribs) for (const n of Object.keys(c.units)) dActive[n] = (dActive[n] || 0) + c.units[n];
 
   const ratio = fleetScore(aActive) / Math.max(1, fleetScore(dActive));
-  const rate = ratio <= 1 ? CAP_MAX : Math.max(CAP_MIN, CAP_MIN + (CAP_MAX - CAP_MIN) / ratio);
+  const rate = Math.max(CAP_MIN, Math.min(CAP_MAX, CAP_MAX - (CAP_MAX - CAP_MIN) * (ratio - 1) / (CAP_RATIO_FULL - 1)));
   const st: BattleState = { atkInit: { ...aActive }, defInit: { ...dActive }, aActive: { ...aActive }, dActive: { ...dActive }, aLost: {}, dLost: {}, aPem: {}, dPem: {}, rate };
   // dAssim = atacantes assimilados pela defesa; aAssim = defensores assimilados pelo atacante.
   const { aAssim, dAssim } = oneRound(st);
