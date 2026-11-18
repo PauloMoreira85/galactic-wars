@@ -467,27 +467,46 @@ td { font-family: var(--mono); }
 .tick-info { text-align: right; color: var(--muted); font-size: 13px; font-family: var(--mono); }
 .tick-info b { color: var(--text); }
 
+/* Barra mobile (logo + título + ☰) — escondida no desktop */
+.mobile-bar { display: none; }
+.menu-backdrop { display: none; }
+
 @media (max-width: 760px) {
   .layout { flex-direction: column; }
-  /* Menu FIXO no topo (sticky) e compacto — não rola junto e ocupa pouco espaço */
-  .sidebar {
-    width: 100%; height: auto; max-height: 42vh; overflow-y: auto;
-    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 50;
-    border-right: none; border-bottom: 1px solid var(--border-strong);
-    padding: 6px 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.55);
+
+  /* Barra fina FIXA no topo: logo, seção atual e botão do menu. Ocupa ~48px só. */
+  .mobile-bar {
+    display: flex; align-items: center; gap: 10px;
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 60;
+    padding: 6px 12px; border-bottom: 1px solid var(--border-strong);
     background: linear-gradient(180deg, rgba(6,16,33,0.98), rgba(3,8,18,0.98));
+    box-shadow: 0 3px 14px rgba(0,0,0,0.5);
   }
-  /* Logo pequena e ao lado (não ocupa uma faixa inteira) */
-  .sidebar-brand { margin-bottom: 6px; }
-  .sidebar-logo { max-width: 92px; }
-  /* Menu vira barra de "chips" compactos que quebram linha */
-  .menu { display: flex; flex-wrap: wrap; gap: 4px; }
-  .menu > div { display: contents; }
-  .menu-sep { display: none; }
-  .menu-link { width: auto; padding: 4px 8px; font-size: 11.5px; line-height: 1.15;
-    border: 1px solid var(--border); border-left: 1px solid var(--border); border-radius: 6px; }
-  .menu-link.active { border-color: var(--accent); }
-  /* Esconde itens "em breve" no mobile pra enxugar o menu */
+  .mobile-bar-logo { width: 34px; height: 34px; border-radius: 7px; object-fit: cover; cursor: pointer; filter: drop-shadow(0 0 5px var(--glow)); }
+  .mobile-bar-title { flex: 1; font-family: "Orbitron", sans-serif; font-weight: 800; font-size: 15px; letter-spacing: 1px; color: #eaffff; text-shadow: 0 0 8px var(--glow); text-transform: uppercase; }
+  .mobile-bar-menu {
+    width: 42px; height: 38px; margin: 0; padding: 0; font-size: 20px; line-height: 1;
+    background: rgba(37,211,255,0.12); color: var(--accent); border: 1px solid var(--border-hi, var(--border)); border-radius: 8px; cursor: pointer;
+  }
+
+  /* Fundo escuro quando o menu abre */
+  .menu-backdrop { display: block; position: fixed; inset: 0; z-index: 70; background: rgba(2,8,18,0.6); backdrop-filter: blur(2px); }
+
+  /* Sidebar vira painel DESLIZANTE da esquerda (escondido até abrir no ☰) */
+  .sidebar {
+    position: fixed; top: 0; left: 0; z-index: 80;
+    width: 76%; max-width: 300px; height: 100%; overflow-y: auto;
+    transform: translateX(-100%); transition: transform 0.22s ease;
+    border-right: 1px solid var(--border-strong); border-bottom: none;
+    padding: 14px 12px calc(14px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 4px 0 28px rgba(0,0,0,0.6);
+  }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-brand { margin-bottom: 12px; }
+  .sidebar-logo { max-width: 150px; }
+  /* Dentro do painel, o menu é uma lista vertical normal (não chips) */
+  .menu { display: block; }
+  .menu-link { width: 100%; padding: 10px 12px; font-size: 14px; }
   .menu-link.soon { display: none; }
 
   .content { padding: 12px 10px 48px; max-width: 100%; }

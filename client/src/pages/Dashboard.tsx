@@ -184,6 +184,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [qty, setQty] = useState<Record<string, number>>({});
   const [shipBusy, setShipBusy] = useState<string | null>(null);
   const [section, setSection] = useState<Section>("planeta");
+  const [menuOpen, setMenuOpen] = useState(false); // menu retrátil no celular
   const [showIntro, setShowIntro] = useState(() => localStorage.getItem("gw_intro_hidden") !== "1");
   const [mktFrom, setMktFrom] = useState<Resource>("metalium");
   const [mktTo, setMktTo] = useState<Resource>("carbonum");
@@ -332,6 +333,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     if (it.key === "ferramentas") { window.open("/ferramentas", "_blank", "noopener"); return; }
     if (it.key === "forum") { window.open("https://forum.galacticwar.com.br", "_blank", "noopener"); return; }
     setSection(it.key as Section);
+    setMenuOpen(false); // fecha o menu retrátil ao escolher uma seção (celular)
   }
 
   if (!view) return <div className="app">Carregando o universo...</div>;
@@ -407,8 +409,19 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   return (
     <CoordNavContext.Provider value={(c) => { setGalaxyGoto(c + "#" + Date.now()); setSection("galaxia"); }}>
     <div className="layout">
+      {/* ===== Barra mobile: só aparece no celular — logo + ☰ + seção atual ===== */}
+      <div className="mobile-bar">
+        <img src="/art/logo/brasao.jpg" alt="GW" className="mobile-bar-logo" onClick={() => { setSection("planeta"); setMenuOpen(false); }} />
+        <span className="mobile-bar-title">{TITLES[section]}</span>
+        <button className="mobile-bar-menu" onClick={() => setMenuOpen((o) => !o)} aria-label="Menu">
+          {menuOpen ? "✕" : "☰"}
+        </button>
+      </div>
+      {/* Fundo escuro ao abrir o menu no celular (toca fora pra fechar) */}
+      {menuOpen && <div className="menu-backdrop" onClick={() => setMenuOpen(false)} />}
+
       {/* ===== Barra lateral ===== */}
-      <aside className="sidebar">
+      <aside className={`sidebar ${menuOpen ? "open" : ""}`}>
         <div className="sidebar-brand">
           <img src="/art/logo/brasao.jpg" alt="Galactic War" className="sidebar-logo" />
         </div>
