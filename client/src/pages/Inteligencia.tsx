@@ -64,9 +64,13 @@ export function Inteligencia() {
           </div>
           <div className="roid-row" style={{ marginTop: 6 }}>
             <div className="roid-label"><div>
-              <div><b>{fmt(prot.ce)}</b> agentes de CE · cobertura cheia em <b>{fmt(prot.needed)}</b> (você tem {fmt(prot.roids)} roids)</div>
-              <div className="roid-count" style={{ color: prot.shielded ? "var(--carbonum)" : "var(--danger)" }}>
-                {prot.shielded ? "✅ Bem protegido (~85% de bloqueio)" : `⚠️ Pouco protegido — bloqueio ~${Math.round(Math.min(85, (prot.ce * prot.roidsPerCE / Math.max(1, prot.roids)) * 100))}% (cheio em ${fmt(prot.needed)} CE)`}
+              <div>Você tem <b>{fmt(prot.ce)}</b> agentes de Contra-Espionagem (CE).</div>
+              <div className="roid-count" style={{ lineHeight: 1.6, marginTop: 4 }}>
+                A chance do atacante passar depende do <b>AE dele vs seu CE</b> (ao cubo). Referência da sua defesa:
+                <div>• Atacante com <b>metade</b> do seu Ce de AE → ele passa só <b>~11%</b> (espionagem) / <b>~6%</b> (sabotagem)</div>
+                <div>• Atacante com AE <b>igual</b> ao seu CE → <b>50%</b> / <b>33%</b></div>
+                <div>• Atacante com o <b>dobro</b> do seu CE de AE → <b>89%</b> / <b>80%</b></div>
+                <div style={{ opacity: 0.8, marginTop: 2 }}>→ pra se blindar, mantenha o CE acima do AE que o inimigo consegue juntar.</div>
               </div>
             </div></div>
           </div>
