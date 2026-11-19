@@ -13,7 +13,6 @@ const STATUS_LABEL: Record<string, string> = {
 // persistentes nomeadas. Move naves entre a Base e cada frota idle.
 export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () => void }) {
   const [fleets, setFleets] = useState<Awaited<ReturnType<typeof api.fleets>>["fleets"]>([]);
-  const [edits, setEdits] = useState<Record<string, Record<string, number>>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   // Envio direto daqui: coordenadas + ação + ticks + frota.
@@ -64,16 +63,6 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
     try {
       const f = (await api.fleets()).fleets;
       setFleets(f);
-      // Inicializa os campos editáveis SÓ pra frotas que ainda não têm edição.
-      // NÃO sobrescreve o que o usuário já digitou (o auto-refresh apagava os
-      // valores a cada poucos segundos e a transferência saía errada).
-      setEdits((prev) => {
-        const next = { ...prev };
-        for (const fl of f) if (fl.idle && !next[fl.id]) next[fl.id] = { ...fl.units };
-        // Remove edits de frotas que não existem mais.
-        for (const id of Object.keys(next)) if (!f.some((fl) => fl.id === id)) delete next[id];
-        return next;
-      });
     } catch {}
   }
   useEffect(() => { load(); const t = setInterval(load, REFRESH_MS); return () => clearInterval(t); }, []);
@@ -82,15 +71,23 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
     setBusy(true); setError("");
     try {
       const r = await fn(); if (r && r.planet) onChanged();
-      // A ação mudou a composição de propósito → re-sincroniza os campos editáveis
-      // com o estado novo do servidor (senão ficariam com o valor antigo).
-      const f = (await api.fleets()).fleets;
-      setFleets(f);
-      const e: Record<string, Record<string, number>> = {};
-      for (const fl of f) if (fl.idle) e[fl.id] = { ...fl.units };
-      setEdits(e);
+      setFleets((await api.fleets()).fleets);
     }
     catch (e: any) { setError(e.message ?? "Falha"); }
+    finally { setBusy(false); }
+  }
+
+  // Move naves NA HORA (sem campo intermediário). dir "base" = frota→Base;
+  // "frota" = Base→frota. Usa a API de transferência direta.
+  async function quickMove(fleetId: string, dir: "base" | "frota", name: string, qty: number, toFleet?: string) {
+    if (qty <= 0) return;
+    setBusy(true); setError("");
+    try {
+      if (dir === "base") await api.transferFleet(fleetId, "base", { [name]: qty });
+      else await api.transferFleet("base", toFleet!, { [name]: qty });
+      const f = (await api.fleets()).fleets; setFleets(f);
+      onChanged();
+    } catch (e: any) { setError(e.message ?? "Falha ao mover"); }
     finally { setBusy(false); }
   }
 
@@ -113,7 +110,7 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
       <div className="panel">
         <h2>Frotas sob o seu comando</h2>
         <div className="cost" style={{ marginBottom: 10 }}>
-          {view.planet.fleetSlots}/5 frotas criadas. Ajuste a quantidade (ou use <b>«</b> = tudo pra Base / <b>»</b> = tudo pra frota) e clique <b>transferir</b>. Depois envie pelo painel <b>Enviar frota</b> abaixo (ou pela aba <b>Galáxia</b>).
+          {view.planet.fleetSlots}/5 frotas criadas. As setas movem <b>na hora</b>: <b>»</b> = tudo da Base → frota · <b>«</b> = tudo da frota → Base. Pra mover <b>de uma frota pra outra</b>, use o painel <b>🔀 Transferir naves direto</b> abaixo. Depois envie pela <b>Enviar frota</b> ou pela aba <b>Galáxia</b>.
         </div>
 
         {fleets.length === 0 ? (
@@ -137,14 +134,12 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
                       <td key={f.id} className={!f.idle && !(f.units[name]) ? "fg-zero" : ""}>
                         {f.idle ? (
                           <div style={{ display: "flex", gap: 3, alignItems: "center", justifyContent: "center" }}>
-                            <button title="tudo desta nave → Base" disabled={busy} onClick={() => setEdits({ ...edits, [f.id]: { ...edits[f.id], [name]: 0 } })}
+                            <button title="mover TUDO desta nave desta frota → Base (na hora)" disabled={busy || (f.units[name] ?? 0) <= 0}
+                              onClick={() => quickMove(f.id, "base", name, f.units[name] ?? 0)}
                               style={{ padding: "2px 5px", margin: 0, fontSize: 12, lineHeight: 1 }}>«</button>
-                            <input
-                              type="number" min={0} placeholder="0" value={edits[f.id]?.[name] || ""}
-                              onChange={(e) => setEdits({ ...edits, [f.id]: { ...edits[f.id], [name]: e.target.value === "" ? 0 : Math.max(0, Math.floor(Number(e.target.value))) } })}
-                              style={{ width: 54, margin: 0, padding: "3px 4px", textAlign: "center" }}
-                            />
-                            <button title="tudo desta nave (Base + frota) → esta frota" disabled={busy} onClick={() => setEdits({ ...edits, [f.id]: { ...edits[f.id], [name]: baseOf(name) + (f.units[name] ?? 0) } })}
+                            <span style={{ minWidth: 40, textAlign: "center", fontFamily: "var(--mono)" }}>{f.units[name] ? fmt(f.units[name]) : "·"}</span>
+                            <button title="mover TUDO desta nave da Base → esta frota (na hora)" disabled={busy || baseOf(name) <= 0}
+                              onClick={() => quickMove(f.id, "frota", name, baseOf(name), f.id)}
                               style={{ padding: "2px 5px", margin: 0, fontSize: 12, lineHeight: 1 }}>»</button>
                           </div>
                         ) : (f.units[name] ? fmt(f.units[name]) : "·")}
@@ -180,9 +175,7 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
                   <td>Ações</td><td>—</td>
                   {fleets.map((f) => (
                     <td key={f.id}>
-                      {f.idle ? (
-                        <button disabled={busy} style={{ padding: "2px 8px", fontSize: 11 }} onClick={() => act(() => api.loadFleet(f.id, edits[f.id] || {}))}>transferir</button>
-                      ) : f.canRecall ? (
+                      {!f.idle && f.canRecall ? (
                         <button disabled={busy} style={{ padding: "2px 8px", fontSize: 11 }} onClick={() => act(() => api.recallFleet(f.id))}>↩ recuar</button>
                       ) : <span className="roid-count">—</span>}
                     </td>
