@@ -73,10 +73,6 @@ export async function setFleetComposition(planetId: string, fleetId: string, des
     const fleet = await tx.fleet.findUnique({ where: { id: fleetId } });
     if (!fleet || fleet.ownerPlanetId !== planetId) throw new Error("Frota nao encontrada");
     if (fleet.status !== "idle") throw new Error("So da pra mexer nas naves de uma frota parada na base");
-    // Sob ataque: a base está em combate — não dá pra puxar naves (senão elas
-    // contariam na defesa E na frota ao mesmo tempo).
-    const inBattle = await tx.fleet.count({ where: { status: "engaged", targetGalaxy: planet.galaxy, targetSystem: planet.system, targetSlot: planet.slot } });
-    if (inBattle > 0) throw new Error("Seu planeta está em combate — não dá pra mexer nas frotas até a batalha acabar");
 
     const hangar = parseUnits(planet.units);
     const cur = parseUnits(fleet.units);
@@ -104,10 +100,6 @@ export async function transferUnits(planetId: string, fromId: string, toId: stri
   return withWrite(() => prisma.$transaction(async (tx) => {
     const planet = await tx.planet.findUnique({ where: { id: planetId } });
     if (!planet) throw new Error("Planeta nao encontrado");
-
-    // Sob ataque: não dá pra mexer nas frotas (naves contariam 2x na defesa).
-    const inBattle = await tx.fleet.count({ where: { status: "engaged", targetGalaxy: planet.galaxy, targetSystem: planet.system, targetSlot: planet.slot } });
-    if (inBattle > 0) throw new Error("Seu planeta está em combate — não dá pra mexer nas frotas até a batalha acabar");
 
     // Carrega a composição atual da origem e do destino (base = hangar do planeta).
     async function load(id: string): Promise<UnitMap> {
@@ -162,10 +154,6 @@ export async function dispatchFleet(planetId: string, fleetId: string, target: C
     if (target.galaxy === origin.galaxy && target.system === origin.system && target.slot === origin.slot) {
       throw new Error("Voce nao pode enviar frota para o proprio planeta");
     }
-    // Sob ataque: a base está em combate — não dá pra enviar frotas (as naves
-    // estão na defesa; sair com elas duplicaria).
-    const inBattle = await tx.fleet.count({ where: { status: "engaged", targetGalaxy: origin.galaxy, targetSystem: origin.system, targetSlot: origin.slot } });
-    if (inBattle > 0) throw new Error("Seu planeta está em combate — não dá pra enviar frotas até a batalha acabar");
     // Não dá pra ATACAR e DEFENDER o mesmo planeta ao mesmo tempo.
     const opposite = mission === "attack" ? "transport" : "attack";
     const conflict = await tx.fleet.count({ where: { ownerPlanetId: planetId, mission: opposite, status: { in: ["outbound", "engaged", "garrison"] }, targetGalaxy: target.galaxy, targetSystem: target.system, targetSlot: target.slot } });
