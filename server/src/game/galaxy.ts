@@ -205,7 +205,9 @@ export async function dispatchFleet(planetId: string, fleetId: string, target: C
         engageTicks, fake,
       },
     });
-    const tipoMsg = fake ? (mission === "attack" ? "ataque falso" : "defesa falsa") : (mission === "attack" ? "ataque" : "defesa");
+    // NÃO revela "falso/falsa" nas notícias: se o inimigo espionar com agente de
+    // Transmissão, não pode descobrir que é uma finta (senão estraga a estratégia).
+    const tipoMsg = mission === "attack" ? "ataque" : "defesa";
     await tx.news.create({ data: { planetId, tick, message: `${fleet.name} (${tipoMsg}) enviada para ${target.galaxy}:${target.system}:${target.slot} (chega em ${tt}t)` } });
 
     // Avisa o ALVO na hora do envio. Ataque = radar (Rakshasa mostra só roiders;
@@ -288,8 +290,10 @@ export async function processFleets(uptoTick: number) {
     if (fleet.arriveTick > uptoTick) continue;
 
     // Ameaça FALSA: chegou na órbita e volta SEM engajar nem guarnecer.
+    // A notícia NÃO menciona "finta/falso" (se espionada, estragaria a estratégia)
+    // — parece só uma frota voltando pra base, como qualquer outra.
     if (fleet.fake) {
-      await prisma.news.create({ data: { planetId: fleet.ownerPlanetId, tick: uptoTick, message: `${fleet.name} fez a finta e está voltando pra base (não engajou)` } });
+      await prisma.news.create({ data: { planetId: fleet.ownerPlanetId, tick: uptoTick, message: `${fleet.name} está voltando pra base` } });
       await scheduleReturn(fleet.id, fleet, parseUnits(fleet.units));
       continue;
     }
