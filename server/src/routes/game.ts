@@ -26,7 +26,7 @@ import { forumIndex, listTopics, createTopic, getTopic, reply as forumReply, isF
 import { sendChat, recentChat, olderChat, resolveRoom } from "../game/chat.js";
 import { pushPublicKey, saveSubscription, removeSubscription, PUSH_ENABLED } from "../game/push.js";
 import { checkMissions, missionsView } from "../game/missions.js";
-import { sendPM, inbox, sentbox, markRead, unreadCount } from "../game/pm.js";
+import { sendPM, inbox, sentbox, markRead, unreadCount, conversations, conversation } from "../game/pm.js";
 import { SABOTAGES, availableSabotages, executeSabotage, sabotageOdds, sabotageCatalog } from "../game/sabotage.js";
 import { parseUnits, totalUnits } from "../game/unitmap.js";
 import {
@@ -822,6 +822,13 @@ gameRouter.post("/sabotage", async (req: AuthedRequest, res) => {
 // Contagem leve de não-lidas (pra destacar o ícone no menu/abas).
 gameRouter.get("/pm/unread", async (req: AuthedRequest, res) => {
   res.json({ unread: await unreadCount(req.userId!) });
+});
+// Modo CHAT: lista de conversas e mensagens de uma conversa.
+gameRouter.get("/pm/conversations", async (req: AuthedRequest, res) => {
+  res.json({ conversations: await conversations(req.userId!) });
+});
+gameRouter.get("/pm/conversation/:otherId", async (req: AuthedRequest, res) => {
+  res.json({ messages: await conversation(req.userId!, req.params.otherId) });
 });
 gameRouter.get("/pm", async (req: AuthedRequest, res) => {
   res.json({ inbox: await inbox(req.userId!), sent: await sentbox(req.userId!), unread: await unreadCount(req.userId!) });

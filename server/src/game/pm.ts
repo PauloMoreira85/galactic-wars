@@ -11,8 +11,13 @@ export async function sendPM(fromUserId: string, fromName: string, to: string, s
   if (!body) throw new Error("Escreva uma mensagem");
 
   let target: { id: string; planet: { id: string } | null } | null = null;
-  const coord = to.trim().match(/^(\d+):(\d+):(\d+)$/);
-  if (coord) {
+  const t = to.trim();
+  const coord = t.match(/^(\d+):(\d+):(\d+)$/);
+  if (t.startsWith("uid:")) {
+    // Resposta direta numa conversa (userId do interlocutor).
+    target = await prisma.user.findUnique({ where: { id: t.slice(4) }, include: { planet: { select: { id: true } } } });
+    if (!target) throw new Error("Jogador nao encontrado");
+  } else if (coord) {
     const planet = await prisma.planet.findUnique({
       where: { galaxy_system_slot: { galaxy: +coord[1], system: +coord[2], slot: +coord[3] } },
       include: { user: { select: { id: true } } },
@@ -55,4 +60,60 @@ export async function markRead(userId: string, id: string) {
 
 export async function unreadCount(userId: string) {
   return prisma.privateMessage.count({ where: { toUserId: userId, read: false } });
+}
+
+// ===== Modo CHAT (conversas por jogador) =====
+// Lista de conversas: para cada OUTRO jogador com quem troquei mensagens, a última
+// mensagem, horário e quantas não lidas. Ordenado pela mais recente.
+export async function conversations(userId: string) {
+  const rows = await prisma.privateMessage.findMany({
+    where: { OR: [{ fromUserId: userId }, { toUserId: userId }] },
+    orderBy: { createdAt: "desc" }, take: 500,
+  });
+  // Nome/coord dos interlocutores.
+  const otherIds = [...new Set(rows.map((m) => (m.fromUserId === userId ? m.toUserId : m.fromUserId)))];
+  const planets = await prisma.planet.findMany({ where: { userId: { in: otherIds } }, select: { userId: true, name: true, galaxy: true, system: true, slot: true, user: { select: { username: true } } } });
+  const info = new Map(planets.map((p) => [p.userId, { name: p.user.username, planet: p.name, coords: `${p.galaxy}:${p.system}:${p.slot}` }]));
+
+  const byOther = new Map<string, { otherId: string; name: string; coords: string | null; last: string; lastAt: Date; unread: number; lastMine: boolean }>();
+  for (const m of rows) {
+    const other = m.fromUserId === userId ? m.toUserId : m.fromUserId;
+    // Mensagem anônima recebida: mostra "Anônimo" (não revela quem é na lista).
+    const anonIn = m.anonymous && m.toUserId === userId;
+    const disp = info.get(other);
+    if (!byOther.has(other)) {
+      byOther.set(other, {
+        otherId: other,
+        name: anonIn ? "Anônimo" : (disp?.name ?? "?"),
+        coords: anonIn ? null : (disp?.coords ?? null),
+        last: m.body, lastAt: m.createdAt, unread: 0, lastMine: m.fromUserId === userId,
+      });
+    }
+    if (m.toUserId === userId && !m.read) byOther.get(other)!.unread++;
+  }
+  return [...byOther.values()].sort((a, b) => b.lastAt.getTime() - a.lastAt.getTime());
+}
+
+// Mensagens de UMA conversa (cronológica) + marca as recebidas como lidas.
+export async function conversation(userId: string, otherId: string) {
+  const rows = await prisma.privateMessage.findMany({
+    where: {
+      OR: [
+        { fromUserId: userId, toUserId: otherId },
+        { fromUserId: otherId, toUserId: userId },
+      ],
+    },
+    orderBy: { createdAt: "asc" }, take: 500,
+  });
+  // Marca como lidas as recebidas desta conversa.
+  await prisma.privateMessage.updateMany({ where: { fromUserId: otherId, toUserId: userId, read: false }, data: { read: true } });
+  return rows.map((m) => ({
+    id: m.id,
+    mine: m.fromUserId === userId,
+    // Recebida anônima aparece como "Anônimo"; enviada por mim mostra normal.
+    fromName: (m.anonymous && m.toUserId === userId) ? "Anônimo" : m.fromName,
+    subject: m.subject,
+    body: m.body,
+    at: m.createdAt,
+  }));
 }

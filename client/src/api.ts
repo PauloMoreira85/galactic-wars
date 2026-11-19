@@ -317,6 +317,9 @@ export const api = {
     request<any>("/game/pm", { method: "POST", body: JSON.stringify({ to, subject, body, anonymous }) }),
   pmRead: (id: string) => request<{ ok: true }>(`/game/pm/${id}/read`, { method: "POST" }),
   pmUnread: () => request<{ unread: number }>("/game/pm/unread"),
+  // Modo chat
+  pmConversations: () => request<{ conversations: { otherId: string; name: string; coords: string | null; last: string; lastAt: string; unread: number; lastMine: boolean }[] }>("/game/pm/conversations"),
+  pmConversation: (otherId: string) => request<{ messages: { id: string; mine: boolean; fromName: string; subject: string; body: string; at: string }[] }>(`/game/pm/conversation/${otherId}`),
 
   chat: (room: string) => request<{ label: string; messages: { id: string; author: string; body: string; at: string }[] }>(`/game/chat/${room}`),
   chatOlder: (room: string, beforeId: string) => request<{ label: string; messages: { id: string; author: string; body: string; at: string }[] }>(`/game/chat/${room}?before=${encodeURIComponent(beforeId)}`),
