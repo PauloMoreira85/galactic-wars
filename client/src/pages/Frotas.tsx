@@ -64,17 +64,32 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
     try {
       const f = (await api.fleets()).fleets;
       setFleets(f);
-      // inicializa os campos editáveis das frotas idle com a composição atual
-      const e: Record<string, Record<string, number>> = {};
-      for (const fl of f) if (fl.idle) e[fl.id] = { ...fl.units };
-      setEdits(e);
+      // Inicializa os campos editáveis SÓ pra frotas que ainda não têm edição.
+      // NÃO sobrescreve o que o usuário já digitou (o auto-refresh apagava os
+      // valores a cada poucos segundos e a transferência saía errada).
+      setEdits((prev) => {
+        const next = { ...prev };
+        for (const fl of f) if (fl.idle && !next[fl.id]) next[fl.id] = { ...fl.units };
+        // Remove edits de frotas que não existem mais.
+        for (const id of Object.keys(next)) if (!f.some((fl) => fl.id === id)) delete next[id];
+        return next;
+      });
     } catch {}
   }
   useEffect(() => { load(); const t = setInterval(load, REFRESH_MS); return () => clearInterval(t); }, []);
 
   async function act(fn: () => Promise<any>) {
     setBusy(true); setError("");
-    try { const r = await fn(); if (r && r.planet) onChanged(); await load(); }
+    try {
+      const r = await fn(); if (r && r.planet) onChanged();
+      // A ação mudou a composição de propósito → re-sincroniza os campos editáveis
+      // com o estado novo do servidor (senão ficariam com o valor antigo).
+      const f = (await api.fleets()).fleets;
+      setFleets(f);
+      const e: Record<string, Record<string, number>> = {};
+      for (const fl of f) if (fl.idle) e[fl.id] = { ...fl.units };
+      setEdits(e);
+    }
     catch (e: any) { setError(e.message ?? "Falha"); }
     finally { setBusy(false); }
   }
