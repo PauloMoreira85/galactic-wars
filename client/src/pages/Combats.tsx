@@ -158,11 +158,10 @@ export function Combats() {
                   const who = e.side === "a" ? "Atacante" : "Defensor";
                   const verbo = e.action === "pem" ? "paralisando" : e.action === "assim" ? "assimilando" : "destruindo";
                   const chanceLabel = e.action === "pem" ? "Chance de vencer a resistência ao PEM" : "Chance média de atingir";
-                  const tirosPorNave = e.count > 0 ? Math.round(e.shots / e.count) : 0;
                   return (
                     <div key={i} className="combat-line">
                       <span style={{ color: e.side === "a" ? "var(--danger)" : "var(--carbonum)" }}>{who}:</span>{" "}
-                      {fmt(e.count)} {e.ship} atirando {fmt(e.shots)} vez(es) ({fmt(e.count)} naves × {tirosPorNave} tiros) em {e.target}, {verbo} {fmt(e.amount)} naves
+                      {fmt(e.count)} {e.ship} direcionaram <b>{fmt(e.shots)}</b> tiro(s) em {e.target}, {verbo} {fmt(e.amount)} naves
                       {e.action === "assim" && (e.assimCost ?? 0) > 0 && <span style={{ color: "var(--danger)" }}> — ao custo de {fmt(e.assimCost!)} naves</span>}
                       <span className="roid-count"> ({chanceLabel} — {e.chance}%)</span>
                     </div>
