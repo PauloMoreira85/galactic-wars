@@ -1,0 +1,342 @@
+<title>Plano de Marketing Galactic Wars</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Barlow:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+
+<style>
+  :root{
+    --bg:#070b16; --bg2:#0b1220; --panel:#0e1830; --panel2:#122240;
+    --ink:#e9f1fc; --mut:#93a6c6; --dim:#61748f;
+    --line:#1e2c48; --line2:#2b3e63;
+    --cy:#25d3ff; --cy-d:#0e91b8; --vi:#9a6bff; --pk:#ff5a8a;
+    --ok:#37e07a; --warn:#ffb020;
+    --maxw:960px; --read:74ch;
+    --fdisp:"Orbitron","Barlow",system-ui,sans-serif;
+    --fbody:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --fmono:"JetBrains Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:var(--fbody); font-size:16.5px; line-height:1.65; letter-spacing:.1px;
+    background-image:
+      radial-gradient(1px 1px at 18% 12%, rgba(255,255,255,.35), transparent),
+      radial-gradient(1px 1px at 72% 28%, rgba(255,255,255,.25), transparent),
+      radial-gradient(1.4px 1.4px at 42% 62%, rgba(37,211,255,.30), transparent),
+      radial-gradient(1px 1px at 88% 78%, rgba(255,255,255,.20), transparent),
+      radial-gradient(1px 1px at 8% 82%, rgba(154,107,255,.30), transparent),
+      radial-gradient(900px 500px at 85% -8%, rgba(37,211,255,.10), transparent),
+      radial-gradient(760px 500px at -5% 108%, rgba(154,107,255,.10), transparent);
+    background-attachment:fixed;
+  }
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 22px 96px}
+  p{max-width:var(--read)}
+  a{color:var(--cy); text-decoration:none} a:hover{text-decoration:underline}
+  a:focus-visible,button:focus-visible{outline:2px solid var(--cy); outline-offset:2px}
+  h1,h2,h3{font-family:var(--fdisp); text-wrap:balance; line-height:1.12; margin:0}
+  .mono{font-family:var(--fmono)}
+  .tnum{font-variant-numeric:tabular-nums}
+
+  /* ---- Hero ---- */
+  header{padding:64px 0 30px; border-bottom:1px solid var(--line)}
+  .kicker{font-family:var(--fmono); font-size:12px; letter-spacing:3px; text-transform:uppercase; color:var(--cy); display:flex; gap:12px; align-items:center; flex-wrap:wrap}
+  .kicker::before{content:""; width:26px; height:1px; background:var(--cy)}
+  h1{font-weight:900; font-size:clamp(34px,7vw,64px); letter-spacing:1px; margin:16px 0 6px; text-transform:uppercase}
+  h1 .em{color:var(--cy)}
+  .sub{font-size:clamp(17px,2.4vw,21px); color:var(--mut); max-width:60ch; font-weight:500}
+  .badges{display:flex; gap:8px; flex-wrap:wrap; margin-top:20px}
+  .badge{font-family:var(--fmono); font-size:12px; letter-spacing:.5px; padding:5px 11px; border:1px solid var(--line2); border-radius:999px; color:var(--mut); background:rgba(18,34,64,.5)}
+  .badge.on{color:#04121a; background:var(--cy); border-color:var(--cy); font-weight:600}
+  .badge.beta{color:#1a1205; background:var(--warn); border-color:var(--warn); font-weight:600}
+
+  /* ---- Section ---- */
+  section{padding:44px 0 8px; border-bottom:1px solid var(--line)}
+  .eyebrow{font-family:var(--fmono); font-size:12px; letter-spacing:2px; color:var(--dim); text-transform:uppercase; display:flex; align-items:baseline; gap:12px; margin-bottom:10px}
+  .eyebrow b{color:var(--cy); font-weight:600}
+  h2{font-weight:700; font-size:clamp(23px,3.4vw,30px); letter-spacing:.5px; margin-bottom:14px}
+  h3{font-family:var(--fbody); font-weight:700; font-size:17px; letter-spacing:.2px; color:var(--ink); margin:0 0 4px}
+  .lead{font-size:18.5px; color:var(--ink)}
+  strong{color:#fff; font-weight:700}
+  em{color:var(--cy); font-style:normal; font-weight:600}
+
+  /* ---- Building blocks ---- */
+  .grid{display:grid; gap:14px; margin:18px 0}
+  .g2{grid-template-columns:repeat(2,1fr)} .g3{grid-template-columns:repeat(3,1fr)} .g4{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:720px){.g2,.g3,.g4{grid-template-columns:1fr}}
+  .card{background:linear-gradient(180deg,var(--panel),var(--bg2)); border:1px solid var(--line); border-radius:12px; padding:18px}
+  .card h3{margin-bottom:6px}
+  .card p{margin:0; color:var(--mut); font-size:15px}
+  .tag{display:inline-block; font-family:var(--fmono); font-size:11px; letter-spacing:.5px; text-transform:uppercase; color:var(--cy); border:1px solid var(--line2); border-radius:6px; padding:2px 7px; margin-bottom:8px}
+
+  .kpi .n{font-family:var(--fdisp); font-weight:900; font-size:30px; color:var(--cy); letter-spacing:.5px}
+  .kpi .n.vi{color:var(--vi)} .kpi .n.pk{color:var(--pk)}
+  .kpi .lbl{font-size:13.5px; color:var(--mut); margin-top:2px}
+
+  .persona{border-left:3px solid var(--cy)} .persona.b{border-left-color:var(--vi)} .persona.c{border-left-color:var(--pk)}
+
+  ul.clean{margin:10px 0; padding:0; list-style:none; max-width:var(--read)}
+  ul.clean li{position:relative; padding:5px 0 5px 22px; color:var(--mut); border-bottom:1px dashed var(--line)}
+  ul.clean li::before{content:"▸"; position:absolute; left:0; color:var(--cy)}
+  ul.clean li b{color:var(--ink)}
+  ul.clean li:last-child{border-bottom:0}
+
+  /* ---- Table ---- */
+  .tblwrap{overflow-x:auto; margin:18px 0; border:1px solid var(--line); border-radius:12px}
+  table{border-collapse:collapse; width:100%; min-width:560px; font-size:14.5px}
+  th,td{text-align:left; padding:11px 14px; border-bottom:1px solid var(--line); vertical-align:top}
+  thead th{font-family:var(--fmono); font-size:11.5px; letter-spacing:1px; text-transform:uppercase; color:var(--cy); background:var(--panel); position:sticky; top:0}
+  tbody tr:last-child td{border-bottom:0}
+  tbody tr:hover{background:rgba(37,211,255,.04)}
+  td b{color:var(--ink)} td .mono{color:var(--mut)}
+
+  /* ---- Timeline ---- */
+  .phase{display:grid; grid-template-columns:150px 1fr; gap:18px; padding:18px 0; border-bottom:1px solid var(--line)}
+  .phase:last-child{border-bottom:0}
+  @media(max-width:640px){.phase{grid-template-columns:1fr; gap:6px}}
+  .phase .when{font-family:var(--fmono); font-size:13px; color:var(--cy)}
+  .phase .when .p{display:block; font-family:var(--fdisp); font-weight:700; font-size:15px; color:var(--ink); letter-spacing:1px; text-transform:uppercase; margin-top:2px}
+  .phase h3{margin-bottom:6px}
+
+  .callout{background:linear-gradient(180deg,rgba(37,211,255,.09),rgba(37,211,255,.02)); border:1px solid var(--line2); border-left:3px solid var(--cy); border-radius:10px; padding:16px 18px; margin:18px 0}
+  .callout p{margin:0}
+  .funnel{display:flex; flex-wrap:wrap; gap:8px; align-items:stretch; margin:16px 0}
+  .fstep{flex:1; min-width:120px; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px 14px}
+  .fstep .s{font-family:var(--fmono); font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:1px}
+  .fstep .m{font-family:var(--fdisp); font-weight:700; font-size:17px; color:var(--cy); margin-top:3px}
+  .fstep .d{font-size:13px; color:var(--mut)}
+
+  footer{padding:34px 0 0; color:var(--dim); font-family:var(--fmono); font-size:12.5px; letter-spacing:.5px}
+  @media (prefers-reduced-motion: no-preference){ header, section{animation:rise .5s ease both} }
+  @keyframes rise{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="kicker">Go-to-Market · Plano operacional · 2026</div>
+    <h1>Galactic <span class="em">Wars</span><br>Plano de Marketing</h1>
+    <p class="sub">Como levar o MMO de estratégia espacial do zero à comunidade — do resgate dos veteranos do Wars clássico à conquista de novos estrategistas, com o RUR como isca de aquisição.</p>
+    <div class="badges">
+      <span class="badge beta">FASE BETA</span>
+      <span class="badge on">Grátis · Sem download</span>
+      <span class="badge">Navegador · Mobile &amp; PC</span>
+      <span class="badge">pt-BR</span>
+      <span class="badge">galacticwar.com.br</span>
+    </div>
+  </header>
+
+  <!-- 01 SUMÁRIO -->
+  <section>
+    <div class="eyebrow"><b>01</b> Sumário executivo</div>
+    <h2>A tese em uma frase</h2>
+    <p class="lead"><em>Galactic Wars</em> é um MMO de estratégia por turnos (ticks) que roda direto no navegador — sem instalar nada, grátis, em português. O ativo mais raro do produto é o <strong>RUR (Round Ultra-Rápido)</strong>: uma partida completa de estratégia espacial em <strong>~100 minutos</strong>, quando o gênero costuma exigir semanas de dedicação.</p>
+    <p>A estratégia de marketing se apoia em três alavancas: (1) <strong>nostalgia</strong> — reconquistar quem jogou o Wars original nos anos 2000, um público que já ama o jogo e só precisa saber que ele voltou; (2) <strong>baixíssima fricção</strong> — "clica e joga em 30 segundos", sem download, sem cartão; (3) <strong>viralidade nativa</strong> — o próprio jogo é social (galáxias, alianças, ataques), então cada jogador ativo puxa os amigos. O objetivo do BETA não é escala máxima, e sim <strong>validar retenção e encher as galáxias</strong> para o lançamento oficial.</p>
+    <div class="callout"><p><strong>Norte (North Star):</strong> jogadores que completam ≥1 round e voltam para o seguinte. Tudo no funil serve a isso — atrair é fácil; <em>fazer voltar</em> é o jogo.</p></div>
+  </section>
+
+  <!-- 02 OBJETIVOS -->
+  <section>
+    <div class="eyebrow"><b>02</b> Objetivos &amp; metas</div>
+    <h2>Metas por fase (90 dias)</h2>
+    <p>Metas realistas para um jogo indie em BETA, focadas em densidade de jogadores por galáxia (competitividade) antes de volume bruto.</p>
+    <div class="grid g4">
+      <div class="card kpi"><div class="n tnum">150</div><div class="lbl">Cadastros no primeiro mês de BETA aberto</div></div>
+      <div class="card kpi"><div class="n vi tnum">40%</div><div class="lbl">Retenção D1 (voltam no dia seguinte / próximo round)</div></div>
+      <div class="card kpi"><div class="n pk tnum">3+</div><div class="lbl">Galáxias públicas cheias (competitividade real)</div></div>
+      <div class="card kpi"><div class="n tnum">2×</div><div class="lbl">Coeficiente de indicação até o lançamento oficial</div></div>
+    </div>
+    <ul class="clean">
+      <li><b>Curto prazo (BETA):</b> feedback de balanceamento, corrigir fricções de cadastro/onboarding, formar o núcleo de veteranos.</li>
+      <li><b>Médio prazo (Lançamento):</b> "Round de Abertura" marcado, comunidade no Discord ativa, primeiros criadores de conteúdo cobrindo o jogo.</li>
+      <li><b>Longo prazo (Escala):</b> rounds sempre cheios, receita de patrocínio + associados cobrindo o custo do servidor, calendário de temporadas.</li>
+    </ul>
+  </section>
+
+  <!-- 03 PÚBLICO -->
+  <section>
+    <div class="eyebrow"><b>03</b> Público-alvo</div>
+    <h2>Três personas, três iscas</h2>
+    <div class="grid g3">
+      <div class="card persona">
+        <span class="tag">Persona A · núcleo</span>
+        <h3>O Veterano do Wars</h3>
+        <p>30–45 anos, jogou o Wars/Galactic Wars original. Nostálgico, evangelista natural. <b>Isca:</b> "o Wars voltou". <b>Onde:</b> grupos de retrô/MMO BR, ex-alianças, fórum, Facebook.</p>
+      </div>
+      <div class="card persona b">
+        <span class="tag">Persona B · crescimento</span>
+        <h3>O Estrategista de Browser</h3>
+        <p>18–35, joga OGame/Travian/Tribal Wars/Ikariam. Busca profundidade sem download. <b>Isca:</b> árvore tecnológica, espionagem, alianças, PvP. <b>Onde:</b> Reddit, Discords de estratégia, YouTube.</p>
+      </div>
+      <div class="card persona c">
+        <span class="tag">Persona C · casual</span>
+        <h3>O Curioso do RUR</h3>
+        <p>Quer diversão rápida, não tem semanas pra investir. <b>Isca:</b> "estratégia espacial inteira no seu almoço — 100 minutos". <b>Onde:</b> TikTok/Reels, indicação de amigo, anúncios.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 PROPOSTA -->
+  <section>
+    <div class="eyebrow"><b>04</b> Proposta de valor &amp; diferenciais</div>
+    <h2>Por que jogar (e por que agora)</h2>
+    <ul class="clean">
+      <li><b>RUR — 100 minutos:</b> o grande diferencial. Um round inteiro numa sessão. Nenhum concorrente do gênero entrega isso.</li>
+      <li><b>Zero fricção:</b> roda no navegador, no PC e no celular, grátis, sem instalar, sem cartão. "Clica e joga."</li>
+      <li><b>Profundidade real:</b> 5 raças com identidades fortes (Rakshasa invisível, c-Mech que assimila naves, Daharan que paralisa), árvore tecnológica, roids, frotas, combate, espionagem e sabotagem.</li>
+      <li><b>Social por natureza:</b> galáxias de 5 aliados, alianças, governo (Comandante + ministros), ataques e defesas — o jogo <em>é</em> a comunidade.</li>
+      <li><b>Nostalgia legítima:</b> a recriação fiel de um clássico brasileiro querido — não é "mais um jogo", é <em>o</em> jogo de volta.</li>
+      <li><b>Em português, feito no Brasil:</b> suporte, comunidade e cultura no idioma do jogador.</li>
+    </ul>
+    <div class="callout"><p><strong>Mensagem-guia:</strong> use o RUR para <em>adquirir</em> (baixa fricção, gratificação rápida) e o round clássico para <em>reter</em> (profundidade, alianças, rivalidades que duram).</p></div>
+  </section>
+
+  <!-- 05 MENSAGEM -->
+  <section>
+    <div class="eyebrow"><b>05</b> Mensagem &amp; tom de voz</div>
+    <h2>Como o jogo fala</h2>
+    <p>Tom: <strong>épico, direto e confiante</strong> — linguagem de comando militar espacial, sem ser pesado. Frases curtas. Chamada pra ação sempre clara.</p>
+    <div class="grid g3">
+      <div class="card"><span class="tag">Tagline principal</span><h3>"Conquiste os roids. Domine a galáxia."</h3><p>Já é o slogan do jogo — manter como assinatura.</p></div>
+      <div class="card"><span class="tag">Gancho RUR</span><h3>"O universo em 100 minutos."</h3><p>Para aquisição casual e anúncios de sessão rápida.</p></div>
+      <div class="card"><span class="tag">Gancho nostalgia</span><h3>"O Wars voltou. Reúna sua aliança."</h3><p>Para reativar veteranos e ex-alianças.</p></div>
+    </div>
+    <p style="margin-top:10px"><b>Pitch de 1 linha (bio/anúncio):</b> <em>MMO de estratégia espacial grátis no navegador — construa sua frota, domine galáxias e jogue um round inteiro em 100 minutos.</em></p>
+  </section>
+
+  <!-- 06 CANAIS -->
+  <section>
+    <div class="eyebrow"><b>06</b> Canais &amp; táticas</div>
+    <h2>Onde e como divulgar</h2>
+    <div class="tblwrap">
+      <table>
+        <thead><tr><th>Canal</th><th>Objetivo</th><th>Tática concreta</th><th>Custo</th></tr></thead>
+        <tbody>
+          <tr><td><b>Comunidades de nostalgia</b><br><span class="mono">Facebook / grupos retrô MMO BR</span></td><td>Reativar veteranos</td><td>Post "o Wars voltou" com print da tela, link direto, convite pra reformar alianças.</td><td><b>R$0</b></td></tr>
+          <tr><td><b>Reddit / Discords de estratégia</b></td><td>Persona B</td><td>r/browsergames, r/OGame, r/Brasil; devlog honesto de indie brasileiro (não spam).</td><td><b>R$0</b></td></tr>
+          <tr><td><b>YouTube / Twitch</b></td><td>Alcance + prova</td><td>Enviar chave/round marcado a criadores de estratégia BR pra jogarem um RUR ao vivo (100 min = 1 vídeo).</td><td>R$0–permuta</td></tr>
+          <tr><td><b>TikTok / Reels / Shorts</b></td><td>Persona C</td><td>Clipes curtos: "estratégia inteira em 100 min", combate épico, "escolha sua raça".</td><td><b>R$0</b></td></tr>
+          <tr><td><b>WhatsApp</b></td><td>Ativação / viral</td><td>Grupo oficial + botão "chamar amigos"; avisos de início de round. O jogo já integra WhatsApp.</td><td><b>R$0</b></td></tr>
+          <tr><td><b>Fórum próprio</b></td><td>Retenção</td><td>Anúncios de round, patch notes, ranking, drama entre alianças (isso prende).</td><td><b>R$0</b></td></tr>
+          <tr><td><b>SEO / conteúdo</b></td><td>Aquisição contínua</td><td>Guias ("melhor raça", "como roidar"), páginas indexáveis; captura quem busca o "Wars".</td><td>Tempo</td></tr>
+          <tr><td><b>Anúncios pagos</b></td><td>Escalar o que funciona</td><td>Meta/Google só DEPOIS de validar retenção; segmentar fãs de OGame/Travian e ex-jogadores.</td><td>Pago</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><b>Regra de ouro:</b> não gastar em anúncio antes da retenção estar boa — senão você paga pra encher um balde furado. Primeiro os canais gratuitos + comunidade; pago só para amplificar o que já converte.</p>
+  </section>
+
+  <!-- 07 GROWTH -->
+  <section>
+    <div class="eyebrow"><b>07</b> Motores de crescimento</div>
+    <h2>Viralidade embutida no jogo</h2>
+    <div class="grid g2">
+      <div class="card"><span class="tag">Loop 1</span><h3>Indicação recompensada</h3><p>"Traga um aliado": quem convida e o convidado ganham bônus (recursos/roids). Coeficiente viral &gt; 1 = crescimento orgânico.</p></div>
+      <div class="card"><span class="tag">Loop 2</span><h3>Aliança = convite</h3><p>Formar/encher uma galáxia (5 aliados) exige chamar gente. O social do jogo <em>é</em> o motor de aquisição.</p></div>
+      <div class="card"><span class="tag">Loop 3</span><h3>RUR = hábito diário</h3><p>3 rounds/dia de 100 min criam retorno recorrente e clipes constantes pra redes.</p></div>
+      <div class="card"><span class="tag">Loop 4</span><h3>Patrocínio = prova social</h3><p>Marcas reais (ex.: teramind.ia, UltraSistem) no jogo passam credibilidade e ajudam a bancar o servidor.</p></div>
+    </div>
+  </section>
+
+  <!-- 08 CRONOGRAMA -->
+  <section>
+    <div class="eyebrow"><b>08</b> Cronograma de lançamento</div>
+    <h2>Quatro fases</h2>
+    <div class="phase"><div class="when">Semanas 1–2<span class="p">Fase 0</span></div><div><h3>Preparar a base (BETA silencioso)</h3><p style="margin:0;color:var(--mut)">Corrigir onboarding/cadastro, deixar galáxias cheias, kit de imprensa e artes prontos, Discord + grupo WhatsApp criados. Convidar 10–20 veteranos pra "testar em primeira mão" (semear o núcleo).</p></div></div>
+    <div class="phase"><div class="when">Semanas 3–4<span class="p">Fase 1</span></div><div><h3>Reconquista dos veteranos</h3><p style="margin:0;color:var(--mut)">Ofensiva "o Wars voltou" nas comunidades de nostalgia. Posts, prints, convites pra reformar alianças. Meta: encher as primeiras galáxias com quem já ama o jogo.</p></div></div>
+    <div class="phase"><div class="when">Semanas 5–8<span class="p">Fase 2</span></div><div><h3>Lançamento &amp; criadores</h3><p style="margin:0;color:var(--mut)">"Round de Abertura" marcado (evento). Streamers/YouTubers jogam um RUR ao vivo. Clipes curtos em TikTok/Reels. Primeiro impulso pago pequeno para testar criativos.</p></div></div>
+    <div class="phase"><div class="when">Semanas 9–12<span class="p">Fase 3</span></div><div><h3>Retenção &amp; escala</h3><p style="margin:0;color:var(--mut)">Calendário de temporadas, torneios entre alianças, ativar indicação recompensada, escalar os anúncios que converteram. Reativar o Hall da Fama no lançamento oficial.</p></div></div>
+  </section>
+
+  <!-- 09 CONTEÚDO -->
+  <section>
+    <div class="eyebrow"><b>09</b> Calendário de conteúdo</div>
+    <h2>Ritmo semanal sustentável</h2>
+    <div class="tblwrap">
+      <table>
+        <thead><tr><th>Dia</th><th>Formato</th><th>Tema</th></tr></thead>
+        <tbody>
+          <tr><td><b>Seg</b></td><td>Card / post</td><td>Dica de estratégia da semana ("como roidar mais rápido").</td></tr>
+          <tr><td><b>Qua</b></td><td>Reel / Short</td><td>Momento épico de combate ou "escolha sua raça".</td></tr>
+          <tr><td><b>Sex</b></td><td>Post + fórum</td><td>Anúncio do round do fim de semana + ranking / rivalidades.</td></tr>
+          <tr><td><b>Dom</b></td><td>Comunidade</td><td>Resenha do round: destaque de aliança/jogador, meme, enquete.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Pilares de conteúdo: <b>1) Nostalgia</b> ("lembra disso?"), <b>2) Ensino</b> (guias/dicas), <b>3) Épico</b> (combates, conquistas), <b>4) Comunidade</b> (alianças, drama, memes). Rode os quatro em rotação.</p>
+  </section>
+
+  <!-- 10 ORÇAMENTO -->
+  <section>
+    <div class="eyebrow"><b>10</b> Orçamento</div>
+    <h2>Três cenários</h2>
+    <div class="grid g3">
+      <div class="card"><span class="tag">Cenário 1</span><h3>Guerrilha · R$0</h3><p>Só canais orgânicos: comunidades, Reddit, TikTok, WhatsApp, fórum, permuta com criadores. Ideal pro BETA. Custo = seu tempo.</p></div>
+      <div class="card persona b"><span class="tag">Cenário 2</span><h3>Impulso · R$300–800/mês</h3><p>Orgânico + micro-anúncios segmentados (fãs de OGame/Travian, ex-Wars) + brinde pra 1–2 criadores. Só após retenção validada.</p></div>
+      <div class="card persona c"><span class="tag">Cenário 3</span><h3>Escala · R$1.500+/mês</h3><p>Campanha paga séria + parcerias com criadores maiores. Só quando LTV/retenção justificarem o custo de aquisição.</p></div>
+    </div>
+    <p><b>Receita pra bancar:</b> patrocínio (banners no jogo) + Associados (perks pagos). Meta saudável: patrocínio cobre o servidor; anúncio só entra quando a conta fecha.</p>
+  </section>
+
+  <!-- 11 MÉTRICAS -->
+  <section>
+    <div class="eyebrow"><b>11</b> Métricas &amp; funil</div>
+    <h2>O que medir toda semana</h2>
+    <div class="funnel">
+      <div class="fstep"><div class="s">Topo</div><div class="m">Visitantes</div><div class="d">Landing / cliques nos links</div></div>
+      <div class="fstep"><div class="s">Ativação</div><div class="m">Cadastros</div><div class="d">Visitante → planeta criado</div></div>
+      <div class="fstep"><div class="s">Retenção</div><div class="m">D1 / D7</div><div class="d">Voltam / jogam o round seguinte</div></div>
+      <div class="fstep"><div class="s">Engajamento</div><div class="m">Ativos/round</div><div class="d">Galáxias cheias, ataques, alianças</div></div>
+      <div class="fstep"><div class="s">Viral</div><div class="m">Indicações</div><div class="d">Convites por jogador (K-factor)</div></div>
+    </div>
+    <ul class="clean">
+      <li><b>Taxa de cadastro:</b> visitantes que viram planeta. Se baixa → problema na landing/onboarding (foi o que travava o cadastro).</li>
+      <li><b>Retenção por round:</b> a métrica-rainha. Se sobe, pode escalar aquisição com segurança.</li>
+      <li><b>Origem do cadastro:</b> saber qual canal traz gente que <em>fica</em> (não só que clica) — dobrar no que funciona.</li>
+    </ul>
+  </section>
+
+  <!-- 12 RISCOS -->
+  <section>
+    <div class="eyebrow"><b>12</b> Riscos &amp; mitigação</div>
+    <h2>O que pode dar errado</h2>
+    <div class="tblwrap">
+      <table>
+        <thead><tr><th>Risco</th><th>Mitigação</th></tr></thead>
+        <tbody>
+          <tr><td><b>Galáxias vazias</b> (jogador entra e não tem com quem jogar)</td><td>Alocação equilibrada + concentrar divulgação em rajadas pra encher junto; começar poucas galáxias.</td></tr>
+          <tr><td><b>Onboarding confuso</b> pra quem nunca jogou o gênero</td><td>Tutorial curto, proteção de novato, "primeiros 3 passos" na tela inicial.</td></tr>
+          <tr><td><b>Multi-contas / trapaça</b> distorcem a competição</td><td>Sistema anti-multi por IP já ativo; moderação e regras claras.</td></tr>
+          <tr><td><b>Custo de servidor</b> sem receita</td><td>Patrocínio + Associados desde o BETA; escalar infra só com demanda.</td></tr>
+          <tr><td><b>Bug em horário de pico</b> derruba a experiência</td><td>Monitorar; comunicar rápido no WhatsApp/Discord; BETA deixa claro que ajustes acontecem.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 13 ARTES -->
+  <section>
+    <div class="eyebrow"><b>13</b> Brief de artes</div>
+    <h2>O que pedir pro Artefatos fazer</h2>
+    <p>Peças visuais que este plano precisa. Mantenha uma <b>identidade coesa</b>: fundo espacial escuro, ciano <span class="mono">#25d3ff</span> + violeta <span class="mono">#9a6bff</span> de acento, prata metálico, tipografia Orbitron. Sempre com logo e a URL <span class="mono">galacticwar.com.br</span>.</p>
+    <div class="tblwrap">
+      <table>
+        <thead><tr><th>Peça</th><th>Uso</th><th>Formato</th></tr></thead>
+        <tbody>
+          <tr><td><b>Key visual</b> (arte-mãe)</td><td>Base de todas as peças</td><td>16:9 e 9:16</td></tr>
+          <tr><td><b>Post "o Wars voltou"</b></td><td>Nostalgia / feed</td><td>1080×1080</td></tr>
+          <tr><td><b>Story/Reel "100 minutos"</b></td><td>Aquisição RUR</td><td>1080×1920</td></tr>
+          <tr><td><b>Cards das 5 raças</b></td><td>"Escolha sua raça"</td><td>1080×1080 (série)</td></tr>
+          <tr><td><b>Thumbnail YouTube</b></td><td>Criadores / vídeo do round</td><td>1280×720</td></tr>
+          <tr><td><b>Banner do Round de Abertura</b></td><td>Evento de lançamento</td><td>1080×1080 + 1920×1080</td></tr>
+          <tr><td><b>Criativos de anúncio</b></td><td>Meta/Google (2–3 variações)</td><td>1:1, 4:5, 9:16</td></tr>
+          <tr><td><b>Capa de grupo/Discord</b></td><td>Comunidade</td><td>por plataforma</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout"><p><strong>Para cada peça, entregue ao Artefatos:</strong> o objetivo, a persona, o texto (headline + CTA) e o formato. Copie os ganchos da seção 05 — eles já são o texto das artes.</p></div>
+  </section>
+
+  <footer>
+    Galactic Wars · Plano de Marketing · v1 · galacticwar.com.br — documento de trabalho, ajustável a cada round.
+  </footer>
+</div>

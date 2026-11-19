@@ -1,0 +1,268 @@
+Galactic Wars - Rankings
+Versão para impressão
+Mineração
+Fundição de Metalium
+Extração e fundição de Metalium (+3000 por tick)
+Metalium: 2.500 Carbonum: 2.500
+12 ticks
+Construção
+Desenvolvimento de Carbonum
+Estudo para extração de Carbonum da natureza
+Metalium: 7.500 Carbonum: 7.500
+12 ticks
+Pesquisa
+Extração de Carbonum
+Estruturas de extração de Carbonum (+3000 por tick)
+Metalium: 12.500 Carbonum: 12.500
+12 ticks
+Construção
+Estudo da Tecnologia Nuclear Taakh
+Resíduos de fissão nuclear Taakh, deixando residuos de Plutônium
+Metalium: 20.000 Carbonum: 20.000
+24 ticks
+Pesquisa
+Reator de geração rápida
+Produção de Plutônium atravez de fissões nucleares (+3000 por tick)
+Metalium: 30.000 Carbonum: 30.000
+24 ticks
+Construção
+Pesquisa de Ruptura nuclear de baixo custo
+Transmutação de metais comuns em Metalium
+Metalium: 45.000 Carbonum: 45.000
+36 ticks
+Pesquisa
+Mini aceleradores de trasmutação
+Produção de Metalium em laboratórios (+25000 por tick)
+Metalium: 80.000 Carbonum: 80.000
+36 ticks
+Construção
+Extrativismo de alto rendimento
+Sistema de extração de grandes volumes de Carbonum
+Metalium: 135.000 Carbonum: 135.000
+48 ticks
+Pesquisa
+Extração avançada
+Extração de grandes quantidades de Carbonum (+25000 por tick)
+Metalium: 135.000 Carbonum: 135.000
+48 ticks
+Construção
+Estudo de reatores auto-sustentaveis
+Reatores alimentados por Plutônium e com alto indice de resíduos de Plutônium liberados
+Metalium: 150.000 Carbonum: 150.000
+60 ticks
+Pesquisa
+Reator residual de Plutônium
+Implementação dos reatores auto sustentaveis (+25000 por tick)
+Metalium: 250.000 Carbonum: 250.000
+60 ticks
+Construção
+Deslocamento
+Propulsores de alta velocidade
+Melhoria no sistema de propulsão padrão que lhe permite viagens espaciais mais rápidas
+Metalium: 2.500 Carbonum: 2.500
+12 ticks
+Pesquisa
+Viagem de alta velocidade
+Naves com propulsores mais poderosos (-1 tick de viagem)
+Metalium: 10.000 Carbonum: 10.000
+12 ticks
+Construção
+Queima de anti-plutônium
+Pesquisa que visa ampliar a capacidade dos propulsores neutralizando plutônium com anti-plutônium
+Metalium: 15.000 Carbonum: 15.000
+12 ticks
+Pesquisa
+Propulsores de Anti-matéria
+Propulsores que utilizam a queima de matéria/anti-matéria para viajar mais rápido (-2 ticks de viagem)
+Metalium: 30.000 Carbonum: 30.000
+24 ticks
+Construção
+Hiper computadores
+Desenvolvimento de computadores capazes de calcular rotas para a realização de Saltos espaciais seguros
+Metalium: 50.000 Carbonum: 50.000
+36 ticks
+Pesquisa
+Saltos espaciais
+Utilização da teoria de dobras espaciais (dobrando o espaço a frente) para viagens ultra rápidas (-3 ticks de viagem)
+Metalium: 75.000 Carbonum: 75.000
+48 ticks
+Construção
+Estudo de buracos de minhoca
+Manipulação para controle de local e duração de buracos de minhoca criados artificialmente
+Metalium: 150.000 Carbonum: 150.000
+60 ticks
+Pesquisa
+Travessia de buracos
+Implementação do sistema de buracos de minhoca em frotas espaciais, permitindo furar o espaço (-4 ticks de viagem)
+Metalium: 250.000 Carbonum: 250.000
+60 ticks
+Construção
+Inteligência
+Escola de Espionagem
+Treinamento básico de agentes
+Metalium: 2.500 Carbonum: 2.500
+12 ticks
+Pesquisa
+Central de inteligência
+Centro de treinamento de Coordenadores de operações e contra-espionagem
+Metalium: 10.000 Carbonum: 10.000
+12 ticks
+Construção
+Treinamento padrão
+Treinamento de agentes para que estes possam se infiltrar em planetas inimigos
+Metalium: 15.000 Carbonum: 15.000
+24 ticks
+Pesquisa
+Formação do serviço secreto
+Formação de agência de segurança planetária especializada em missoes de infiltração e de obtenção de informações básicas de um planeta
+Metalium: 20.000 Carbonum: 20.000
+36 ticks
+Construção
+Treinamento de especialistas
+Criação de uma escola de agentes especializados em obter informações sobre as capacidades militares do inimigo
+Metalium: 35.000 Carbonum: 35.000
+48 ticks
+Pesquisa
+Agentes Militares
+Agentes que obtêm informacao sobre a capacidade militar do inimigo
+Metalium: 50.000 Carbonum: 50.000
+60 ticks
+Construção
+Investimento em Captação
+Patrocinio para pesquisas de metodos de interceptação de frequencias codificadas, utilizadas em sistemas de noticias militares
+Metalium: 75.000 Carbonum: 75.000
+72 ticks
+Pesquisa
+Equipe de Trasmissão
+Montagem de uma equipe de agentes capacitados a se infiltrar em um planeta e 'grampear' a rede de noticias militares
+Metalium: 100.000 Carbonum: 100.000
+72 ticks
+Construção
+Táticas de Infiltração
+Estudo avançado de engenharia social e da estrutura militar alienigena, permitindo assim que agentes se infiltrem e conquistem cargos de confiança
+Metalium: 150.000 Carbonum: 150.000
+96 ticks
+Pesquisa
+Agente Duplos
+Construcao da base secreta de agentes duplos para treinamento dos mesmos
+Metalium: 250.000 Carbonum: 250.000
+96 ticks
+Construção
+Sabotagem
+Táticas de Sabotagem
+Táticas básicas para sabotagens em planetas inimigos
+Metalium: 2.500 Carbonum: 2.500
+12 ticks
+Pesquisa
+Sistemas de mineração
+Ataques que retardam a produção de recursos de um planeta
+Metalium: 7.500 Carbonum: 7.500
+12 ticks
+Construção
+Estudo de produção
+Desenvolvimento de métodos para interferir na produção de naves
+Metalium: 10.000 Carbonum: 10.000
+12 ticks
+Pesquisa
+Equipe de Produção
+Treinamento de equipe especializada em sabotagens nas linhas de produção
+Metalium: 15.000 Carbonum: 15.000
+12 ticks
+Construção
+Táticas de pistas falsas
+Métodos para atrapalhar espionagem e contra-espionagem
+Metalium: 20.000 Carbonum: 20.000
+12 ticks
+Pesquisa
+Infiltração na inteligência
+Infiltrados na rede de espionagem / contra-espionagem e colocando pistas falsas essa equipe prejudica a eficiencia do alvo nestes itens
+Metalium: 30.000 Carbonum: 30.000
+24 ticks
+Construção
+Novas taticas de mineração
+Estudo de novos métodos para prejudicar a mineração de um planeta alvo de maneira mais eficaz
+Metalium: 40.000 Carbonum: 40.000
+24 ticks
+Pesquisa
+Equipe de mineração
+Equipe especializada em paralizar quase por completo a mineração de um planeta
+Metalium: 60.000 Carbonum: 60.000
+24 ticks
+Construção
+Novas táticas de Produção
+Estudo de novos métodos para prejudicar a produção de um planeta alvo de maneira mais eficaz
+Metalium: 100.000 Carbonum: 100.000
+24 ticks
+Pesquisa
+Equipe Avançada de Produção
+Equipe especializada em paralizar por um longo tempo a produção de um planeta
+Metalium: 125.000 Carbonum: 125.000
+36 ticks
+Construção
+Roubo tecnológico
+Pesquisa de maneiras para infiltrar um cientista nos laboratórios de um planeta e roubar tecnologias mais avançadas
+Metalium: 150.000 Carbonum: 150.000
+36 ticks
+Pesquisa
+Equipe Assimiladora
+Equipe treinada para descobrir e compreender o funcionamento de tecnologias desenvolvidas por outro planeta
+Metalium: 250.000 Carbonum: 250.000
+48 ticks
+Construção
+Naves
+Indústrias de Naves
+Criação de indústrias que irão construir suas naves, tecnologia de construção de caças
+Metalium: 2.500 Carbonum: 2.500
+12 ticks
+Construção
+Sistema de Múltiplos Propulsores
+Tecnologia que permite que naves maiores possam navegar pelo espaço
+Metalium: 7.500 Carbonum: 7.500
+12 ticks
+Pesquisa
+Fabricação de Corvetas
+Implementação para que suas Indústrias de naves produzam Corvetas
+Metalium: 10.000 Carbonum: 10.000
+24 ticks
+Construção
+Ampliação de Fuselagem
+Estudo de novas ligas de Metalium + Carbonum que lhe permite construir naves maiores e com maior resistência
+Metalium: 15.000 Carbonum: 15.000
+24 ticks
+Pesquisa
+Fabricação de Fragatas
+Nova linha de produção tornando suas Indústrias de naves capazes de produzirem Fragatas
+Metalium: 25.000 Carbonum: 25.000
+36 ticks
+Construção
+Sistema múltiplo de armas
+Desenvolvimento de tecnologia para alocação e controle de várias armas em uma única nave
+Metalium: 45.000 Carbonum: 45.000
+36 ticks
+Pesquisa
+Fabricação de Destroyers
+Re-estruturação de suas Indústrias de naves permitindo a montagem de Destroyers
+Metalium: 80.000 Carbonum: 80.000
+36 ticks
+Construção
+Armas de alto impacto
+Pesquisa de armas de alto impacto, para serem utilizadas por naves maiores
+Metalium: 135.000 Carbonum: 135.000
+48 ticks
+Pesquisa
+Fabricação de Cruzadores
+Ampliação das Indústrias de naves para produção de Cruzadores
+Metalium: 135.000 Carbonum: 135.000
+48 ticks
+Construção
+Cidades espaciais
+Desenvolvimento de naves gigantescas, capazes de abrigar milhares de pessoas com numerosos sistemas de defesa
+Metalium: 150.000 Carbonum: 150.000
+60 ticks
+Pesquisa
+Fabricação de Naves Mãe
+Criação Industrias espaciais espacializadas na criação de Naves mãe
+Metalium: 250.000 Carbonum: 250.000
+60 ticks
+Construção
+Versão para impressão

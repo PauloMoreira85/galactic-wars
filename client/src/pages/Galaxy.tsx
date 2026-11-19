@@ -65,6 +65,7 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
     const t = setInterval(loadFleets, REFRESH_MS);
     return () => clearInterval(t);
   }, []);
+  useEffect(() => { api.markSeen("galaxy"); }, []); // missão tutorial
 
   // Mesma galáxia (= mesmo setor E paralelo) = aliados: só transporte (não pode atacar).
   const myGalaxy = g || 1;

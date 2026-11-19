@@ -95,6 +95,10 @@ model Planet {
   // Última vez que o jogador abriu o Chat (pra acender o alerta de msg nova).
   chatSeenAt DateTime?
 
+  // Primeira vez que abriu as Ferramentas/Calculadora e a Galáxia (missões tutorial).
+  toolsSeenAt  DateTime?
+  galaxySeenAt DateTime?
+
   // Auto-exílios restantes (cai em galáxia aleatória não-privada). Máx 3 por planeta.
   autoExiles Int @default(3)
 

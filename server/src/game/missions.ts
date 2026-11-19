@@ -20,6 +20,10 @@ export interface MissionCtx {
   hadCombat: boolean;    // já participou de combate (atacou ou defendeu)
   sentFleet: boolean;    // já enviou alguma frota
   newsOpened: boolean;   // já abriu as notícias
+  spied: boolean;        // já espionou alguém (gerou relatório)
+  sabotaged: boolean;    // já lançou uma sabotagem
+  toolsUsed: boolean;    // já abriu as Ferramentas/Calculadora
+  galaxyViewed: boolean; // já abriu a tela da Galáxia
 }
 
 export interface MissionDef {
@@ -34,32 +38,36 @@ const totalUnitsOf = (c: MissionCtx) => totalUnits(c.baseUnits) + totalUnits(c.f
 
 export const MISSIONS: MissionDef[] = [
   // ---- Primeiros passos / economia ----
-  { key: "m_fundicao", title: "Fundação de Metalium", desc: "Construa a Fundição de Metalium (aba Tecnologia). É a base da sua economia.", reward: { m: 10000 }, done: (c) => (c.tech.centroMineracao ?? 0) >= 1 },
-  { key: "m_roids5", title: "Minere 5 asteroides", desc: "Inicie asteroides na aba Recursos até ter 11 no total (você começa com 6). Roids = recursos por tick.", reward: { roidM: 2 }, done: (c) => c.roidsTotal >= 11 },
-  { key: "m_carbonum_pesq", title: "Pesquise Carbonum", desc: "Pesquise 'Desenvolvimento de Carbonum' (aba Tecnologia) pra liberar o 2º recurso.", reward: { c: 10000 }, done: (c) => (c.tech.extracaoCristal ?? 0) >= 1 },
-  { key: "m_carbonum_build", title: "Extração de Carbonum", desc: "Construa a 'Extração de Carbonum' — agora você produz Carbonum por tick.", reward: { roidC: 1 }, done: (c) => (c.tech.minaCristal ?? 0) >= 1 },
-  { key: "m_plutonium", title: "Produza Plutônium", desc: "Avance a trilha de Mineração até o 'Reator de geração rápida' pra produzir Plutônium (combustível das frotas).", reward: { p: 10000 }, done: (c) => (c.tech.labEonio ?? 0) >= 1 },
-  { key: "m_roids15", title: "15 asteroides", desc: "Chegue a 15 asteroides no total. Mais roids = mais recursos e mais naves depois.", reward: { roidM: 1, roidC: 1, roidP: 1 }, done: (c) => c.roidsTotal >= 15 },
-  { key: "m_mina_profunda", title: "Mineração avançada", desc: "Pesquise 'Ruptura nuclear de baixo custo' (Mineração) — abre as minas profundas (+25.000/tick).", reward: { m: 15000, c: 15000 }, done: (c) => (c.tech.recursosProfundidade ?? 0) >= 1 },
+  { key: "m_fundicao", title: "Fundação de Metalium", desc: "📍 Abra o menu ☰ (3 tracinhos, topo-esquerda) → Tecnologia. Na trilha 'Mineração', clique em 'Fundição de Metalium' e construa. É a base da sua economia — tudo começa por aqui.", reward: { m: 10000 }, done: (c) => (c.tech.centroMineracao ?? 0) >= 1 },
+  { key: "m_roids5", title: "Minere 5 asteroides", desc: "📍 Menu ☰ → Recursos. Clique em 'Minerar asteroide' até chegar a 11 roids no total (você começa com 6). Cada roid rende recursos todo tick — é sua renda passiva.", reward: { roidM: 2 }, done: (c) => c.roidsTotal >= 11 },
+  { key: "m_carbonum_pesq", title: "Pesquise Carbonum", desc: "📍 Menu ☰ → Tecnologia → trilha 'Mineração'. Pesquise 'Desenvolvimento de Carbonum' pra destravar o 2º recurso do jogo.", reward: { c: 10000 }, done: (c) => (c.tech.extracaoCristal ?? 0) >= 1 },
+  { key: "m_carbonum_build", title: "Extração de Carbonum", desc: "📍 Tecnologia → 'Mineração'. Depois de pesquisar, construa a 'Extração de Carbonum'. A partir daí você produz Carbonum por tick (olhe o contador no topo da tela).", reward: { roidC: 1 }, done: (c) => (c.tech.minaCristal ?? 0) >= 1 },
+  { key: "m_plutonium", title: "Produza Plutônium", desc: "📍 Tecnologia → 'Mineração'. Avance até o 'Reator de geração rápida' pra produzir Plutônium — é o combustível que as frotas gastam pra viajar.", reward: { p: 10000 }, done: (c) => (c.tech.labEonio ?? 0) >= 1 },
+  { key: "m_roids15", title: "15 asteroides", desc: "📍 Menu ☰ → Recursos. Continue minerando até 15 roids no total. Quanto mais roids, mais recursos por tick e mais naves você constrói depois.", reward: { roidM: 1, roidC: 1, roidP: 1 }, done: (c) => c.roidsTotal >= 15 },
+  { key: "m_mina_profunda", title: "Mineração avançada", desc: "📍 Tecnologia → 'Mineração'. Pesquise 'Ruptura nuclear de baixo custo' — libera as minas profundas (+25.000/tick cada). É o salto de economia do meio de jogo.", reward: { m: 15000, c: 15000 }, done: (c) => (c.tech.recursosProfundidade ?? 0) >= 1 },
+  { key: "m_calc", title: "Use a Calculadora", desc: "📍 Menu ☰ → Ferramentas → Calculadora. Simule quanto rende construir naves/roids ou quanto custa uma pesquisa antes de gastar. Planejar economiza recursos.", reward: { m: 8000, c: 8000 }, done: (c) => c.toolsUsed },
 
   // ---- Naves e frotas ----
-  { key: "m_fabrica", title: "Indústrias de Naves", desc: "Construa as 'Indústrias de Naves' (trilha Naves) pra poder fabricar Caças.", reward: { m: 15000, c: 15000 }, done: (c) => (c.tech.fundicaoCacas ?? 0) >= 1 },
-  { key: "m_nave1", title: "Sua 1ª nave", desc: "Construa sua primeira nave (aba Naves). Cada raça tem naves próprias.", reward: { m: 10000, c: 10000 }, done: (c) => totalUnitsOf(c) >= 1 },
-  { key: "m_frota", title: "Crie uma frota", desc: "Crie uma frota (aba Frotas) e transfira naves pra ela — é assim que você envia naves pra atacar ou defender.", reward: { p: 15000 }, done: (c) => c.fleetSlots >= 1 },
-  { key: "m_desloc", title: "Pesquise Deslocamento", desc: "Pesquise 'Propulsores de alta velocidade' (trilha Deslocamento) — naves mais rápidas chegam antes ao alvo.", reward: { m: 15000 }, done: (c) => (c.tech.mecanicaQuantica ?? 0) >= 1 },
-  { key: "m_envio", title: "Mova uma frota", desc: "Envie uma frota pra algum destino (defesa de aliado ou ataque). Veja o tráfego na aba correspondente.", reward: { m: 15000, c: 15000 }, done: (c) => c.sentFleet },
-  { key: "m_combate", title: "Primeiro combate", desc: "Participe de um combate — ataque um inimigo ou defenda um aliado. Veja o resultado em Combates.", reward: { m: 20000, c: 20000, roidM: 1, roidC: 1 }, done: (c) => c.hadCombat },
+  { key: "m_fabrica", title: "Indústrias de Naves", desc: "📍 Tecnologia → trilha 'Naves'. Construa as 'Indústrias de Naves' — sem ela você não fabrica nenhuma nave.", reward: { m: 15000, c: 15000 }, done: (c) => (c.tech.fundicaoCacas ?? 0) >= 1 },
+  { key: "m_nave1", title: "Sua 1ª nave", desc: "📍 Menu ☰ → Naves. Clique no Caça (a nave mais barata), escolha a quantidade e construa. Cada raça tem naves próprias com funções diferentes.", reward: { m: 10000, c: 10000 }, done: (c) => totalUnitsOf(c) >= 1 },
+  { key: "m_frota", title: "Crie uma frota", desc: "📍 Menu ☰ → Frotas → 'Criar frota'. Depois use as setas « » pra transferir naves do hangar (base) pra frota. Só com naves numa frota você consegue enviá-las pra fora.", reward: { p: 15000 }, done: (c) => c.fleetSlots >= 1 },
+  { key: "m_desloc", title: "Pesquise Deslocamento", desc: "📍 Tecnologia → trilha 'Deslocamento'. Pesquise 'Propulsores de alta velocidade' — cada nível reduz o tempo (TEC) que as frotas levam pra chegar ao alvo.", reward: { m: 15000 }, done: (c) => (c.tech.mecanicaQuantica ?? 0) >= 1 },
+  { key: "m_galaxia", title: "Explore a Galáxia", desc: "📍 Menu ☰ → Galáxia. Veja os planetas vizinhos, suas coordenadas (setor:paralelo:slot) e quem é aliado ou inimigo. Clique numa coordenada em qualquer lugar do jogo pra abrir o planeta.", reward: { m: 8000, c: 8000 }, done: (c) => c.galaxyViewed },
+  { key: "m_envio", title: "Mova uma frota", desc: "📍 Menu ☰ → Frotas. Escolha a frota, digite a coordenada de destino e envie (defesa de aliado ou ataque). Acompanhe o tráfego na própria aba Frotas.", reward: { m: 15000, c: 15000 }, done: (c) => c.sentFleet },
+  { key: "m_combate", title: "Primeiro combate", desc: "📍 Envie uma frota de ataque a um inimigo, ou defenda um aliado atacado. O relatório aparece em Menu ☰ → Combates — lá você vê os tiros e as perdas de cada lado.", reward: { m: 20000, c: 20000, roidM: 1, roidC: 1 }, done: (c) => c.hadCombat },
 
-  // ---- Inteligência ----
-  { key: "m_intel", title: "Central de Inteligência", desc: "Pesquise/construa a 'Central de Inteligência' pra começar a espionar e se defender de espiões.", reward: { p: 10000 }, done: (c) => (c.tech.centralInteligencia ?? 0) >= 1 },
-  { key: "m_agente", title: "Treine um agente", desc: "Treine seu primeiro agente (aba Inteligência). Agentes espionam, sabotam e protegem você.", reward: { p: 15000 }, done: (c) => Object.values(c.agents).reduce((a, b) => a + (b || 0), 0) >= 1 },
-  { key: "m_ce", title: "Contra-Espionagem", desc: "Treine agentes de Contra-Espionagem (CE) — eles bloqueiam espiões e sabotadores inimigos.", reward: { p: 15000 }, done: (c) => (c.agents.CE ?? 0) >= 1 },
+  // ---- Inteligência e sabotagem ----
+  { key: "m_intel", title: "Central de Inteligência", desc: "📍 Tecnologia → trilha 'Inteligência'. Construa a 'Central de Inteligência' — destrava treinar agentes pra espionar, sabotar e se defender.", reward: { p: 10000 }, done: (c) => (c.tech.centralInteligencia ?? 0) >= 1 },
+  { key: "m_agente", title: "Treine um agente", desc: "📍 Menu ☰ → Inteligência. Treine seu primeiro agente. Agentes são a sua espionagem e sabotagem — e também sua defesa contra espiões inimigos.", reward: { p: 15000 }, done: (c) => Object.values(c.agents).reduce((a, b) => a + (b || 0), 0) >= 1 },
+  { key: "m_ce", title: "Contra-Espionagem", desc: "📍 Menu ☰ → Inteligência. Treine agentes de Contra-Espionagem (CE) — eles barram os espiões e sabotadores que o inimigo mandar contra você.", reward: { p: 15000 }, done: (c) => (c.agents.CE ?? 0) >= 1 },
+  { key: "m_espionar", title: "Espione um inimigo", desc: "📍 Menu ☰ → Inteligência → 'Espionar'. Digite a coordenada do alvo pra ver roids, naves e tecnologia dele. O relatório fica salvo em Ferramentas → Espionagens. Saber o que o outro tem é meio caminho pra vencer.", reward: { m: 12000, p: 12000 }, done: (c) => c.spied },
+  { key: "m_sabotar", title: "Faça uma sabotagem", desc: "📍 Menu ☰ → Inteligência → 'Sabotar'. Escolha o alvo e o que atacar (recursos, naves em construção, etc.). A sabotagem leva alguns ticks pra fazer efeito. É guerra sem enviar frota.", reward: { m: 15000, p: 15000 }, done: (c) => c.sabotaged },
 
   // ---- Comunidade e política ----
-  { key: "m_msg", title: "Mande uma mensagem", desc: "Envie uma mensagem privada a outro comandante (aba Mensagem). Diplomacia vence guerras.", reward: { m: 8000, c: 8000 }, done: (c) => c.sentPM },
-  { key: "m_news", title: "Leia as Notícias", desc: "Abra a aba Notícias — é onde chegam avisos de ataque, defesa e eventos do seu planeta.", reward: { m: 5000, c: 5000 }, done: (c) => c.newsOpened },
-  { key: "m_voto", title: "Vote na galáxia", desc: "Vote para Comandante da Galáxia (aba Votação/Governo). A galáxia é seu time de aliados.", reward: { m: 10000, c: 10000 }, done: (c) => c.voted },
-  { key: "m_alianca", title: "Entre numa aliança", desc: "Crie ou entre numa aliança (aba Alianças). Juntos vocês dominam o universo.", reward: { m: 20000, c: 20000, p: 20000 }, done: (c) => c.hasAlliance },
+  { key: "m_msg", title: "Mande uma mensagem", desc: "📍 Menu ☰ → Mensagens → 'Nova conversa'. Digite a coordenada de outro comandante e escreva (estilo chat, Enter envia). Diplomacia vence tanto quanto frota.", reward: { m: 8000, c: 8000 }, done: (c) => c.sentPM },
+  { key: "m_news", title: "Leia as Notícias", desc: "📍 Menu ☰ → Notícias. É o painel onde chegam os avisos do seu planeta: ataque chegando, defesa, espionagem sofrida, pesquisa concluída. Olhe sempre.", reward: { m: 5000, c: 5000 }, done: (c) => c.newsOpened },
+  { key: "m_voto", title: "Vote na galáxia", desc: "📍 Menu ☰ → Governo. Vote para Comandante da Galáxia — ele gerencia o fundo de recursos e organiza a defesa dos aliados. Sua galáxia é seu time.", reward: { m: 10000, c: 10000 }, done: (c) => c.voted },
+  { key: "m_alianca", title: "Entre numa aliança", desc: "📍 Menu ☰ → Alianças. Crie uma ou entre numa existente. Alianças cruzam galáxias — é a estrutura política grande do jogo. Juntos vocês dominam o universo.", reward: { m: 20000, c: 20000, p: 20000 }, done: (c) => c.hasAlliance },
 ];
 
 export const MISSION_BY_KEY: Record<string, MissionDef> = Object.fromEntries(MISSIONS.map((m) => [m.key, m]));
@@ -82,11 +90,16 @@ export async function checkMissions(planetId: string): Promise<string[]> {
   const fleetUnits: Record<string, number> = {};
   for (const f of fleets) { const u = parseUnits(f.units); for (const n of Object.keys(u)) fleetUnits[n] = (fleetUnits[n] || 0) + u[n]; }
 
-  const [alliance, pm, vote, combat, tick] = await Promise.all([
+  const [alliance, pm, vote, combat, spied, sabotaged, tick] = await Promise.all([
     prisma.allianceMember.findUnique({ where: { planetId } }).then((x) => !!x),
     prisma.privateMessage.count({ where: { fromUserId: planet.userId } }).then((n) => n > 0),
     prisma.galaxyVote.count({ where: { voterPlanetId: planetId } }).then((n) => n > 0),
     prisma.battleReport.count({ where: { OR: [{ attackerPlanetId: planetId }, { defenderPlanetId: planetId }] } }).then((n) => n > 0),
+    prisma.spyReport.count({ where: { spyPlanetId: planetId } }).then((n) => n > 0),
+    Promise.all([
+      prisma.sabotageCooldown.count({ where: { planetId } }),
+      prisma.sabotageOrder.count({ where: { saboteurPlanetId: planetId } }),
+    ]).then(([a, b]) => a + b > 0),
     prisma.gameState.findUnique({ where: { id: 1 } }).then((s) => s?.tickNumber ?? 0),
   ]);
   // Enviou frota? (tem frota fora da base, ou já teve combate = com certeza enviou)
@@ -98,6 +111,9 @@ export async function checkMissions(planetId: string): Promise<string[]> {
     fleetSlots: planet.fleetSlots,
     hasAlliance: alliance, sentPM: pm, voted: vote, hadCombat: combat, sentFleet,
     newsOpened: planet.newsSeenAt != null,
+    spied, sabotaged,
+    toolsUsed: planet.toolsSeenAt != null,
+    galaxyViewed: planet.galaxySeenAt != null,
   };
 
   const granted: string[] = [];

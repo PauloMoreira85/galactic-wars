@@ -626,6 +626,19 @@ gameRouter.post("/news/seen", async (req: AuthedRequest, res) => {
   res.json({ ok: true });
 });
 
+// Marca que o jogador abriu uma tela (missões tutorial): "tools" ou "galaxy".
+gameRouter.post("/seen/:what", async (req: AuthedRequest, res) => {
+  const planet = await myPlanet(req.userId!);
+  if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
+  const field = req.params.what === "tools" ? "toolsSeenAt" : req.params.what === "galaxy" ? "galaxySeenAt" : null;
+  if (!field) return res.status(400).json({ error: "Tela inválida" });
+  // Só grava a 1ª vez (basta pra missão); evita update desnecessário todo refresh.
+  if ((planet as any)[field] == null) {
+    await prisma.planet.update({ where: { id: planet.id }, data: { [field]: new Date() } }).catch(() => {});
+  }
+  res.json({ ok: true });
+});
+
 // ===== Governo da galáxia (CG, ministros, imposto, fundo) =====
 async function myPlanet(userId: string) {
   return prisma.planet.findUnique({ where: { userId } });

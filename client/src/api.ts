@@ -299,6 +299,7 @@ export const api = {
 
   news: () => request<{ news: { tick: number; message: string }[] }>("/game/news"),
   newsSeen: () => request<{ ok: boolean }>("/game/news/seen", { method: "POST" }).catch(() => {}),
+  markSeen: (what: "tools" | "galaxy") => request<{ ok: boolean }>(`/game/seen/${what}`, { method: "POST" }).catch(() => {}),
 
   forum: () => request<{ forums: { key: string; cat: string; name: string; desc: string; topics: number; messages: number; last: { authorName: string; at: string } | null }[] }>("/game/forum"),
   forumTopics: (key: string) => request<{ topics: { id: string; title: string; author: string; createdAt: string; bumpedAt: string; replies: number }[] }>(`/game/forum/topics/${key}`),

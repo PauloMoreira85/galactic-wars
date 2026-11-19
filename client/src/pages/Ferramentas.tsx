@@ -16,6 +16,7 @@ const RACE_LABEL: Record<string, string> = {
 // Kit de Ferramentas — página separada com menu próprio (estilo toolkit do GW).
 export function Ferramentas({ onClose }: { onClose: () => void }) {
   const [tool, setTool] = useState<Tool>("universo");
+  useEffect(() => { api.markSeen("tools"); }, []); // missão tutorial
 
   const MENU: { key: Tool | "voltar"; label: string }[] = [
     { key: "voltar", label: "‹ Tela principal" },
