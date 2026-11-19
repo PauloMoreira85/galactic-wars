@@ -322,6 +322,7 @@ export const api = {
   chatOlder: (room: string, beforeId: string) => request<{ label: string; messages: { id: string; author: string; body: string; at: string }[] }>(`/game/chat/${room}?before=${encodeURIComponent(beforeId)}`),
   chatSend: (room: string, body: string) => request<{ label: string; messages: { id: string; author: string; body: string; at: string }[] }>(`/game/chat/${room}`, { method: "POST", body: JSON.stringify({ body }) }),
   chatUnread: () => request<{ unread: number }>("/game/chat/unread"),
+  missions: () => request<{ missions: { key: string; title: string; desc: string; done: boolean; reward: { m?: number; c?: number; p?: number; roidM?: number; roidC?: number; roidP?: number } }[] }>("/game/missions"),
   pushKey: () => request<{ key: string; enabled: boolean }>("/game/push/key"),
   pushSubscribe: (subscription: any) => request<{ ok: boolean }>("/game/push/subscribe", { method: "POST", body: JSON.stringify({ subscription }) }),
   pushUnsubscribe: (endpoint: string) => request<{ ok: boolean }>("/game/push/unsubscribe", { method: "POST", body: JSON.stringify({ endpoint }) }),

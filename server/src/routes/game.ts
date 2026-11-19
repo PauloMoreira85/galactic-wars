@@ -25,6 +25,7 @@ import { createAlliance, invitePlayer, acceptInvite, leaveAlliance, kickMember, 
 import { forumIndex, listTopics, createTopic, getTopic, reply as forumReply, isForum } from "../game/forum.js";
 import { sendChat, recentChat, olderChat, resolveRoom } from "../game/chat.js";
 import { pushPublicKey, saveSubscription, removeSubscription, PUSH_ENABLED } from "../game/push.js";
+import { checkMissions, missionsView } from "../game/missions.js";
 import { sendPM, inbox, sentbox, markRead, unreadCount } from "../game/pm.js";
 import { SABOTAGES, availableSabotages, executeSabotage, sabotageOdds, sabotageCatalog } from "../game/sabotage.js";
 import { parseUnits, totalUnits } from "../game/unitmap.js";
@@ -239,9 +240,18 @@ async function planetView(userId: string) {
 gameRouter.get("/me", async (req: AuthedRequest, res) => {
   await withWrite(() => prisma.user.update({ where: { id: req.userId! }, data: { lastSeen: new Date() } })).catch(() => {});
   trackIp(req.userId!, clientIp(req)); // anti multi-conta (1 escrita por IP/processo)
+  // Verifica/concede missões de novato cumpridas (recompensa automática).
+  const myP = await prisma.planet.findUnique({ where: { userId: req.userId! }, select: { id: true } });
+  if (myP) await withWrite(() => checkMissions(myP.id)).catch(() => {});
   const view = await planetView(req.userId!);
   if (!view) return res.status(404).json({ error: "Planeta nao encontrado" });
   res.json(view);
+});
+
+gameRouter.get("/missions", async (req: AuthedRequest, res) => {
+  const planet = await prisma.planet.findUnique({ where: { userId: req.userId! }, select: { id: true } });
+  if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
+  res.json({ missions: await missionsView(planet.id) });
 });
 
 const buildSchema = z.object({ resource: z.enum(["metalium", "carbonum", "plutonium"]) });

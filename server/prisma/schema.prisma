@@ -98,6 +98,9 @@ model Planet {
   // Auto-exílios restantes (cai em galáxia aleatória não-privada). Máx 3 por planeta.
   autoExiles Int @default(3)
 
+  // Missões de novato já concluídas e recompensadas (JSON array de keys). Evita pagar 2x.
+  missionsDone String @default("[]")
+
   buildOrders BuildOrder[]
   fleets      Fleet[]
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api, clearToken, IS_RUR, MAIN_URL, RUR_URL, REFRESH_MS, type PlanetView, type Resource, type TechItem } from "../api";
 import { CoordNavContext, CoordLink } from "../components/CoordLink";
 import { Galaxy } from "./Galaxy";
+import { Missoes } from "./Missoes";
 import { Trafego } from "./Trafego";
 import { Frotas } from "./Frotas";
 import { Combats } from "./Combats";
@@ -101,7 +102,7 @@ function useRoundStatus(view: PlanetView | null) {
   return { label: "Próximo round", time: fmtDur(Math.floor((next - now) / 1000)) };
 }
 
-type Section = "planeta" | "galaxia" | "frotas" | "trafego" | "tecnologia" | "naves" | "recursos" | "combates" | "votacao" | "noticias" | "aliancas" | "associados" | "preferencias" | "forum" | "forumgalaxia" | "chat" | "mensagens" | "sabotagem" | "intel";
+type Section = "planeta" | "missoes" | "galaxia" | "frotas" | "trafego" | "tecnologia" | "naves" | "recursos" | "combates" | "votacao" | "noticias" | "aliancas" | "associados" | "preferencias" | "forum" | "forumgalaxia" | "chat" | "mensagens" | "sabotagem" | "intel";
 
 interface MenuItem {
   key: string;
@@ -113,6 +114,7 @@ interface MenuItem {
 const MENU: MenuItem[][] = [
   [
     { key: "planeta", label: "Página Principal" },
+    { key: "missoes", label: "🎖️ Missões" },
     { key: "galaxia", label: "Galáxia" },
     { key: "combates", label: "Combates" },
     { key: "trafego", label: "Tráfego" },
@@ -156,6 +158,7 @@ const MENU: MenuItem[][] = [
 
 const TITLES: Record<Section, string> = {
   planeta: "Página Principal",
+  missoes: "Missões",
   galaxia: "Galáxia",
   frotas: "Frotas",
   trafego: "Tráfego",
@@ -854,6 +857,8 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             )}
           </>
         )}
+
+        {section === "missoes" && <Missoes />}
 
         {section === "galaxia" && <Galaxy view={view} gotoCoords={galaxyGoto} onChanged={refresh} onMessage={(c) => { setPmTo(c); setSection("mensagens"); }} />}
 
