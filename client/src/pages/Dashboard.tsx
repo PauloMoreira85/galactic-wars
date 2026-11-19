@@ -710,7 +710,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
               <h2>💰 Doar do fundo (Ministro da Economia)</h2>
               <div className="cost" style={{ marginBottom: 6 }}>
                 Fundo disponível: <b>{fmt(view.galaxyFund.metalium)}</b> M · <b>{fmt(view.galaxyFund.carbonum)}</b> C · <b>{fmt(view.galaxyFund.plutonium)}</b> P
-                <div style={{ marginTop: 2 }}>Limite por doação (50%): <b style={{ color: "#3aa0ff" }}>{fmt(Math.floor(view.galaxyFund.metalium * 0.5))}</b> M · <b style={{ color: "#3aa0ff" }}>{fmt(Math.floor(view.galaxyFund.carbonum * 0.5))}</b> C · <b style={{ color: "#3aa0ff" }}>{fmt(Math.floor(view.galaxyFund.plutonium * 0.5))}</b> P · 1 doação a cada 72 ticks por planeta</div>
+                <div style={{ marginTop: 2 }}>Limite por doação (50%): <b style={{ color: "#3aa0ff" }}>{fmt(Math.floor(view.galaxyFund.metalium * 0.5))}</b> M · <b style={{ color: "#3aa0ff" }}>{fmt(Math.floor(view.galaxyFund.carbonum * 0.5))}</b> C · <b style={{ color: "#3aa0ff" }}>{fmt(Math.floor(view.galaxyFund.plutonium * 0.5))}</b> P · 1 de CADA recurso a cada 72 ticks por planeta</div>
               </div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
                 <select value={donTo} onChange={(e) => setDonTo(e.target.value)}

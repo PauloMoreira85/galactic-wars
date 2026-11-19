@@ -92,8 +92,13 @@ export function Governo() {
         <div className="status-row"><span>🕊️ Min. da Diplomacia</span><b>{gov.md ?? "— vago —"}</b></div>
         <div className="status-row"><span>Imposto</span><b>{gov.taxRate}%</b></div>
         <div className="status-row"><span>Taxa do mercado</span><b>{gov.marketFee}%</b></div>
-        <div className="cost" style={{ marginTop: 8 }}>
-          Fundo da galáxia: <span>{fmt(gov.fund.metalium)} M</span> · <span>{fmt(gov.fund.carbonum)} C</span> · <span>{fmt(gov.fund.plutonium)} P</span>
+        <div style={{ marginTop: 10, padding: "10px 14px", border: "1px solid var(--border-strong)", borderRadius: 8, background: "rgba(37,211,255,0.06)" }}>
+          <div style={{ fontFamily: "Orbitron, sans-serif", fontSize: 13, letterSpacing: 1, color: "var(--accent)", marginBottom: 6 }}>🏦 FUNDO DA GALÁXIA</div>
+          <div style={{ display: "flex", gap: 18, flexWrap: "wrap", fontFamily: "var(--mono)" }}>
+            <span><span className="dot metalium" /> <b>{fmt(gov.fund.metalium)}</b> M</span>
+            <span><span className="dot carbonum" /> <b>{fmt(gov.fund.carbonum)}</b> C</span>
+            <span><span className="dot plutonium" /> <b>{fmt(gov.fund.plutonium)}</b> P</span>
+          </div>
         </div>
         {/* Livro caixa: histórico das doações do fundo (transparência p/ a galáxia). */}
         {gov.donations && gov.donations.length > 0 && (
@@ -223,10 +228,10 @@ export function Governo() {
             <button onClick={() => act(() => api.govMarketLock(!gov.marketLocked))}>{gov.marketLocked ? "destrancar" : "trancar"}</button>
           </div>
           <div style={{ marginTop: 10 }} className="cost">
-            Doar do fundo (máx 50% por doação, 1 doação a cada 72 ticks por planeta):
+            Doar do fundo (máx 50% por doação · 1 de CADA recurso a cada 72 ticks por planeta):
             <div style={{ marginTop: 4, fontSize: 12 }}>
               Fundo: <b>{fmt(gov.fund.metalium)}</b> M · <b>{fmt(gov.fund.carbonum)}</b> C · <b>{fmt(gov.fund.plutonium)}</b> P
-              {" — "}limite por doação: <b style={{ color: "#3aa0ff" }}>{fmt(Math.floor(gov.fund.metalium * 0.2))}</b> M · <b style={{ color: "#3aa0ff" }}>{fmt(Math.floor(gov.fund.carbonum * 0.2))}</b> C · <b style={{ color: "#3aa0ff" }}>{fmt(Math.floor(gov.fund.plutonium * 0.2))}</b> P
+              {" — "}limite por doação: <b style={{ color: "#3aa0ff" }}>{fmt(Math.floor(gov.fund.metalium * 0.5))}</b> M · <b style={{ color: "#3aa0ff" }}>{fmt(Math.floor(gov.fund.carbonum * 0.5))}</b> C · <b style={{ color: "#3aa0ff" }}>{fmt(Math.floor(gov.fund.plutonium * 0.5))}</b> P
             </div>
           </div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginTop: 6 }}>

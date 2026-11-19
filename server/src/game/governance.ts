@@ -229,11 +229,17 @@ export async function donate(mePlanetId: string, toPlanetId: string, amounts: { 
   if (m > maxM || c > maxC || p > maxP) {
     throw new Error(`Máximo ${DONATION_MAX_PCT}% do fundo por doação. Limite agora: ${maxM} M · ${maxC} C · ${maxP} P.`);
   }
-  // Cooldown por planeta.
+  // Cooldown POR RECURSO: o planeta pode receber 1 de cada recurso por janela.
+  // (Antes era 1 doação de qualquer coisa, então o fundo entupia de plutônio.)
   const tick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
   const cd = await prisma.donationCooldown.findUnique({ where: { planetId: toPlanetId } });
-  if (cd && tick - cd.lastTick < DONATION_WINDOW) {
-    throw new Error(`Esse planeta so pode receber outra doacao em ${DONATION_WINDOW - (tick - cd.lastTick)} ticks`);
+  if (cd) {
+    const faltam = (last: number) => DONATION_WINDOW - (tick - last);
+    const blocked: string[] = [];
+    if (m > 0 && tick - cd.lastTickM < DONATION_WINDOW) blocked.push(`Metalium (${faltam(cd.lastTickM)}t)`);
+    if (c > 0 && tick - cd.lastTickC < DONATION_WINDOW) blocked.push(`Carbonum (${faltam(cd.lastTickC)}t)`);
+    if (p > 0 && tick - cd.lastTickP < DONATION_WINDOW) blocked.push(`Plutonium (${faltam(cd.lastTickP)}t)`);
+    if (blocked.length) throw new Error(`Esse planeta já recebeu recentemente: ${blocked.join(" · ")}. Aguarde o cooldown de cada recurso.`);
   }
 
   // Nomes dos planetas (ME e destino) pro livro caixa.
@@ -241,10 +247,15 @@ export async function donate(mePlanetId: string, toPlanetId: string, amounts: { 
     prisma.planet.findUnique({ where: { id: mePlanetId }, select: { name: true } }),
     prisma.planet.findUnique({ where: { id: toPlanetId }, select: { name: true } }),
   ]);
+  // Atualiza o lastTick SÓ dos recursos efetivamente doados agora.
+  const cdUpdate: any = { lastTick: tick };
+  if (m > 0) cdUpdate.lastTickM = tick;
+  if (c > 0) cdUpdate.lastTickC = tick;
+  if (p > 0) cdUpdate.lastTickP = tick;
   await prisma.$transaction([
     prisma.galaxyState.update({ where: { galaxy: g }, data: { fundMetalium: { decrement: m }, fundCarbonum: { decrement: c }, fundPlutonium: { decrement: p } } }),
     prisma.planet.update({ where: { id: toPlanetId }, data: { metalium: { increment: m }, carbonum: { increment: c }, plutonium: { increment: p } } }),
-    prisma.donationCooldown.upsert({ where: { planetId: toPlanetId }, update: { lastTick: tick }, create: { planetId: toPlanetId, lastTick: tick } }),
+    prisma.donationCooldown.upsert({ where: { planetId: toPlanetId }, update: cdUpdate, create: { planetId: toPlanetId, lastTick: tick, lastTickM: m > 0 ? tick : 0, lastTickC: c > 0 ? tick : 0, lastTickP: p > 0 ? tick : 0 } }),
     // Livro caixa: registra a doação (transparência pra galáxia).
     prisma.donationLog.create({ data: { galaxy: g, fromName: meP?.name ?? "ME", toName: toP?.name ?? "?", metalium: m, carbonum: c, plutonium: p, tick } }),
   ]);

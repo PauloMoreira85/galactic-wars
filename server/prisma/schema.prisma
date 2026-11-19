@@ -301,8 +301,12 @@ model GalaxyVote {
 
 // Cooldown de doacao: um planeta so recebe doacao a cada DONATION_WINDOW ticks.
 model DonationCooldown {
-  planetId String @id
-  lastTick Int
+  planetId    String @id
+  lastTick    Int    @default(0) // legado (compat): última doação (qualquer recurso)
+  // Cooldown POR RECURSO: o planeta pode receber 1 de cada recurso por janela.
+  lastTickM   Int    @default(0) // última doação de Metalium
+  lastTickC   Int    @default(0) // última doação de Carbonum
+  lastTickP   Int    @default(0) // última doação de Plutonium
 }
 
 // Inscrição de notificações push (Web Push) de um usuário/dispositivo.
