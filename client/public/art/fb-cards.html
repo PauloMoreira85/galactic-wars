@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Galactic War — Cards Facebook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0e1a; display: flex; flex-direction: column; align-items: center; gap: 0; padding: 0; font-family: "Rajdhani", sans-serif; }
+
+  /* Cada card é 1080x1080 (quadrado do Facebook). Escala pra caber na tela via zoom. */
+  .card {
+    width: 1080px; height: 1080px; position: relative; overflow: hidden;
+    border-radius: 0; display: flex; flex-direction: column; align-items: center;
+    justify-content: space-between; padding: 70px 64px 60px;
+    color: #fff; isolation: isolate;
+  }
+  /* Fundo: radial da cor da raça + textura de estrelas */
+  .card::before {
+    content: ""; position: absolute; inset: 0; z-index: -2;
+    background:
+      radial-gradient(circle at 50% 38%, var(--glow) 0%, transparent 58%),
+      linear-gradient(160deg, var(--bg1), var(--bg2));
+  }
+  .card::after {
+    content: ""; position: absolute; inset: 0; z-index: -1; opacity: .5;
+    background-image:
+      radial-gradient(1.5px 1.5px at 20% 30%, #fff8, transparent),
+      radial-gradient(1.5px 1.5px at 70% 20%, #fff6, transparent),
+      radial-gradient(1px 1px at 40% 70%, #fff7, transparent),
+      radial-gradient(1.5px 1.5px at 85% 60%, #fff5, transparent),
+      radial-gradient(1px 1px at 15% 80%, #fff6, transparent),
+      radial-gradient(1px 1px at 60% 85%, #fff5, transparent),
+      radial-gradient(1.5px 1.5px at 90% 35%, #fff6, transparent);
+  }
+  .frame { position: absolute; inset: 24px; border: 3px solid var(--accent); border-radius: 18px; opacity: .55; z-index: -1; box-shadow: inset 0 0 60px var(--glow); }
+
+  .top { text-align: center; }
+  .kicker { font-family: "Orbitron"; font-weight: 600; letter-spacing: 8px; font-size: 26px; color: var(--accent); text-transform: uppercase; opacity: .9; }
+  .name { font-family: "Orbitron"; font-weight: 900; font-size: 104px; line-height: 1; margin-top: 10px; text-transform: uppercase;
+          text-shadow: 0 0 30px var(--glow), 0 4px 10px #000a; letter-spacing: 2px; }
+  .brasao { height: 520px; width: auto; filter: drop-shadow(0 0 40px var(--glow)); }
+  .mid { flex: 1; display: flex; align-items: center; justify-content: center; }
+
+  .bottom { width: 100%; text-align: center; }
+  .tagline { font-size: 44px; font-weight: 700; color: #fff; margin-bottom: 22px; text-shadow: 0 2px 8px #000b; }
+  .tagline b { color: var(--accent); }
+  .perks { display: flex; flex-direction: column; gap: 10px; align-items: center; margin-bottom: 26px; }
+  .perk { font-size: 32px; font-weight: 600; color: #e8f0ff; }
+  .perk .i { color: var(--accent); margin-right: 8px; }
+  .cta { font-family: "Orbitron"; font-weight: 700; font-size: 30px; letter-spacing: 3px; color: #0a0e1a; background: var(--accent); padding: 16px 34px; border-radius: 10px; display: inline-block; box-shadow: 0 0 30px var(--glow); }
+
+  /* ===== Paletas por raça ===== */
+  .humanos  { --accent:#4ea8ff; --glow:#1b4a8044; --bg1:#0b1830; --bg2:#050a18; }
+  .daharan  { --accent:#38d6c4; --glow:#1b7a6e44; --bg1:#0c2420; --bg2:#06110f; }
+  .rakshasa { --accent:#6bc6ff; --glow:#1a3a6644; --bg1:#0a1222; --bg2:#05080f; }
+  .mech     { --accent:#56e06a; --glow:#1b7a2e44; --bg1:#0a2012; --bg2:#050f08; }
+  .insecta  { --accent:#8bdc4a; --glow:#4a7a1b44; --bg1:#132010; --bg2:#0a0f06; }
+</style>
+</head>
+<body>
+
+  <!-- HUMANOS -->
+  <div class="card humanos" id="card-humanos">
+    <div class="frame"></div>
+    <div class="top">
+      <div class="kicker">Raça do Universo</div>
+      <div class="name">Humanos</div>
+    </div>
+    <div class="mid"><img class="brasao" src="races/humanos.png" alt="Humanos"></div>
+    <div class="bottom">
+      <div class="tagline">Naves <b>resistentes</b>. A força que não quebra.</div>
+      <div class="perks">
+        <div class="perk"><span class="i">✦</span>A raça mais equilibrada</div>
+        <div class="perk"><span class="i">✦</span>Blindagem pesada, aguenta o tranco</div>
+        <div class="perk"><span class="i">✦</span>Perfeita pra quem começa</div>
+      </div>
+      <div class="cta">GALACTICWAR.COM.BR</div>
+    </div>
+  </div>
+
+  <!-- DAHARAN -->
+  <div class="card daharan" id="card-daharan">
+    <div class="frame"></div>
+    <div class="top">
+      <div class="kicker">Raça do Universo</div>
+      <div class="name">Daharan</div>
+    </div>
+    <div class="mid"><img class="brasao" src="races/daharan.png" alt="Daharan"></div>
+    <div class="bottom">
+      <div class="tagline">Atiram <b>primeiro</b>. Paralisam tudo.</div>
+      <div class="perks">
+        <div class="perk"><span class="i">✦</span>PEM trava o inimigo antes dele reagir</div>
+        <div class="perk"><span class="i">✦</span>Os melhores defensores do jogo</div>
+        <div class="perk"><span class="i">✦</span>Excelentes roidadores</div>
+      </div>
+      <div class="cta">GALACTICWAR.COM.BR</div>
+    </div>
+  </div>
+
+  <!-- RAKSHASA -->
+  <div class="card rakshasa" id="card-rakshasa">
+    <div class="frame"></div>
+    <div class="top">
+      <div class="kicker">Raça do Universo</div>
+      <div class="name">Rakshasa</div>
+    </div>
+    <div class="mid"><img class="brasao" src="races/rakshasa.png" alt="Rakshasa"></div>
+    <div class="bottom">
+      <div class="tagline">Você <b>não vê</b> o golpe chegar.</div>
+      <div class="perks">
+        <div class="perk"><span class="i">✦</span>Naves invisíveis ao radar inimigo</div>
+        <div class="perk"><span class="i">✦</span>+30% de contra-espionagem</div>
+        <div class="perk"><span class="i">✦</span>Leves e rápidas</div>
+      </div>
+      <div class="cta">GALACTICWAR.COM.BR</div>
+    </div>
+  </div>
+
+  <!-- C-MECH -->
+  <div class="card mech" id="card-mech">
+    <div class="frame"></div>
+    <div class="top">
+      <div class="kicker">Raça do Universo</div>
+      <div class="name">c-Mech</div>
+    </div>
+    <div class="mid"><img class="brasao" src="races/mech.png" alt="c-Mech"></div>
+    <div class="bottom">
+      <div class="tagline">Sua frota vira a frota <b>deles</b>.</div>
+      <div class="perks">
+        <div class="perk"><span class="i">✦</span>Assimilam naves inimigas em combate</div>
+        <div class="perk"><span class="i">✦</span>Crescem com a frota de quem atacam</div>
+        <div class="perk"><span class="i">✦</span>A raça mais tática do jogo</div>
+      </div>
+      <div class="cta">GALACTICWAR.COM.BR</div>
+    </div>
+  </div>
+
+  <!-- INSECTA -->
+  <div class="card insecta" id="card-insecta">
+    <div class="frame"></div>
+    <div class="top">
+      <div class="kicker">Raça do Universo</div>
+      <div class="name">Insecta</div>
+    </div>
+    <div class="mid"><img class="brasao" src="races/insecta.png" alt="Insecta"></div>
+    <div class="bottom">
+      <div class="tagline">O <b>enxame</b> não para.</div>
+      <div class="perks">
+        <div class="perk"><span class="i">✦</span>Naves baratíssimas e numerosas</div>
+        <div class="perk"><span class="i">✦</span>O terror dos Daharan</div>
+        <div class="perk"><span class="i">✦</span>Vence no número esmagador</div>
+      </div>
+      <div class="cta">GALACTICWAR.COM.BR</div>
+    </div>
+  </div>
+
+</body>
+</html>

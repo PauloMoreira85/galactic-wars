@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Galactic War — Cards Facebook 2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0e1a; display: flex; flex-direction: column; align-items: center; gap: 0; font-family: "Rajdhani", sans-serif; }
+
+  .card {
+    width: 1080px; height: 1080px; position: relative; overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+    padding: 76px 70px 64px; color: #fff; isolation: isolate;
+    --accent:#4ea8ff; --glow:#1b4a8044; --bg1:#0b1830; --bg2:#050a18;
+  }
+  .card::before { content:""; position:absolute; inset:0; z-index:-2;
+    background: radial-gradient(circle at 50% 36%, var(--glow) 0%, transparent 60%), linear-gradient(160deg, var(--bg1), var(--bg2)); }
+  .card::after { content:""; position:absolute; inset:0; z-index:-1; opacity:.5;
+    background-image:
+      radial-gradient(1.5px 1.5px at 18% 25%, #fff8, transparent),
+      radial-gradient(1.5px 1.5px at 72% 18%, #fff6, transparent),
+      radial-gradient(1px 1px at 42% 66%, #fff7, transparent),
+      radial-gradient(1.5px 1.5px at 85% 58%, #fff5, transparent),
+      radial-gradient(1px 1px at 12% 78%, #fff6, transparent),
+      radial-gradient(1px 1px at 62% 82%, #fff5, transparent),
+      radial-gradient(1.5px 1.5px at 90% 32%, #fff6, transparent); }
+  .frame { position:absolute; inset:24px; border:3px solid var(--accent); border-radius:18px; opacity:.5; z-index:-1; box-shadow: inset 0 0 70px var(--glow); }
+
+  .kicker { font-family:"Orbitron"; font-weight:600; letter-spacing:8px; font-size:26px; color:var(--accent); text-transform:uppercase; opacity:.9; text-align:center; }
+  .icon { font-size:260px; line-height:1; filter: drop-shadow(0 0 40px var(--glow)); }
+  .title { font-family:"Orbitron"; font-weight:900; font-size:72px; line-height:1.05; text-align:center; text-transform:uppercase;
+           text-shadow: 0 0 28px var(--glow), 0 4px 10px #000a; letter-spacing:1px; }
+  .title.sm { font-size:60px; }
+  .lead { font-size:40px; font-weight:600; text-align:center; color:#dfeaff; line-height:1.4; max-width:880px; }
+  .lead b { color:var(--accent); }
+  .perks { display:flex; flex-direction:column; gap:14px; align-items:center; }
+  .perk { font-size:34px; font-weight:600; color:#eaf2ff; }
+  .perk .i { color:var(--accent); margin-right:10px; }
+  .cta { font-family:"Orbitron"; font-weight:700; font-size:32px; letter-spacing:3px; color:#0a0e1a; background:var(--accent); padding:18px 38px; border-radius:10px; box-shadow:0 0 34px var(--glow); }
+  .logo { width:860px; max-width:92%; filter: drop-shadow(0 0 40px var(--glow)); border-radius:12px; }
+  .center { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:30px; }
+  .races-row { display:flex; gap:14px; justify-content:center; align-items:center; flex-wrap:wrap; }
+  .races-row img { height:200px; filter: drop-shadow(0 0 18px var(--glow)); }
+  .cmp { display:flex; flex-direction:column; gap:16px; align-items:flex-start; }
+  .cmp .row { font-size:36px; font-weight:600; color:#eaf2ff; }
+  .cmp .row b { color:var(--accent); font-weight:800; }
+</style>
+</head>
+<body>
+
+  <!-- ABERTURA -->
+  <div class="card" id="card-abertura">
+    <div class="frame"></div>
+    <div class="kicker">MMO de Estratégia Espacial</div>
+    <div class="center">
+      <img class="logo" src="logo/logo.jpg" alt="Galactic War">
+      <div class="lead">Comande um planeta. Construa frotas. <b>Domine o universo</b> — em tempo real, 24h por dia.</div>
+    </div>
+    <div class="perks" style="margin-bottom:10px">
+      <div class="perk"><span class="i">⛏️</span>Minere · 🚀 Construa · 🛰️ Espione · ⚔️ Ataque</div>
+    </div>
+    <div class="cta">GRÁTIS · GALACTICWAR.COM.BR</div>
+  </div>
+
+  <!-- ROIDS -->
+  <div class="card" id="card-roids" style="--accent:#7fd0ff; --glow:#1b6a8044;">
+    <div class="frame"></div>
+    <div class="kicker">Economia</div>
+    <div class="center">
+      <div class="icon">💎</div>
+      <div class="title">Tudo começa<br>nos roids</div>
+      <div class="lead">Cada asteroide produz recurso <b>a cada tick</b> — automático, mesmo offline. Mais roids, mais naves, mais poder.</div>
+    </div>
+    <div class="perks"><div class="perk"><span class="i">✦</span>Quem domina a economia, domina a guerra</div></div>
+    <div class="cta" style="margin-top:20px">GALACTICWAR.COM.BR</div>
+  </div>
+
+  <!-- COMBATE -->
+  <div class="card" id="card-combate" style="--accent:#ff6a4e; --glow:#7a2a1b44; --bg1:#2a1410; --bg2:#120706;">
+    <div class="frame"></div>
+    <div class="kicker">Frotas & Combate</div>
+    <div class="center">
+      <div class="icon">⚔️</div>
+      <div class="title">Monte sua frota.<br>Escolha seu alvo.</div>
+      <div class="lead">Combate por <b>iniciativa</b>: o mais rápido atira primeiro. Ataque inimigos, defenda aliados e roube os roids do derrotado.</div>
+    </div>
+    <div class="perks"><div class="perk"><span class="i">✦</span>Estratégia de verdade. Sem sorte, só tática.</div></div>
+    <div class="cta" style="margin-top:20px">GALACTICWAR.COM.BR</div>
+  </div>
+
+  <!-- ESPIONAGEM -->
+  <div class="card" id="card-intel" style="--accent:#b98cff; --glow:#4a1b7a44; --bg1:#1c1030; --bg2:#0b0618;">
+    <div class="frame"></div>
+    <div class="kicker">Inteligência</div>
+    <div class="center">
+      <div class="icon">🕵️</div>
+      <div class="title">A informação<br>vence guerras</div>
+      <div class="lead">Espione a frota, a tecnologia e os roids do inimigo. <b>Sabote</b> sua produção sem enviar uma única nave.</div>
+    </div>
+    <div class="perks"><div class="perk"><span class="i">✦</span>Treine Contra-Espionagem e não caia nas armadilhas</div></div>
+    <div class="cta" style="margin-top:20px">GALACTICWAR.COM.BR</div>
+  </div>
+
+  <!-- ALIANÇA -->
+  <div class="card" id="card-alianca" style="--accent:#38d6a0; --glow:#1b7a5e44; --bg1:#0c2420; --bg2:#06110f;">
+    <div class="frame"></div>
+    <div class="kicker">Alianças</div>
+    <div class="center">
+      <div class="icon">🤝</div>
+      <div class="title">Sozinho você cai.<br>Em grupo, domina.</div>
+      <div class="lead">Forme uma aliança, organize <b>ataques em massa</b> e defesa mútua. Aliados não se atacam — e são avisados quando um é atacado.</div>
+    </div>
+    <div class="perks"><div class="perk"><span class="i">✦</span>Sala de comando com cargos de verdade</div></div>
+    <div class="cta" style="margin-top:20px">GALACTICWAR.COM.BR</div>
+  </div>
+
+  <!-- COMPARATIVO -->
+  <div class="card" id="card-comparativo">
+    <div class="frame"></div>
+    <div class="kicker">5 raças, 5 formas de dominar</div>
+    <div class="races-row" style="margin-top:6px">
+      <img src="races/humanos.png" alt=""><img src="races/daharan.png" alt=""><img src="races/rakshasa.png" alt=""><img src="races/mech.png" alt=""><img src="races/insecta.png" alt="">
+    </div>
+    <div class="cmp">
+      <div class="row">🛡️ <b>Humanos</b> — resistência e equilíbrio</div>
+      <div class="row">⚡ <b>Daharan</b> — paralisam e atiram primeiro</div>
+      <div class="row">👻 <b>Rakshasa</b> — invisíveis ao radar</div>
+      <div class="row">🤖 <b>c-Mech</b> — assimilam a frota inimiga</div>
+      <div class="row">🐝 <b>Insecta</b> — enxame barato e esmagador</div>
+    </div>
+    <div class="cta">QUAL É A SUA? GALACTICWAR.COM.BR</div>
+  </div>
+
+  <!-- CTA FINAL -->
+  <div class="card" id="card-cta" style="--accent:#ffb020; --glow:#7a5a1b44;">
+    <div class="frame"></div>
+    <div class="kicker">A galáxia espera um comandante</div>
+    <div class="center">
+      <img class="logo" src="logo/logo.jpg" alt="Galactic War">
+      <div class="title sm">De que lado<br>você está?</div>
+      <div class="lead">Sem download. Grátis. Direto no navegador. O primeiro tiro já foi disparado.</div>
+    </div>
+    <div class="cta">ENTRE NA GUERRA · GALACTICWAR.COM.BR</div>
+  </div>
+
+</body>
+</html>
