@@ -67,9 +67,13 @@ function distributeUnits(survivors: UnitMap, contributors: { id: string; units: 
   for (const type of Object.keys(survivors)) {
     const totalInit = contributors.reduce((a, c) => a + (c.units[type] || 0), 0);
     if (totalInit <= 0) {
-      // Tipo que NENHUM contribuinte tinha (ex.: naves ASSIMILADAS). Vai todo
-      // pro 1º contribuinte (defesa = "base"; ataque = a frota líder).
-      const fb = contributors[0]?.id;
+      // Tipo que NENHUM contribuinte tinha = naves ASSIMILADAS nesta batalha.
+      // Só a raça c-Mech (naves Assimiladoras) assimila, então o espólio vai pro
+      // 1º contribuinte que TENHA assimiladoras — não pro dono da base (que pode
+      // ser de outra raça, só defendido por um aliado c-Mech). Sem assimiladora
+      // entre os contribuintes, cai no 1º (fallback).
+      const hasAssim = (c: { units: UnitMap }) => Object.keys(c.units).some((n) => unitByName(n)?.tipo === "Assimiladora");
+      const fb = (contributors.find(hasAssim) ?? contributors[0])?.id;
       if (fb) out[fb][type] = (out[fb][type] || 0) + survivors[type];
       continue;
     }
