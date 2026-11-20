@@ -21,7 +21,7 @@ import { vote, appoint, setTax, setMarketFee, setMarketLocked, donate, contribut
 import { planetScore } from "../game/score.js";
 import { clampMorale, moraleMult } from "../game/morale.js";
 import { addNews, recentNews } from "../game/news.js";
-import { createAlliance, invitePlayer, acceptInvite, leaveAlliance, kickMember, setMemberRole, allianceView } from "../game/alliance.js";
+import { createAlliance, invitePlayer, acceptInvite, leaveAlliance, kickMember, setMemberRole, allianceView, allianceFleetsView } from "../game/alliance.js";
 import { forumIndex, listTopics, createTopic, getTopic, reply as forumReply, isForum } from "../game/forum.js";
 import { sendChat, recentChat, olderChat, resolveRoom } from "../game/chat.js";
 import { pushPublicKey, saveSubscription, removeSubscription, PUSH_ENABLED } from "../game/push.js";
@@ -766,6 +766,14 @@ gameRouter.get("/alliance", async (req: AuthedRequest, res) => {
   const planet = await myPlanet(req.userId!);
   if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
   res.json(await allianceView(planet.id));
+});
+
+// Movimentação da aliança (só DC/CA). 403 se não tiver o cargo.
+gameRouter.get("/alliance/fleets", async (req: AuthedRequest, res) => {
+  const planet = await myPlanet(req.userId!);
+  if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
+  try { res.json(await allianceFleetsView(planet.id)); }
+  catch (e: any) { res.status(403).json({ error: e.message ?? "Sem acesso" }); }
 });
 
 async function allianceAction(req: AuthedRequest, res: any, fn: (planetId: string) => Promise<any>) {

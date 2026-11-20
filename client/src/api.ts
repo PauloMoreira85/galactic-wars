@@ -188,9 +188,9 @@ export interface AllianceView {
   pending?: { planetId: string; name: string; commander: string }[];
 }
 export const ROLE_LABEL: Record<string, string> = {
-  lider: "Líder", alto_comando: "Alto Comando", dc: "DC", scanner: "Scanner", porta_voz: "Porta-Voz", recruta: "Recruta",
+  lider: "Líder", alto_comando: "Alto Comando", dc: "DC (Defesa)", ca: "CA (Ataque)", scanner: "Scanner", porta_voz: "Porta-Voz", recruta: "Recruta",
 };
-export const ALLIANCE_ROLES = ["lider", "alto_comando", "dc", "scanner", "porta_voz", "recruta"];
+export const ALLIANCE_ROLES = ["lider", "alto_comando", "dc", "ca", "scanner", "porta_voz", "recruta"];
 
 export const api = {
   meta: () => request<{ tickIntervalSeconds: number; roundTicks: number; roundDurationMinutes: number; startTimes: string[]; dailySchedule?: boolean }>("/meta"),
@@ -333,6 +333,11 @@ export const api = {
   chatSeen: () => request<{ ok: boolean }>("/game/chat/seen", { method: "POST" }).catch(() => {}),
 
   alliance: () => request<AllianceView>("/game/alliance"),
+  allianceFleets: () => request<{
+    role: string;
+    memberFleets: { owner: string; ownerCoords: string; name: string; mission: string; status: string; target: string; ships: number; ticksLeft: number }[];
+    attacks: { attacker: string; attackerCoords: string; target: string; status: string; ticksLeft: number }[];
+  }>("/game/alliance/fleets"),
   allianceCreate: (name: string, tag: string) =>
     request<AllianceView>("/game/alliance/create", { method: "POST", body: JSON.stringify({ name, tag }) }),
   allianceInvite: (username: string) =>

@@ -1,10 +1,15 @@
 import { prisma } from "../db.js";
+import { parseUnits, totalUnits } from "./unitmap.js";
 
 export const MAX_MEMBERS = 60;
-export const ROLES = ["lider", "alto_comando", "dc", "scanner", "porta_voz", "recruta"];
+// dc = Defense Commander · ca = Comandante de Ataque (ambos veem a movimentação).
+export const ROLES = ["lider", "alto_comando", "dc", "ca", "scanner", "porta_voz", "recruta"];
 export const ROLE_LABEL: Record<string, string> = {
-  lider: "Líder", alto_comando: "Alto Comando", dc: "DC", scanner: "Scanner", porta_voz: "Porta-Voz", recruta: "Recruta",
+  lider: "Líder", alto_comando: "Alto Comando", dc: "DC (Defesa)", ca: "CA (Ataque)", scanner: "Scanner", porta_voz: "Porta-Voz", recruta: "Recruta",
 };
+
+// Cargos que enxergam o painel de movimentação da aliança (DC e CA = os "olhos").
+export function canSeeFleets(role: string) { return role === "dc" || role === "ca"; }
 
 async function memberOf(planetId: string) {
   return prisma.allianceMember.findUnique({ where: { planetId } });
@@ -137,4 +142,62 @@ export async function allianceMateIds(planetId: string): Promise<string[]> {
   if (!me) return [];
   const mates = await prisma.allianceMember.findMany({ where: { allianceId: me.allianceId, NOT: { planetId } }, select: { planetId: true } });
   return mates.map((m) => m.planetId);
+}
+
+// ===== Painel de movimentação da aliança (só DC e CA) =====
+// Mostra: (1) frotas dos MEMBROS em movimento (defesas/ataques indo/voltando) e
+// (2) ataques INIMIGOS a caminho de qualquer membro. Permite ao DC/CA organizar
+// a defesa e aos CAs sincronizar waves — a informação fica restrita aos cargos.
+export async function allianceFleetsView(planetId: string) {
+  const me = await prisma.allianceMember.findUnique({ where: { planetId } });
+  if (!me) throw new Error("Voce nao esta em uma alianca");
+  if (!canSeeFleets(me.role)) throw new Error("Apenas DC e CA veem a movimentação da aliança");
+
+  const members = await prisma.allianceMember.findMany({ where: { allianceId: me.allianceId }, select: { planetId: true } });
+  const memberIds = members.map((m) => m.planetId);
+  const planets = await prisma.planet.findMany({
+    where: { id: { in: memberIds } },
+    select: { id: true, name: true, galaxy: true, system: true, slot: true, user: { select: { username: true } } },
+  });
+  const pById = new Map(planets.map((p) => [p.id, p]));
+  const coordOf = (p: any) => p ? `${p.galaxy}:${p.system}:${p.slot}` : "?";
+  const tick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
+  const STATUS: Record<string, string> = { outbound: "indo", engaged: "em combate", returning: "voltando", garrison: "defendendo", idle: "na base" };
+
+  // (1) Frotas dos membros que estão fora da base.
+  const mine = await prisma.fleet.findMany({ where: { ownerPlanetId: { in: memberIds }, status: { in: ["outbound", "engaged", "returning", "garrison"] } } });
+  const memberFleets = mine.map((f) => {
+    const owner = pById.get(f.ownerPlanetId);
+    return {
+      owner: owner?.user.username ?? "?", ownerCoords: coordOf(owner),
+      name: f.name, mission: f.mission, status: STATUS[f.status] ?? f.status,
+      target: `${f.targetGalaxy}:${f.targetSystem}:${f.targetSlot}`,
+      ships: totalUnits(parseUnits(f.units)),
+      ticksLeft: f.status === "engaged" ? 0 : Math.max(0, f.arriveTick - tick),
+    };
+  }).sort((a, b) => a.ticksLeft - b.ticksLeft);
+
+  // (2) Ataques INIMIGOS (de quem não é da aliança) a caminho de um membro.
+  const memberCoords = new Set(planets.map((p) => `${p.galaxy}:${p.system}:${p.slot}`));
+  const incoming = await prisma.fleet.findMany({
+    where: {
+      mission: "attack", status: { in: ["outbound", "engaged"] },
+      ownerPlanetId: { notIn: memberIds },
+      OR: planets.map((p) => ({ targetGalaxy: p.galaxy, targetSystem: p.system, targetSlot: p.slot })),
+    },
+  });
+  // Frota falsa (fake) não aparece — é finta, ninguém sabe que é falsa.
+  const enemyOwners = await prisma.planet.findMany({ where: { id: { in: [...new Set(incoming.map((f) => f.ownerPlanetId))] } }, select: { id: true, name: true, galaxy: true, system: true, slot: true } });
+  const eById = new Map(enemyOwners.map((p) => [p.id, p]));
+  const attacks = incoming.filter((f) => !f.fake && memberCoords.has(`${f.targetGalaxy}:${f.targetSystem}:${f.targetSlot}`)).map((f) => {
+    const atk = eById.get(f.ownerPlanetId);
+    return {
+      attacker: atk?.name ?? "?", attackerCoords: atk ? `${atk.galaxy}:${atk.system}:${atk.slot}` : "?",
+      target: `${f.targetGalaxy}:${f.targetSystem}:${f.targetSlot}`,
+      status: STATUS[f.status] ?? f.status,
+      ticksLeft: f.status === "engaged" ? 0 : Math.max(0, f.arriveTick - tick),
+    };
+  }).sort((a, b) => a.ticksLeft - b.ticksLeft);
+
+  return { role: me.role, memberFleets, attacks };
 }

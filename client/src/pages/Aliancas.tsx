@@ -72,6 +72,8 @@ export function Aliancas() {
         </div>
       )}
 
+      {(a.myRole === "dc" || a.myRole === "ca") && <PainelMovimentacao />}
+
       <div className="panel">
         <h2>Membros</h2>
         <table>
@@ -97,5 +99,74 @@ export function Aliancas() {
         </table>
       </div>
     </>
+  );
+}
+
+// Painel de Comando — movimentação da aliança (só DC/CA veem). Atualiza sozinho.
+function PainelMovimentacao() {
+  const [data, setData] = useState<Awaited<ReturnType<typeof api.allianceFleets>> | null>(null);
+  const [err, setErr] = useState("");
+  async function load() { try { setData(await api.allianceFleets()); setErr(""); } catch (e: any) { setErr(e.message ?? "Sem acesso"); } }
+  useEffect(() => { load(); const t = setInterval(load, REFRESH_MS); return () => clearInterval(t); }, []);
+
+  const isCA = data?.role === "ca";
+  // DC foca em defesa; CA foca em ataque. Ambos veem tudo, só muda a ordem/ênfase.
+  return (
+    <div className="panel" style={{ borderColor: "var(--accent)" }}>
+      <h2>🎯 Painel de Comando {isCA ? "— Ataque (CA)" : "— Defesa (DC)"}</h2>
+      <div className="cost" style={{ marginBottom: 10 }}>
+        Movimentação da aliança — visível só pra <b>DC</b> e <b>CA</b>. Reporte-se ao Alto Comando e organize {isCA ? "as waves de ataque" : "a defesa dos aliados"}.
+      </div>
+      {err && <div className="error">{err}</div>}
+
+      {/* Ataques inimigos a caminho dos aliados (prioridade do DC). */}
+      <div style={{ marginBottom: 14 }}>
+        <div className="combat-ini" style={{ fontSize: 14, marginBottom: 6 }}>🚨 Ataques inimigos a caminho de aliados ({data?.attacks.length ?? 0})</div>
+        {(data?.attacks.length ?? 0) === 0 ? <div className="roid-count">Nenhum ataque detectado a caminho dos aliados. 👍</div> : (
+          <div style={{ overflowX: "auto" }}>
+            <table>
+              <thead><tr><th>Atacante</th><th>De</th><th>Alvo (aliado)</th><th>Situação</th><th>Chega</th></tr></thead>
+              <tbody>
+                {data!.attacks.map((x, i) => (
+                  <tr key={i}>
+                    <td style={{ color: "var(--danger)" }}><b>{x.attacker}</b></td>
+                    <td><CoordLink c={x.attackerCoords} /></td>
+                    <td><CoordLink c={x.target} /></td>
+                    <td className="roid-count">{x.status}</td>
+                    <td><b>{x.ticksLeft === 0 ? "agora" : `${x.ticksLeft}t`}</b></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Frotas dos membros em movimento. */}
+      <div>
+        <div className="combat-ini" style={{ fontSize: 14, marginBottom: 6 }}>🚀 Frotas da aliança em movimento ({data?.memberFleets.length ?? 0})</div>
+        {(data?.memberFleets.length ?? 0) === 0 ? <div className="roid-count">Nenhuma frota da aliança em movimento.</div> : (
+          <div style={{ overflowX: "auto" }}>
+            <table>
+              <thead><tr><th>Membro</th><th>De</th><th>Frota</th><th>Missão</th><th>Alvo</th><th>Naves</th><th>Situação</th><th>Chega</th></tr></thead>
+              <tbody>
+                {data!.memberFleets.map((f, i) => (
+                  <tr key={i}>
+                    <td><b>{f.owner}</b></td>
+                    <td><CoordLink c={f.ownerCoords} /></td>
+                    <td className="roid-count">{f.name}</td>
+                    <td style={{ color: f.mission === "attack" ? "var(--danger)" : "var(--carbonum)" }}>{f.mission === "attack" ? "⚔️ ataque" : "🛡️ defesa"}</td>
+                    <td><CoordLink c={f.target} /></td>
+                    <td>{f.ships.toLocaleString("pt-BR")}</td>
+                    <td className="roid-count">{f.status}</td>
+                    <td><b>{f.ticksLeft === 0 ? "—" : `${f.ticksLeft}t`}</b></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
