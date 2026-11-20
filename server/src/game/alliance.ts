@@ -160,6 +160,7 @@ export async function attackBoardView(planetId: string) {
     select: { name: true, galaxy: true, system: true, slot: true },
   });
   const tgtName = new Map(tgtPlanets.map((p) => [`${p.galaxy}:${p.system}:${p.slot}`, p.name]));
+  const intelByCoord = await allianceIntelByCoord(mem.allianceId); // coord -> spyHash
 
   return {
     locked,
@@ -169,6 +170,7 @@ export async function attackBoardView(planetId: string) {
       const coord = `${t.galaxy}:${t.system}:${t.slot}`;
       return {
         id: t.id, coord, targetName: tgtName.get(coord) ?? null, note: t.note ?? null, createdBy: t.createdBy,
+        intelHash: intelByCoord[coord] ?? null, // espionagem compartilhada deste alvo (se houver)
         ownerPlanetId: t.ownerPlanetId ?? null, shared: t.shared,
         iAmOwner: t.ownerPlanetId === planetId,
         mineClaimed: t.claims.some((c) => c.planetId === planetId),
@@ -259,6 +261,49 @@ export async function unclaimTarget(planetId: string, targetId: string) {
     const next = await tx.attackClaim.findFirst({ where: { targetId }, orderBy: { claimedAt: "asc" } });
     await tx.attackTarget.update({ where: { id: targetId }, data: { ownerPlanetId: next?.planetId ?? null, shared: next ? t.shared : false } });
   });
+}
+
+// ===== Intel da Tag (espionagens compartilhadas) =====
+// Qualquer membro compartilha um relatório de espionagem seu com a aliança.
+export async function shareIntel(planetId: string, spyHash: string) {
+  const mem = await memberOf(planetId);
+  if (!mem) throw new Error("Voce nao esta em uma alianca");
+  const rep = await prisma.spyReport.findUnique({ where: { hash: spyHash.trim().toUpperCase() } });
+  if (!rep) throw new Error("Relatório não encontrado (confira o código)");
+  // Só compartilha relatório SEU (evita publicar intel de terceiros sem ser dono).
+  if (rep.spyPlanetId !== planetId) throw new Error("Esse relatório não é seu");
+  const planet = await prisma.planet.findUnique({ where: { id: planetId }, select: { user: { select: { username: true } } } });
+  await prisma.allianceIntel.upsert({
+    where: { allianceId_spyHash: { allianceId: mem.allianceId, spyHash: rep.hash } },
+    update: { sharedBy: planet?.user.username ?? "?", tick: rep.tick },
+    create: {
+      allianceId: mem.allianceId, spyHash: rep.hash, targetCoords: rep.targetCoords,
+      targetName: rep.targetName, agent: rep.agent, sharedBy: planet?.user.username ?? "?", tick: rep.tick,
+    },
+  });
+}
+
+// Lista as espionagens compartilhadas na tag (mais recentes primeiro).
+export async function allianceIntelView(planetId: string) {
+  const mem = await memberOf(planetId);
+  if (!mem) throw new Error("Voce nao esta em uma alianca");
+  const rows = await prisma.allianceIntel.findMany({ where: { allianceId: mem.allianceId }, orderBy: { createdAt: "desc" }, take: 100 });
+  return rows.map((r) => ({ id: r.id, spyHash: r.spyHash, targetCoords: r.targetCoords, targetName: r.targetName, agent: r.agent, sharedBy: r.sharedBy, tick: r.tick, at: r.createdAt }));
+}
+
+// Mapa coord -> hash do intel mais recente (pra anexar ao Quadro de Ataque).
+export async function allianceIntelByCoord(allianceId: string): Promise<Record<string, string>> {
+  const rows = await prisma.allianceIntel.findMany({ where: { allianceId }, orderBy: { createdAt: "desc" } });
+  const out: Record<string, string> = {};
+  for (const r of rows) if (!out[r.targetCoords]) out[r.targetCoords] = r.spyHash; // 1º = mais recente
+  return out;
+}
+
+export async function unshareIntel(planetId: string, id: string) {
+  const mem = await memberOf(planetId);
+  if (!mem) throw new Error("Voce nao esta em uma alianca");
+  // Remove só se for da sua aliança (qualquer membro pode limpar intel velho).
+  await prisma.allianceIntel.deleteMany({ where: { id, allianceId: mem.allianceId } });
 }
 
 // TL/HC define o mural de ordens da aliança (recado visível a todos os membros).

@@ -21,7 +21,7 @@ import { vote, appoint, setTax, setMarketFee, setMarketLocked, donate, contribut
 import { planetScore } from "../game/score.js";
 import { clampMorale, moraleMult } from "../game/morale.js";
 import { addNews, recentNews } from "../game/news.js";
-import { createAlliance, invitePlayer, acceptInvite, leaveAlliance, kickMember, setMemberRole, allianceView, allianceFleetsView, setOrders, attackBoardView, toggleAttackLock, addAttackTarget, removeAttackTarget, claimTarget, unclaimTarget, setTargetShared } from "../game/alliance.js";
+import { createAlliance, invitePlayer, acceptInvite, leaveAlliance, kickMember, setMemberRole, allianceView, allianceFleetsView, setOrders, attackBoardView, toggleAttackLock, addAttackTarget, removeAttackTarget, claimTarget, unclaimTarget, setTargetShared, shareIntel, allianceIntelView, unshareIntel } from "../game/alliance.js";
 import { forumIndex, listTopics, createTopic, getTopic, reply as forumReply, isForum } from "../game/forum.js";
 import { sendChat, recentChat, olderChat, resolveRoom } from "../game/chat.js";
 import { pushPublicKey, saveSubscription, removeSubscription, PUSH_ENABLED } from "../game/push.js";
@@ -868,6 +868,30 @@ gameRouter.post("/alliance/attack/share", (req: AuthedRequest, res) => {
   const p = z.object({ targetId: z.string(), shared: z.boolean() }).safeParse(req.body);
   if (!p.success) return res.status(400).json({ error: "Pedido invalido" });
   return attackAction(req, res, (id) => setTargetShared(id, p.data.targetId, p.data.shared));
+});
+
+// ===== Intel da Tag (espionagens compartilhadas) =====
+gameRouter.get("/alliance/intel", async (req: AuthedRequest, res) => {
+  const planet = await myPlanet(req.userId!);
+  if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
+  try { res.json({ intel: await allianceIntelView(planet.id) }); }
+  catch (e: any) { res.status(400).json({ error: e.message ?? "Falha" }); }
+});
+gameRouter.post("/alliance/intel/share", async (req: AuthedRequest, res) => {
+  const p = z.object({ hash: z.string() }).safeParse(req.body);
+  if (!p.success) return res.status(400).json({ error: "Pedido invalido" });
+  const planet = await myPlanet(req.userId!);
+  if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
+  try { await shareIntel(planet.id, p.data.hash); res.json({ intel: await allianceIntelView(planet.id) }); }
+  catch (e: any) { res.status(400).json({ error: e.message ?? "Falha" }); }
+});
+gameRouter.post("/alliance/intel/unshare", async (req: AuthedRequest, res) => {
+  const p = z.object({ id: z.string() }).safeParse(req.body);
+  if (!p.success) return res.status(400).json({ error: "Pedido invalido" });
+  const planet = await myPlanet(req.userId!);
+  if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
+  try { await unshareIntel(planet.id, p.data.id); res.json({ intel: await allianceIntelView(planet.id) }); }
+  catch (e: any) { res.status(400).json({ error: e.message ?? "Falha" }); }
 });
 
 // ===== Sabotagem =====

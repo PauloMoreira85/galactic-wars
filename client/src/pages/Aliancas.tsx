@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
-import { api, REFRESH_MS, type AllianceView, type AttackBoardView, ROLE_LABEL, ALLIANCE_ROLES } from "../api";
+import { api, REFRESH_MS, type AllianceView, type AttackBoardView, type AllianceIntelItem, ROLE_LABEL, ALLIANCE_ROLES } from "../api";
 import { CoordLink } from "../components/CoordLink";
+
+// Abre a Calculadora (aba nova) com a frota do alvo já carregada na defesa,
+// a partir do hash de uma espionagem (reusa o preset lido pela Calculadora).
+function abrirCalcComHash(hash: string) {
+  try { localStorage.setItem("gw_calc_preset", JSON.stringify({ defHash: hash, at: Date.now() })); } catch {}
+  window.open("/ferramentas?tool=calculadora", "_blank", "noopener");
+}
 
 export function Aliancas() {
   const [a, setA] = useState<AllianceView | null>(null);
@@ -62,6 +69,8 @@ export function Aliancas() {
       <MuralOrdens a={a} act={act} />
 
       <QuadroAtaque />
+
+      <IntelDaTag />
 
       {a.canInvite && (
         <div className="panel">
@@ -195,6 +204,7 @@ function QuadroAtaque() {
                   <td>
                     <CoordLink c={t.coord} />{t.targetName && <span className="roid-count"> · {t.targetName}</span>}
                     {t.shared && <span style={{ color: "var(--carbonum)", fontSize: 11 }}> · MASS aberto</span>}
+                    {t.intelHash && <button className="link" title="Espionagem compartilhada deste alvo — abrir na Calculadora" style={{ marginLeft: 6 }} onClick={() => abrirCalcComHash(t.intelHash!)}>🔍 intel</button>}
                   </td>
                   <td className="roid-count">{t.note ?? "—"}</td>
                   <td>
@@ -223,6 +233,61 @@ function QuadroAtaque() {
                     )}
                     {/* Comando remove o alvo */}
                     {b.canManage && <button className="link" style={{ marginLeft: 8, color: "var(--danger)" }} onClick={() => act(() => api.attackRemove(t.id))}>remover</button>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Intel da Tag — espionagens compartilhadas (qualquer membro compartilha e vê).
+function IntelDaTag() {
+  const [intel, setIntel] = useState<AllianceIntelItem[]>([]);
+  const [hash, setHash] = useState("");
+  const [err, setErr] = useState("");
+  async function load() { try { setIntel((await api.allianceIntel()).intel); setErr(""); } catch (e: any) { setErr(e.message ?? "Falha"); } }
+  useEffect(() => { load(); const t = setInterval(load, REFRESH_MS); return () => clearInterval(t); }, []);
+  async function share() {
+    if (!hash.trim()) return;
+    setErr("");
+    try { setIntel((await api.allianceIntelShare(hash.trim().toUpperCase())).intel); setHash(""); } catch (e: any) { setErr(e.message ?? "Falha"); }
+  }
+  async function remove(id: string) { try { setIntel((await api.allianceIntelUnshare(id)).intel); } catch {} }
+  const when = (s: string) => new Date(s).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+  const AGENT: Record<string, string> = { P: "Padrão", M: "Militar", T: "Transmissão", D: "Duplo" };
+
+  return (
+    <div className="panel" style={{ borderColor: "var(--accent)" }}>
+      <h2>🛰️ Intel da Tag</h2>
+      <div className="cost" style={{ marginBottom: 8 }}>
+        Espionagens compartilhadas com a aliança. Pegue o <b>código</b> de um relatório seu (Ferramentas → Espionagens) e compartilhe pra tag ver.
+      </div>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+        <input placeholder="código da espionagem (ex: A1B2C3)" value={hash} onChange={(e) => setHash(e.target.value.toUpperCase())}
+          onKeyDown={(e) => { if (e.key === "Enter") share(); }} maxLength={16} style={{ width: 240, margin: 0, padding: "6px 8px" }} />
+        <button disabled={!hash.trim()} onClick={share}>compartilhar</button>
+      </div>
+      {err && <div className="error" style={{ marginBottom: 8 }}>{err}</div>}
+      {intel.length === 0 ? (
+        <div className="roid-count">Nenhuma espionagem compartilhada ainda.</div>
+      ) : (
+        <div style={{ overflowX: "auto" }}>
+          <table>
+            <thead><tr><th>Alvo</th><th>Agente</th><th>Por</th><th>Quando</th><th></th></tr></thead>
+            <tbody>
+              {intel.map((r) => (
+                <tr key={r.id}>
+                  <td><CoordLink c={r.targetCoords} /> <span className="roid-count">· {r.targetName}</span></td>
+                  <td className="roid-count">{AGENT[r.agent] ?? r.agent}</td>
+                  <td>{r.sharedBy}</td>
+                  <td className="roid-count">{when(r.at)}</td>
+                  <td style={{ whiteSpace: "nowrap" }}>
+                    <button className="link" title="Abrir a frota do alvo na Calculadora" onClick={() => abrirCalcComHash(r.spyHash)}>🔍 calc</button>
+                    <button className="link" style={{ marginLeft: 8, color: "var(--danger)" }} onClick={() => remove(r.id)}>remover</button>
                   </td>
                 </tr>
               ))}

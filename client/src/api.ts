@@ -194,9 +194,13 @@ export interface AttackBoardView {
   myPlanetId: string;
   targets: {
     id: string; coord: string; targetName: string | null; note: string | null; createdBy: string;
+    intelHash: string | null;
     ownerPlanetId: string | null; shared: boolean; iAmOwner: boolean; mineClaimed: boolean;
     claimers: { planetId: string; name: string; coords: string; isOwner: boolean }[];
   }[];
+}
+export interface AllianceIntelItem {
+  id: string; spyHash: string; targetCoords: string; targetName: string; agent: string; sharedBy: string; tick: number; at: string;
 }
 export const ROLE_LABEL: Record<string, string> = {
   lider: "TL (Tag Leader)", alto_comando: "Alto Comando", dc: "DC (Defense Commander)", ac: "AC (Attack Commander)", scanner: "Scanner", porta_voz: "Porta-Voz", recruta: "Recruta",
@@ -367,6 +371,9 @@ export const api = {
   attackClaim: (targetId: string) => request<AttackBoardView>("/game/alliance/attack/claim", { method: "POST", body: JSON.stringify({ targetId }) }),
   attackUnclaim: (targetId: string) => request<AttackBoardView>("/game/alliance/attack/unclaim", { method: "POST", body: JSON.stringify({ targetId }) }),
   attackShare: (targetId: string, shared: boolean) => request<AttackBoardView>("/game/alliance/attack/share", { method: "POST", body: JSON.stringify({ targetId, shared }) }),
+  allianceIntel: () => request<{ intel: AllianceIntelItem[] }>("/game/alliance/intel"),
+  allianceIntelShare: (hash: string) => request<{ intel: AllianceIntelItem[] }>("/game/alliance/intel/share", { method: "POST", body: JSON.stringify({ hash }) }),
+  allianceIntelUnshare: (id: string) => request<{ intel: AllianceIntelItem[] }>("/game/alliance/intel/unshare", { method: "POST", body: JSON.stringify({ id }) }),
   allianceRole: (planetId: string, role: string) =>
     request<AllianceView>("/game/alliance/role", { method: "POST", body: JSON.stringify({ planetId, role }) }),
 

@@ -283,6 +283,25 @@ model AttackClaim {
   @@index([planetId])
 }
 
+// Espionagem compartilhada com a aliança (o Scanner e qualquer membro podem
+// publicar um relatório pra tag inteira ver). Guarda a coord do alvo pra casar
+// com os alvos do Quadro de Ataque.
+model AllianceIntel {
+  id          String   @id @default(cuid())
+  allianceId  String
+  spyHash     String   // hash do SpyReport (abre nas Ferramentas / Calculadora)
+  targetCoords String  // "g:s:slot" do alvo espionado
+  targetName  String
+  agent       String
+  sharedBy    String   // nome de quem compartilhou
+  tick        Int
+  createdAt   DateTime @default(now())
+
+  @@unique([allianceId, spyHash]) // não duplica o mesmo relatório na tag
+  @@index([allianceId])
+  @@index([allianceId, targetCoords])
+}
+
 // Acordo (tratado de não-agressão) entre duas galáxias, fechado pelos Ministros da Diplomacia.
 model GalaxyTreaty {
   id         String   @id @default(cuid())
