@@ -14,8 +14,15 @@ const RACE_LABEL: Record<string, string> = {
 };
 
 // Kit de Ferramentas — página separada com menu próprio (estilo toolkit do GW).
+const VALID_TOOLS = ["universo", "unidades", "techtree", "calculadora", "sabocalc", "procura", "rankings", "graficos", "espionagem"] as const;
+
 export function Ferramentas({ onClose }: { onClose: () => void }) {
-  const [tool, setTool] = useState<Tool>("universo");
+  // Abre já numa ferramenta se veio por ?tool=... (ex: "Simular" da Galáxia).
+  const initialTool = (() => {
+    try { const t = new URLSearchParams(location.search).get("tool"); return (VALID_TOOLS as readonly string[]).includes(t ?? "") ? (t as Tool) : "universo"; }
+    catch { return "universo" as Tool; }
+  })();
+  const [tool, setTool] = useState<Tool>(initialTool);
   useEffect(() => { api.markSeen("tools"); }, []); // missão tutorial
 
   const MENU: { key: Tool | "voltar"; label: string }[] = [
@@ -156,6 +163,16 @@ function Calculadora() {
   const [hashSources, setHashSources] = useState<{ label: string; detail?: string; units: Record<string, number>; total: number }[]>([]);
 
   useEffect(() => { api.toolUnits().then((d) => setUnits(d.units)).catch(() => {}); }, []);
+  // Preset vindo da Galáxia ("🎯 Simular"): hash do alvo pra carregar na defesa.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("gw_calc_preset");
+      if (!raw) return;
+      localStorage.removeItem("gw_calc_preset");
+      const p = JSON.parse(raw);
+      if (p?.defHash) { setHash(String(p.defHash)); setTimeout(() => loadHash(String(p.defHash)), 0); }
+    } catch {}
+  }, []);
   const races = Array.from(new Set(units.map((u) => u.race)));
   const shown = units.filter((u) => u.race === race);
   const nameToRace = Object.fromEntries(units.map((u) => [u.name, u.race]));
@@ -184,9 +201,10 @@ function Calculadora() {
 
   // Carrega o relatório pelo hash e lista as FONTES de naves (base + cada frota).
   // O jogador escolhe DEPOIS qual fonte entra, e se vai pro ataque ou pra defesa.
-  async function loadHash() {
-    const h = hash.trim().toUpperCase();
+  async function loadHash(preset?: string) {
+    const h = (preset ?? hash).trim().toUpperCase();
     if (!h) return;
+    if (preset) setHash(h);
     setHashBusy(true); setHashMsg(""); setErr(""); setHashSources([]); setHashInfo(null);
     try {
       const r = await api.spyLookup(h);
@@ -213,6 +231,12 @@ function Calculadora() {
       setHashSources(sources);
       // Alinha a aba de raça com a do alvo, pra facilitar conferir.
       if (intel.race && races.includes(intel.race)) setRace(intel.race);
+      // Veio da Galáxia ("Simular"): já joga a frota do alvo na DEFESA automaticamente
+      // (se só há uma fonte; com várias, deixa o jogador escolher qual).
+      if (preset && sources.length === 1) {
+        setDef({ ...sources[0].units });
+        setHashMsg(`✅ Defesa carregada: ${fmt(sources[0].total)} nave(s) de ${r.targetName}. Monte seu ataque e simule.`);
+      }
     } catch (e: any) {
       setHashMsg(`❌ ${e.message ?? "Código não encontrado"}`);
     } finally { setHashBusy(false); }
@@ -256,7 +280,7 @@ function Calculadora() {
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
           <input value={hash} onChange={(e) => setHash(e.target.value.toUpperCase())} onKeyDown={(e) => { if (e.key === "Enter") loadHash(); }}
             placeholder="código da espionagem (ex: A1B2C3)" maxLength={16} style={{ width: 240, margin: 0, padding: "6px 8px" }} />
-          <button disabled={hashBusy || !hash.trim()} onClick={loadHash}>{hashBusy ? "carregando…" : "carregar"}</button>
+          <button disabled={hashBusy || !hash.trim()} onClick={() => loadHash()}>{hashBusy ? "carregando…" : "carregar"}</button>
         </div>
 
         {hashInfo && hashSources.length > 0 && (

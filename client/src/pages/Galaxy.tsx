@@ -27,6 +27,8 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
   const [spy, setSpy] = useState<any | null>(null);
   const [atkTicks, setAtkTicks] = useState(3);
   const [fake, setFake] = useState(false);
+  // Última espionagem (hash) de cada alvo que eu já espionei, por coordenada.
+  const [spyByCoord, setSpyByCoord] = useState<Record<string, string>>({});
 
   // Frotas prontas na base (carregadas) que podem ser enviadas.
   const idleFleets = fleets.filter((f) => f.idle && f.totalShips > 0);
@@ -67,6 +69,21 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
     return () => clearInterval(t);
   }, []);
   useEffect(() => { api.markSeen("galaxy"); }, []); // missão tutorial
+  // Mapeia a espionagem mais recente que EU tenho de cada coordenada (pra "Simular").
+  useEffect(() => {
+    api.spyReports().then((d) => {
+      const map: Record<string, string> = {};
+      for (const r of d.reports) if (!map[r.targetCoords]) map[r.targetCoords] = r.hash; // reports vêm do mais novo
+      setSpyByCoord(map);
+    }).catch(() => {});
+  }, []);
+
+  // Abre a Calculadora (aba nova) com a defesa já carregada da espionagem do alvo.
+  function simulate(coords: string) {
+    const hash = spyByCoord[coords];
+    try { localStorage.setItem("gw_calc_preset", JSON.stringify({ defHash: hash ?? "", at: Date.now() })); } catch {}
+    window.open("/ferramentas?tool=calculadora", "_blank", "noopener");
+  }
 
   // Mesma galáxia (= mesmo setor E paralelo) = aliados: só transporte (não pode atacar).
   const myGalaxy = g || 1;
@@ -298,7 +315,19 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
             );
           })}
           {error && <div className="error" style={{ marginTop: 10 }}>{error}</div>}
-          <div style={{ marginTop: 12 }}><button className="link" onClick={() => setTarget(null)}>cancelar</button></div>
+          <div style={{ marginTop: 12, display: "flex", gap: 14, alignItems: "center" }}>
+            <button className="link" onClick={() => setTarget(null)}>cancelar</button>
+            {!sameGalaxy && (() => {
+              const coords = `${galaxy}:${system}:${target.slot}`;
+              const hasSpy = !!spyByCoord[coords];
+              return (
+                <button className="link" title={hasSpy ? "Abre a Calculadora com a frota espionada deste alvo já na defesa" : "Abre a Calculadora (você ainda não espionou este alvo — monte a defesa à mão)"}
+                  onClick={() => simulate(coords)}>
+                  🎯 Simular combate {hasSpy ? "(alvo espionado ✓)" : "(sem espionagem)"}
+                </button>
+              );
+            })()}
+          </div>
         </div>
       )}
 
