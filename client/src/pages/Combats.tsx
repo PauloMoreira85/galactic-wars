@@ -182,13 +182,20 @@ export function Combats() {
       {list.length === 0 ? (
         <div className="roid-count">Nenhum combate ainda. Envie uma frota de ataque a outra galáxia!</div>
       ) : (
+        <>
+        <div className="roid-count" style={{ marginBottom: 6, fontSize: 12 }}>👆 Toque numa linha pra abrir o relatório do combate.</div>
+        <div style={{ overflowX: "auto" }}>
         <table>
           <thead>
             <tr><th>Tick</th><th>Papel</th><th>Oponente</th><th>Coord.</th><th>Perdi</th><th>Inimigo perdeu</th><th>Captura (M/C/P)</th><th></th></tr>
           </thead>
           <tbody>
-            {list.map((c) => (
-              <tr key={c.id}>
+            {list.map((c) => {
+              const canOpen = c.role !== "defense-sent" && c.role !== "defense-received";
+              return (
+              <tr key={c.id} onClick={() => canOpen && open(c.id)}
+                  style={canOpen ? { cursor: "pointer" } : undefined}
+                  title={canOpen ? "ver relatório do combate" : undefined}>
                 <td className="rank-num">#{c.tick}</td>
                 <td>{
                   c.role === "attacker" ? "⚔️ ataque" :
@@ -197,15 +204,19 @@ export function Combats() {
                   c.role === "defense-received" ? "🛡️ fui defendido" : "🛡️ defesa"
                 }</td>
                 <td>{c.opponent}</td>
-                <td><CoordLink c={c.opponentCoords} /></td>
+                {/* stopPropagation: clicar na coord navega, não abre o relatório */}
+                <td onClick={(e) => e.stopPropagation()}><CoordLink c={c.opponentCoords} /></td>
                 <td style={{ color: c.myLost > 0 ? "var(--danger)" : undefined }}>{fmt(c.myLost)}</td>
                 <td style={{ color: c.oppLost > 0 ? "var(--carbonum)" : undefined }}>{fmt(c.oppLost)}</td>
                 <td className="roid-count">{fmt(c.captured.metalium)}/{fmt(c.captured.carbonum)}/{fmt(c.captured.plutonium)}</td>
-                <td>{(c.role === "defense-sent" || c.role === "defense-received") ? <span className="roid-count">—</span> : <button onClick={() => open(c.id)}>ver</button>}</td>
+                <td>{canOpen ? <button onClick={(e) => { e.stopPropagation(); open(c.id); }}>ver</button> : <span className="roid-count">—</span>}</td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
+        </div>
+        </>
       )}
     </div>
   );
