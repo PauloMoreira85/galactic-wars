@@ -1103,6 +1103,31 @@ gameRouter.get("/ranking", async (_req, res) => {
   res.json({ ranking: ranked });
 });
 
+// Ranking/lista de ALIANÇAS: pontuação somada dos membros + nº de membros.
+gameRouter.get("/ranking/alliances", async (_req, res) => {
+  const [alliances, members, planets, allF] = await Promise.all([
+    prisma.alliance.findMany({ select: { id: true, name: true, tag: true } }),
+    prisma.allianceMember.findMany({ select: { planetId: true, allianceId: true } }),
+    prisma.planet.findMany(),
+    prisma.fleet.findMany({ select: { ownerPlanetId: true, units: true } }),
+  ]);
+  const fleetUnitsBy: Record<string, Record<string, number>> = {};
+  for (const f of allF) { const fu = parseUnits(f.units); const m = (fleetUnitsBy[f.ownerPlanetId] ??= {}); for (const n of Object.keys(fu)) m[n] = (m[n] || 0) + fu[n]; }
+  const scoreOf = (p: any) => { const u: Record<string, number> = { ...parseUnits(p.units) }; const fl = fleetUnitsBy[p.id] ?? {}; for (const n of Object.keys(fl)) u[n] = (u[n] || 0) + fl[n]; return planetScore(p, u); };
+  const pById = new Map(planets.map((p) => [p.id, p]));
+
+  const agg: Record<string, { score: number; members: number }> = {};
+  for (const a of alliances) agg[a.id] = { score: 0, members: 0 };
+  for (const m of members) {
+    const p = pById.get(m.planetId); if (!p || !agg[m.allianceId]) continue;
+    agg[m.allianceId].score += scoreOf(p); agg[m.allianceId].members++;
+  }
+  const ranking = alliances
+    .map((a) => ({ id: a.id, name: a.name, tag: a.tag, score: agg[a.id].score, members: agg[a.id].members, avg: agg[a.id].members ? Math.round(agg[a.id].score / agg[a.id].members) : 0 }))
+    .sort((a, b) => b.score - a.score);
+  res.json({ ranking });
+});
+
 const FUND_FIELD = { metalium: "fundMetalium", carbonum: "fundCarbonum", plutonium: "fundPlutonium" } as const;
 const marketSchema = z.object({
   from: z.enum(["metalium", "carbonum", "plutonium"]),

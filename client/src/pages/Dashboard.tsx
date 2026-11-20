@@ -9,6 +9,7 @@ import { Combats } from "./Combats";
 import { Governo } from "./Governo";
 import { Noticias } from "./Noticias";
 import { Aliancas } from "./Aliancas";
+import { Ranking } from "./Ranking";
 import { Associados } from "./Associados";
 import { Forum } from "./Forum";
 import { Chat } from "./Chat";
@@ -102,7 +103,7 @@ function useRoundStatus(view: PlanetView | null) {
   return { label: "Próximo round", time: fmtDur(Math.floor((next - now) / 1000)) };
 }
 
-type Section = "planeta" | "missoes" | "galaxia" | "frotas" | "trafego" | "tecnologia" | "naves" | "recursos" | "combates" | "votacao" | "noticias" | "aliancas" | "associados" | "preferencias" | "forum" | "forumgalaxia" | "chat" | "mensagens" | "sabotagem" | "intel";
+type Section = "planeta" | "missoes" | "galaxia" | "frotas" | "trafego" | "tecnologia" | "naves" | "recursos" | "combates" | "votacao" | "noticias" | "aliancas" | "ranking" | "associados" | "preferencias" | "forum" | "forumgalaxia" | "chat" | "mensagens" | "sabotagem" | "intel";
 
 interface MenuItem {
   key: string;
@@ -147,6 +148,7 @@ const MENU: MenuItem[][] = [
   ],
   [
     { key: "aliancas", label: "Alianças" },
+    { key: "ranking", label: "Rankings" },
     { key: "associados", label: "Associados" },
     { key: "preferencias", label: "Preferências" },
   ],
@@ -169,6 +171,7 @@ const TITLES: Record<Section, string> = {
   votacao: "Votação / Governo",
   noticias: "Notícias",
   aliancas: "Alianças",
+  ranking: "Rankings",
   associados: "Associados",
   preferencias: "Preferências",
   forum: "Fórum do Universo",
@@ -873,6 +876,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         {section === "noticias" && <Noticias />}
 
         {section === "aliancas" && <Aliancas />}
+        {section === "ranking" && <Ranking />}
 
         {section === "associados" && <Associados onChanged={refresh} />}
         {section === "preferencias" && <Preferencias view={view} onChanged={refresh} />}

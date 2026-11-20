@@ -506,6 +506,8 @@ export const api = {
     request<{
       ranking: { username: string; planet: string; coords: string; roids: number; score: number }[];
     }>("/game/ranking"),
+  allianceRanking: () =>
+    request<{ ranking: { id: string; name: string; tag: string; score: number; members: number; avg: number }[] }>("/game/ranking/alliances"),
 
   toolUnits: () =>
     request<{ units: {
