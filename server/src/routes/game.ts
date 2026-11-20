@@ -21,7 +21,7 @@ import { vote, appoint, setTax, setMarketFee, setMarketLocked, donate, contribut
 import { planetScore } from "../game/score.js";
 import { clampMorale, moraleMult } from "../game/morale.js";
 import { addNews, recentNews } from "../game/news.js";
-import { createAlliance, invitePlayer, acceptInvite, leaveAlliance, kickMember, setMemberRole, allianceView, allianceFleetsView } from "../game/alliance.js";
+import { createAlliance, invitePlayer, acceptInvite, leaveAlliance, kickMember, setMemberRole, allianceView, allianceFleetsView, setOrders } from "../game/alliance.js";
 import { forumIndex, listTopics, createTopic, getTopic, reply as forumReply, isForum } from "../game/forum.js";
 import { sendChat, recentChat, olderChat, resolveRoom } from "../game/chat.js";
 import { pushPublicKey, saveSubscription, removeSubscription, PUSH_ENABLED } from "../game/push.js";
@@ -819,6 +819,11 @@ gameRouter.post("/alliance/role", (req: AuthedRequest, res) => {
   const p = z.object({ planetId: z.string(), role: z.string() }).safeParse(req.body);
   if (!p.success) return res.status(400).json({ error: "Pedido invalido" });
   return allianceAction(req, res, (id) => setMemberRole(id, p.data.planetId, p.data.role));
+});
+gameRouter.post("/alliance/orders", (req: AuthedRequest, res) => {
+  const p = z.object({ text: z.string().max(500) }).safeParse(req.body);
+  if (!p.success) return res.status(400).json({ error: "Pedido invalido" });
+  return allianceAction(req, res, (id) => setOrders(id, p.data.text));
 });
 
 // ===== Sabotagem =====

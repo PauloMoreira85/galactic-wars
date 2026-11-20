@@ -8,8 +8,9 @@ export const ROLE_LABEL: Record<string, string> = {
   lider: "TL (Tag Leader)", alto_comando: "Alto Comando", dc: "DC (Defense Commander)", ac: "AC (Attack Commander)", scanner: "Scanner", porta_voz: "Porta-Voz", recruta: "Recruta",
 };
 
-// Cargos que enxergam o painel de movimentação da aliança (DC e AC = os "olhos").
-export function canSeeFleets(role: string) { return role === "dc" || role === "ac"; }
+// Cargos que enxergam o painel de movimentação da aliança: DC/AC (os "olhos")
+// + TL e Alto Comando (coordenam os dois e tomam as decisões).
+export function canSeeFleets(role: string) { return role === "dc" || role === "ac" || role === "lider" || role === "alto_comando"; }
 
 async function memberOf(planetId: string) {
   return prisma.allianceMember.findUnique({ where: { planetId } });
@@ -64,26 +65,40 @@ export async function leaveAlliance(planetId: string) {
   if (count <= 1) await prisma.alliance.delete({ where: { id: mem.allianceId } }); // ultimo membro -> dissolve
 }
 
-export async function kickMember(liderPlanetId: string, targetPlanetId: string) {
-  const mem = await memberOf(liderPlanetId);
-  if (!mem || mem.role !== "lider") throw new Error("Apenas o Lider pode expulsar");
-  if (targetPlanetId === liderPlanetId) throw new Error("Voce nao pode se expulsar");
+// TL expulsa qualquer um; HC expulsa só membros "comuns" (não TL nem outro HC).
+export async function kickMember(actorPlanetId: string, targetPlanetId: string) {
+  const mem = await memberOf(actorPlanetId);
+  if (!mem || (mem.role !== "lider" && mem.role !== "alto_comando")) throw new Error("Apenas TL ou Alto Comando pode expulsar");
+  if (targetPlanetId === actorPlanetId) throw new Error("Voce nao pode se expulsar");
   const t = await memberOf(targetPlanetId);
   if (!t || t.allianceId !== mem.allianceId) throw new Error("Esse planeta nao e da sua alianca");
+  // HC não pode expulsar o TL nem outro HC — isso é exclusivo do TL.
+  if (mem.role === "alto_comando" && (t.role === "lider" || t.role === "alto_comando")) {
+    throw new Error("Alto Comando não pode expulsar o TL nem outro Alto Comando");
+  }
   await prisma.allianceMember.delete({ where: { planetId: targetPlanetId } });
 }
 
-// Define cargo. Promover alguem a Lider rebaixa o Lider atual a Alto Comando.
-export async function setMemberRole(liderPlanetId: string, targetPlanetId: string, role: string) {
-  const mem = await memberOf(liderPlanetId);
-  if (!mem || mem.role !== "lider") throw new Error("Apenas o Lider pode mudar cargos");
+// Define cargo. TL faz tudo (inclusive promover a TL, que o rebaixa a HC, e nomear HC).
+// HC pode nomear cargos operacionais, mas NÃO pode criar TL nem HC, nem mexer em TL/HC.
+export async function setMemberRole(actorPlanetId: string, targetPlanetId: string, role: string) {
+  const mem = await memberOf(actorPlanetId);
+  if (!mem || (mem.role !== "lider" && mem.role !== "alto_comando")) throw new Error("Apenas TL ou Alto Comando pode mudar cargos");
   if (!ROLES.includes(role)) throw new Error("Cargo invalido");
   const t = await memberOf(targetPlanetId);
   if (!t || t.allianceId !== mem.allianceId) throw new Error("Esse planeta nao e da sua alianca");
+
+  if (mem.role === "alto_comando") {
+    // HC não cria TL nem HC, e não altera o cargo de um TL ou de outro HC.
+    if (role === "lider" || role === "alto_comando") throw new Error("Só o TL pode nomear TL ou Alto Comando");
+    if (t.role === "lider" || t.role === "alto_comando") throw new Error("Alto Comando não pode alterar o cargo do TL nem de outro Alto Comando");
+  }
+
   if (role === "lider") {
+    // Só o TL chega aqui: passar a liderança rebaixa o TL atual a Alto Comando.
     await prisma.$transaction([
       prisma.allianceMember.update({ where: { planetId: targetPlanetId }, data: { role: "lider" } }),
-      prisma.allianceMember.update({ where: { planetId: liderPlanetId }, data: { role: "alto_comando" } }),
+      prisma.allianceMember.update({ where: { planetId: actorPlanetId }, data: { role: "alto_comando" } }),
     ]);
   } else {
     await prisma.allianceMember.update({ where: { planetId: targetPlanetId }, data: { role } });
@@ -112,12 +127,26 @@ export async function allianceView(planetId: string) {
     id: alliance!.id, name: alliance!.name, tag: alliance!.tag,
     myRole: mem.role,
     canInvite: canInvite(mem.role), isLeader: mem.role === "lider",
+    // TL e HC gerenciam pessoal (cargos/expulsar); a UI aplica os limites por cargo.
+    canManage: mem.role === "lider" || mem.role === "alto_comando",
+    orders: alliance!.orders ?? null, ordersBy: alliance!.ordersBy ?? null, ordersAt: alliance!.ordersAt ?? null,
     members: members.map((m) => {
       const p: any = pById.get(m.planetId);
       return { planetId: m.planetId, role: m.role, name: p?.name ?? "?", commander: p?.user.username ?? "?", coords: p ? `${p.galaxy}:${p.system}:${p.slot}` : "?" };
     }).sort((a, b) => ROLES.indexOf(a.role) - ROLES.indexOf(b.role)),
     pending: pendingPlanets.map((p) => ({ planetId: p.id, name: p.name, commander: p.user.username })),
   };
+}
+
+// TL/HC define o mural de ordens da aliança (recado visível a todos os membros).
+export async function setOrders(planetId: string, text: string) {
+  const mem = await memberOf(planetId);
+  if (!mem || (mem.role !== "lider" && mem.role !== "alto_comando")) throw new Error("Apenas TL ou Alto Comando pode definir as ordens");
+  const planet = await prisma.planet.findUnique({ where: { id: planetId }, select: { user: { select: { username: true } } } });
+  await prisma.alliance.update({
+    where: { id: mem.allianceId },
+    data: { orders: text.trim().slice(0, 500) || null, ordersBy: planet?.user.username ?? null, ordersAt: new Date() },
+  });
 }
 
 // Mapa planetId -> tag da alianca (para mostrar na galaxia).

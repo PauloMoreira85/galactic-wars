@@ -59,6 +59,8 @@ export function Aliancas() {
         {error && <div className="error" style={{ marginTop: 8 }}>{error}</div>}
       </div>
 
+      <MuralOrdens a={a} act={act} />
+
       {a.canInvite && (
         <div className="panel">
           <h2>Convidar jogador</h2>
@@ -72,29 +74,36 @@ export function Aliancas() {
         </div>
       )}
 
-      {(a.myRole === "dc" || a.myRole === "ac") && <PainelMovimentacao />}
+      {(a.myRole === "dc" || a.myRole === "ac" || a.myRole === "lider" || a.myRole === "alto_comando") && <PainelMovimentacao />}
 
       <div className="panel">
         <h2>Membros</h2>
         <table>
-          <thead><tr><th>Comandante</th><th>Planeta</th><th>Coord.</th><th>Cargo</th>{a.isLeader && <th>Ações</th>}</tr></thead>
+          <thead><tr><th>Comandante</th><th>Planeta</th><th>Coord.</th><th>Cargo</th>{a.canManage && <th>Ações</th>}</tr></thead>
           <tbody>
-            {a.members!.map((m) => (
-              <tr key={m.planetId}>
-                <td>{m.commander}</td>
-                <td>{m.name}</td>
-                <td><CoordLink c={m.coords} /></td>
-                <td>
-                  {a.isLeader && m.role !== "lider" ? (
-                    <select value={m.role} onChange={(e) => act(() => api.allianceRole(m.planetId, e.target.value))}
-                      style={{ background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "2px 6px" }}>
-                      {ALLIANCE_ROLES.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
-                    </select>
-                  ) : <b>{ROLE_LABEL[m.role] ?? m.role}</b>}
-                </td>
-                {a.isLeader && <td>{m.role !== "lider" && <button onClick={() => act(() => api.allianceKick(m.planetId))}>expulsar</button>}</td>}
-              </tr>
-            ))}
+            {a.members!.map((m) => {
+              // Cargos que ESTE usuário pode atribuir a este membro.
+              // TL: todos. HC: só os operacionais (não TL/HC) e só em quem não é TL/HC.
+              const targetLocked = m.role === "lider" || (!a.isLeader && m.role === "alto_comando");
+              const assignable = a.isLeader ? ALLIANCE_ROLES : ALLIANCE_ROLES.filter((r) => r !== "lider" && r !== "alto_comando");
+              const canKick = a.canManage && !targetLocked && m.role !== "lider" && (a.isLeader || m.role !== "alto_comando");
+              return (
+                <tr key={m.planetId}>
+                  <td>{m.commander}</td>
+                  <td>{m.name}</td>
+                  <td><CoordLink c={m.coords} /></td>
+                  <td>
+                    {a.canManage && !targetLocked ? (
+                      <select value={m.role} onChange={(e) => act(() => api.allianceRole(m.planetId, e.target.value))}
+                        style={{ background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "2px 6px" }}>
+                        {assignable.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
+                      </select>
+                    ) : <b>{ROLE_LABEL[m.role] ?? m.role}</b>}
+                  </td>
+                  {a.canManage && <td>{canKick && <button onClick={() => act(() => api.allianceKick(m.planetId))}>expulsar</button>}</td>}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -102,7 +111,40 @@ export function Aliancas() {
   );
 }
 
-// Painel de Comando — movimentação da aliança (só DC/CA veem). Atualiza sozinho.
+// Mural de ordens da tag: recado do TL/HC visível a todos; só TL/HC edita.
+function MuralOrdens({ a, act }: { a: AllianceView; act: (fn: () => Promise<AllianceView>) => Promise<void> }) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(a.orders ?? "");
+  const when = a.ordersAt ? new Date(a.ordersAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : null;
+  return (
+    <div className="panel" style={{ borderColor: "var(--accent)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h2>📣 Ordens da Tag</h2>
+        {a.canManage && !editing && <button className="link" onClick={() => { setText(a.orders ?? ""); setEditing(true); }}>editar</button>}
+      </div>
+      {editing ? (
+        <div>
+          <textarea value={text} onChange={(e) => setText(e.target.value)} maxLength={500} rows={3}
+            placeholder="Ex: Alvo da semana: galáxia 4. Defender 3:2:1 às 20h. Juntar frota pra MASS sexta."
+            style={{ width: "100%", margin: "6px 0", resize: "vertical", fontFamily: "inherit" }} />
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={() => act(async () => { const r = await api.allianceOrders(text); setEditing(false); return r; })}>salvar</button>
+            <button className="link" onClick={() => setEditing(false)}>cancelar</button>
+          </div>
+        </div>
+      ) : a.orders ? (
+        <>
+          <div style={{ whiteSpace: "pre-wrap", margin: "6px 0", fontSize: 15 }}>{a.orders}</div>
+          {when && <div className="roid-count" style={{ fontSize: 11 }}>— {a.ordersBy ?? "?"} · {when}</div>}
+        </>
+      ) : (
+        <div className="roid-count">Sem ordens no momento.{a.canManage && " Clique em editar pra definir."}</div>
+      )}
+    </div>
+  );
+}
+
+// Painel de Comando — movimentação da aliança (DC/AC/TL/HC veem). Atualiza sozinho.
 function PainelMovimentacao() {
   const [data, setData] = useState<Awaited<ReturnType<typeof api.allianceFleets>> | null>(null);
   const [err, setErr] = useState("");
@@ -115,7 +157,7 @@ function PainelMovimentacao() {
     <div className="panel" style={{ borderColor: "var(--accent)" }}>
       <h2>🎯 Painel de Comando {isAC ? "— Ataque (AC)" : "— Defesa (DC)"}</h2>
       <div className="cost" style={{ marginBottom: 10 }}>
-        Movimentação da aliança — visível só pra <b>DC</b> e <b>AC</b>. Reporte-se ao Alto Comando e organize {isAC ? "as waves de ataque" : "a defesa dos aliados"}.
+        Movimentação da aliança — visível ao comando (<b>DC</b>, <b>AC</b>, <b>HC</b> e <b>TL</b>). Organize {isAC ? "as waves de ataque" : "a defesa dos aliados"} e reporte-se ao Alto Comando.
       </div>
       {err && <div className="error">{err}</div>}
 

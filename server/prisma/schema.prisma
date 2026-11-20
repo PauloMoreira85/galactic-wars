@@ -216,6 +216,10 @@ model Alliance {
   name      String   @unique
   tag       String   @unique
   createdAt DateTime @default(now())
+  // Mural de ordens (recado fixo que TL/HC definem e todos os membros veem).
+  orders     String?  // texto da ordem atual
+  ordersBy   String?  // nome de quem escreveu
+  ordersAt   DateTime? // quando foi atualizado
   members   AllianceMember[]
   invites   AllianceInvite[]
 }

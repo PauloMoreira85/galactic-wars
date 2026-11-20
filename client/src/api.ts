@@ -183,7 +183,8 @@ export interface AllianceView {
   inAlliance: boolean;
   invites?: { allianceId: string; name: string; tag: string }[];
   id?: string; name?: string; tag?: string;
-  myRole?: string; canInvite?: boolean; isLeader?: boolean;
+  myRole?: string; canInvite?: boolean; isLeader?: boolean; canManage?: boolean;
+  orders?: string | null; ordersBy?: string | null; ordersAt?: string | null;
   members?: AllianceMemberView[];
   pending?: { planetId: string; name: string; commander: string }[];
 }
@@ -347,6 +348,8 @@ export const api = {
   allianceLeave: () => request<AllianceView>("/game/alliance/leave", { method: "POST" }),
   allianceKick: (planetId: string) =>
     request<AllianceView>("/game/alliance/kick", { method: "POST", body: JSON.stringify({ planetId }) }),
+  allianceOrders: (text: string) =>
+    request<AllianceView>("/game/alliance/orders", { method: "POST", body: JSON.stringify({ text }) }),
   allianceRole: (planetId: string, role: string) =>
     request<AllianceView>("/game/alliance/role", { method: "POST", body: JSON.stringify({ planetId, role }) }),
 
