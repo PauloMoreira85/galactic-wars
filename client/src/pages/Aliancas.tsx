@@ -62,7 +62,7 @@ export function Aliancas() {
           <h2>{a.name} <span className="roid-count">[{a.tag}]</span></h2>
           <button className="link" onClick={() => act(() => api.allianceLeave())}>sair da aliança</button>
         </div>
-        <div className="cost">Seu cargo: <span>{ROLE_LABEL[a.myRole!] ?? a.myRole}</span> · {a.members!.length}/60 membros</div>
+        <div className="cost">Seu cargo: <span>{ROLE_LABEL[a.myRole!] ?? a.myRole}</span> · {a.members!.length}/{a.maxMembers ?? 18} membros</div>
         {error && <div className="error" style={{ marginTop: 8 }}>{error}</div>}
       </div>
 

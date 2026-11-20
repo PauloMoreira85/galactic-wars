@@ -182,7 +182,7 @@ export interface AllianceMemberView { planetId: string; role: string; name: stri
 export interface AllianceView {
   inAlliance: boolean;
   invites?: { allianceId: string; name: string; tag: string }[];
-  id?: string; name?: string; tag?: string;
+  id?: string; name?: string; tag?: string; maxMembers?: number;
   myRole?: string; canInvite?: boolean; isLeader?: boolean; canManage?: boolean;
   orders?: string | null; ordersBy?: string | null; ordersAt?: string | null;
   members?: AllianceMemberView[];

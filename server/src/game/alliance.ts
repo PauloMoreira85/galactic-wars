@@ -2,7 +2,8 @@ import { prisma } from "../db.js";
 import { parseUnits, totalUnits } from "./unitmap.js";
 import { botAttackMessage } from "./chat.js";
 
-export const MAX_MEMBERS = 60;
+// 18 = até 3 galáxias (6 planetas cada). Equilibra o tamanho das tags.
+export const MAX_MEMBERS = 18;
 // dc = Defense Commander · ac = Attack Commander (ambos veem a movimentação).
 export const ROLES = ["lider", "alto_comando", "dc", "ac", "scanner", "porta_voz", "recruta"];
 export const ROLE_LABEL: Record<string, string> = {
@@ -128,7 +129,7 @@ export async function allianceView(planetId: string) {
 
   return {
     inAlliance: true,
-    id: alliance!.id, name: alliance!.name, tag: alliance!.tag,
+    id: alliance!.id, name: alliance!.name, tag: alliance!.tag, maxMembers: MAX_MEMBERS,
     myRole: mem.role,
     canInvite: canInvite(mem.role), isLeader: mem.role === "lider",
     // TL e HC gerenciam pessoal (cargos/expulsar); a UI aplica os limites por cargo.
