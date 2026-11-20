@@ -565,7 +565,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                   <li><b>Minere roids</b> em <b>Recursos</b> (botão "⛏️ minerar …") — você paga pra abrir cada roid. Mais roids = mais recursos por tick.</li>
                   <li><b>Pesquise</b> (🔬) pra desbloquear e depois <b>construa</b> (🛠️). Em <b>Naves, Inteligência e Sabotagem</b> a cadeia é: pesquisa → construção → libera a próxima.</li>
                   <li>Construa <b>naves</b> (em Naves) e monte uma <b>frota</b> em <b>Frotas</b>, com as coordenadas do alvo.</li>
-                  <li>Você pode <b>atacar ou defender</b> de 1 a 3 ticks: na <b>sua galáxia</b> só dá pra <b>defender</b> (aliados); em <b>outras galáxias</b> dá pra <b>atacar e defender</b>. Seus <b>roiders</b> ativos roubam os roids do alvo.</li>
+                  <li>Você pode <b>atacar</b> por até 3 ticks ou <b>defender</b> por até 6: na <b>sua galáxia</b> só dá pra <b>defender</b> (aliados); em <b>outras galáxias</b> dá pra <b>atacar e defender</b>. Cada nave <b>roider</b> (⛏️) rouba <b>Qarm roids por tick</b> (ex.: Netuno 2/tick); o total por tick ainda é limitado por até <b>15% dos roids do alvo</b> (cai conforme sua frota fica maior que a defesa).</li>
                   <li><b>Inteligência</b>: treine agentes <b>P/M/T/D</b> pra espionar (gasta 1 por missão). Pra se defender, treine <b>Contra-Espionagem (CE)</b>: a disputa é <b>AE do atacante vs seu CE</b> — quanto mais CE acima do AE dele, menor a chance de ele passar (com o dobro de CE você bloqueia a grande maioria; nunca é 100%). Sabotagem tem <b>cooldown de 5 ticks</b> entre tentativas.</li>
                   <li><b>Sabotagem</b> prejudica o alvo (atrasa produção, rouba recurso/tecnologia…) — também é barrada pelo CE de quem você ataca.</li>
                   <li>Você tem <b>proteção de novato por 72 ticks</b> — ninguém te ataca. Cresça à vontade.</li>
@@ -792,7 +792,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             <div className="panel">
               <h2>Hangar — {view.race.name}</h2>
               <div className="cost">
-                ⚔️ tiros = nº de armas × dano · 🛡️ Fusel = quanto aguenta · alvos = classes que ela acerta · roiders só roubam roids.
+                ⚔️ tiros = nº de armas × dano · 🛡️ Fusel = quanto aguenta · alvos = classes que ela acerta · ⛏️ roiders roubam roids (cada uma rouba a qtd mostrada por tick de ataque).
               </div>
               <table>
                 <thead>
@@ -810,8 +810,8 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                         </div>
                       </td>
                       <td>{u.classeLabel}</td>
-                      <td className="roid-count">{u.roider ? "rouba roids" : u.alvos.join(", ") || "—"}</td>
-                      <td>{u.roider ? "—" : `${u.stats.qarm}×${u.stats.pfog}${u.tipo === "PEM" ? " PEM" : ""}`}</td>
+                      <td className="roid-count">{u.roider ? `rouba ${u.stats.qarm} roid${u.stats.qarm > 1 ? "s" : ""}/tick` : u.alvos.join(", ") || "—"}</td>
+                      <td>{u.roider ? <span className="roid-count" title="roiders não atiram — roubam roids">⛏️ {u.stats.qarm}/tick</span> : `${u.stats.qarm}×${u.stats.pfog}${u.tipo === "PEM" ? " PEM" : ""}`}</td>
                       <td>{u.stats.fusel}</td>
                       <td>{u.stats.ini}</td>
                       <td className="roid-count">{fmt(u.cost.metalium)}/{fmt(u.cost.carbonum)}/{fmt(u.cost.plutonium)}</td>

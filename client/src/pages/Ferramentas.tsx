@@ -92,13 +92,16 @@ function TabelaUnidades() {
                 <td><b>{u.name}</b>{u.roider && " ⛏️"}</td>
                 <td className="roid-count">{RACE_LABEL[u.race] ?? u.race}</td>
                 <td>{u.classe}</td>
-                <td className="roid-count">{u.roider ? "rouba roids" : u.alvos.join(", ") || "—"}</td>
-                <td>{u.ini}</td><td>{u.agi}</td><td>{u.varm}</td><td>{u.qarm}</td><td>{u.pfog}</td><td>{u.fusel}</td><td>{u.rp}</td>
+                <td className="roid-count">{u.roider ? `rouba ${u.qarm} roid${u.qarm > 1 ? "s" : ""}/tick` : u.alvos.join(", ") || "—"}</td>
+                <td>{u.ini}</td><td>{u.agi}</td><td>{u.varm}</td><td title={u.roider ? "roiders: Qarm = roids roubados por tick de ataque" : "tiros por tick"}>{u.qarm}</td><td>{u.pfog}</td><td>{u.fusel}</td><td>{u.rp}</td>
                 <td className="roid-count">{fmt(u.m)}</td><td className="roid-count">{fmt(u.c)}</td><td>{u.ticks}</td><td>{u.comb}</td><td>{u.tec}</td>
               </tr>
             ))}
           </tbody>
         </table>
+      </div>
+      <div className="cost" style={{ marginTop: 8, fontSize: 12 }}>
+        ⛏️ = nave <b>roider</b> (não atira, rouba roids). Pra elas, a coluna <b>Qarm</b> é quantos <b>roids ela rouba por tick</b> de ataque. Ex.: Qarm 2 = 2 roids/tick por nave.
       </div>
     </div>
   );
