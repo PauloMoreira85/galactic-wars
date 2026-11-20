@@ -292,10 +292,18 @@ export async function resolveSiege(target: { galaxy: number; system: number; slo
   const roids = { metalium: def.roidMetalium, carbonum: def.roidCarbonum, plutonium: def.roidPlutonium };
   const targetRoidsTotal = def.roidMetalium + def.roidCarbonum + def.roidPlutonium; // roids do alvo ANTES do saque
   const capacity = raidCapacity(st.aActive);
-  let room = capacity; const roundCap = { metalium: 0, carbonum: 0, plutonium: 0 };
-  for (const r of ["metalium", "carbonum", "plutonium"] as const) {
+  // Cota do tick = MENOR entre a capacidade das naves e `rate`×(total de roids do alvo).
+  // O limite é calculado no TOTAL (não por recurso) pra bater com o que a UI mostra;
+  // depois a cota é repartida entre os recursos proporcional ao que o alvo tem, sem
+  // perder roids pro arredondamento (o floor por-recurso antigo comia quase tudo).
+  const tickCap = Math.floor(targetRoidsTotal * st.rate);
+  let room = Math.min(capacity, tickCap);
+  const roundCap = { metalium: 0, carbonum: 0, plutonium: 0 };
+  // Rouba recurso a recurso até esgotar a cota; começa pelo que o alvo tem mais.
+  const order = (["metalium", "carbonum", "plutonium"] as const).slice().sort((a, b) => roids[b] - roids[a]);
+  for (const r of order) {
     if (room <= 0) break;
-    const take = Math.min(room, Math.floor(roids[r] * st.rate));
+    const take = Math.min(room, roids[r]);
     if (take > 0) { roids[r] -= take; room -= take; roundCap[r] += take; }
   }
 
