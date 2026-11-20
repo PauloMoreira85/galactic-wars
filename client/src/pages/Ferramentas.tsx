@@ -150,6 +150,10 @@ function Calculadora() {
   const [hash, setHash] = useState("");
   const [hashBusy, setHashBusy] = useState(false);
   const [hashMsg, setHashMsg] = useState("");
+  // Fontes de naves do relatório carregado: base + cada frota (agente Duplo) ou
+  // a frota total (agente Militar). Cada uma pode ir pro Ataque ou pra Defesa.
+  const [hashInfo, setHashInfo] = useState<{ targetName: string; targetCoords: string; race?: string } | null>(null);
+  const [hashSources, setHashSources] = useState<{ label: string; detail?: string; units: Record<string, number>; total: number }[]>([]);
 
   useEffect(() => { api.toolUnits().then((d) => setUnits(d.units)).catch(() => {}); }, []);
   const races = Array.from(new Set(units.map((u) => u.race)));
@@ -171,39 +175,53 @@ function Calculadora() {
     finally { setBusy(false); }
   }
 
-  // Extrai { nave: qtd } das naves de um relatório de espionagem (base + frotas).
-  function shipsFromIntel(intel: any): Record<string, number> {
+  const totalOf = (m: Record<string, number>) => Object.values(m).reduce((a, b) => a + b, 0);
+  const cleanUnits = (o: any): Record<string, number> => {
     const out: Record<string, number> = {};
-    const add = (name: string, n: number) => { if (name && n > 0) out[name] = (out[name] || 0) + n; };
-    // Visão com naves por nome (agente militar/duplo): intel.ships = [{name,count}]
-    if (Array.isArray(intel?.ships)) for (const s of intel.ships) add(s.name, Number(s.count) || 0);
-    // intel.base = { nave: qtd } (naves que ficaram na base)
-    if (intel?.base && typeof intel.base === "object") for (const [n, q] of Object.entries(intel.base)) add(n, Number(q) || 0);
-    // intel.fleets = [{ units: {nave:qtd} }] — soma naves em frotas também
-    if (Array.isArray(intel?.fleets)) for (const f of intel.fleets) if (f?.units) for (const [n, q] of Object.entries(f.units)) add(n, Number(q) || 0);
+    if (o && typeof o === "object") for (const [n, q] of Object.entries(o)) { const v = Number(q) || 0; if (v > 0) out[n] = v; }
     return out;
-  }
+  };
 
-  // Busca a espionagem pelo hash e joga as naves no lado escolhido (AM=ataque / AD=defesa).
-  async function importHash(side: "a" | "d") {
+  // Carrega o relatório pelo hash e lista as FONTES de naves (base + cada frota).
+  // O jogador escolhe DEPOIS qual fonte entra, e se vai pro ataque ou pra defesa.
+  async function loadHash() {
     const h = hash.trim().toUpperCase();
     if (!h) return;
-    setHashBusy(true); setHashMsg(""); setErr("");
+    setHashBusy(true); setHashMsg(""); setErr(""); setHashSources([]); setHashInfo(null);
     try {
       const r = await api.spyLookup(h);
-      const ships = shipsFromIntel(r.intel);
-      const total = Object.values(ships).reduce((a, b) => a + b, 0);
-      if (total === 0) {
+      const intel = r.intel ?? {};
+      const sources: { label: string; detail?: string; units: Record<string, number>; total: number }[] = [];
+      // Agente Militar (M): só o total de naves do alvo (sem separar por frota).
+      if (Array.isArray(intel.ships)) {
+        const u: Record<string, number> = {};
+        for (const s of intel.ships) { const v = Number(s.count) || 0; if (v > 0) u[s.name] = (u[s.name] || 0) + v; }
+        if (totalOf(u) > 0) sources.push({ label: "Frota total do alvo", detail: "visão Militar (M)", units: u, total: totalOf(u) });
+      }
+      // Agente Duplo (D): base + cada frota em movimento, separadas.
+      if (intel.base) { const u = cleanUnits(intel.base); if (totalOf(u) > 0) sources.push({ label: "Naves na base", units: u, total: totalOf(u) }); }
+      if (Array.isArray(intel.fleets)) for (const f of intel.fleets) {
+        const u = cleanUnits(f?.units); if (totalOf(u) === 0) continue;
+        const det = [f.status, f.target && f.target !== "—" ? `→ ${f.target}` : "", f.ticksRemaining ? `${f.ticksRemaining}t` : ""].filter(Boolean).join(" · ");
+        sources.push({ label: f.name || "Frota", detail: det || undefined, units: u, total: totalOf(u) });
+      }
+      if (sources.length === 0) {
         setHashMsg("⚠️ Esse relatório não lista as naves do alvo. Use uma espionagem com agente Militar (M) ou Duplo (D), que revelam a frota.");
         return;
       }
-      if (side === "a") setAtk(ships); else setDef(ships);
-      // Alinha a aba de raça exibida com a do alvo (se reconhecida), pra facilitar conferir.
-      const tgtRace = r.intel?.race; if (tgtRace && races.includes(tgtRace)) setRace(tgtRace);
-      setHashMsg(`✅ ${fmt(total)} nave(s) de ${r.targetName} (${r.targetCoords}) importada(s) para ${side === "a" ? "ATAQUE (AM)" : "DEFESA (AD)"}.`);
+      setHashInfo({ targetName: r.targetName, targetCoords: r.targetCoords, race: intel.race });
+      setHashSources(sources);
+      // Alinha a aba de raça com a do alvo, pra facilitar conferir.
+      if (intel.race && races.includes(intel.race)) setRace(intel.race);
     } catch (e: any) {
       setHashMsg(`❌ ${e.message ?? "Código não encontrado"}`);
     } finally { setHashBusy(false); }
+  }
+
+  // Joga uma fonte escolhida no lado escolhido (substitui o lado).
+  function applySource(units: Record<string, number>, side: "a" | "d") {
+    if (side === "a") setAtk({ ...units }); else setDef({ ...units });
+    setHashMsg(`✅ ${fmt(totalOf(units))} nave(s) → ${side === "a" ? "ATAQUE ⚔️" : "DEFESA 🛡️"}.`);
   }
 
   const VERDICT: Record<SimResult["winner"], string> = {
@@ -233,14 +251,35 @@ function Calculadora() {
       {/* Importar frota de uma espionagem (evita digitar nave por nave). */}
       <div style={{ background: "rgba(37,211,255,0.06)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px", marginBottom: 12 }}>
         <div className="cost" style={{ marginBottom: 8 }}>
-          🛰️ <b>Importar de uma espionagem</b> — cole o <b>código (hash)</b> de um relatório <b>Militar (M)</b> ou <b>Duplo (D)</b> (os que mostram a frota) e preencha as naves automaticamente, sem digitar nave por nave.
+          🛰️ <b>Importar de uma espionagem</b> — cole o <b>código (hash)</b> de um relatório <b>Militar (M)</b> ou <b>Duplo (D)</b>, carregue e escolha qual frota entra no <b>ataque ⚔️</b> ou na <b>defesa 🛡️</b>.
         </div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-          <input value={hash} onChange={(e) => setHash(e.target.value.toUpperCase())} placeholder="código da espionagem (ex: A1B2C3)" maxLength={16}
-            style={{ width: 240, margin: 0, padding: "6px 8px" }} />
-          <button disabled={hashBusy || !hash.trim()} onClick={() => importHash("d")} title="Preenche a DEFESA com as naves do alvo">{hashBusy ? "..." : "→ Defesa (AD)"}</button>
-          <button disabled={hashBusy || !hash.trim()} onClick={() => importHash("a")} title="Preenche o ATAQUE com as naves do alvo">{hashBusy ? "..." : "→ Ataque (AM)"}</button>
+          <input value={hash} onChange={(e) => setHash(e.target.value.toUpperCase())} onKeyDown={(e) => { if (e.key === "Enter") loadHash(); }}
+            placeholder="código da espionagem (ex: A1B2C3)" maxLength={16} style={{ width: 240, margin: 0, padding: "6px 8px" }} />
+          <button disabled={hashBusy || !hash.trim()} onClick={loadHash}>{hashBusy ? "carregando…" : "carregar"}</button>
         </div>
+
+        {hashInfo && hashSources.length > 0 && (
+          <div style={{ marginTop: 10 }}>
+            <div className="roid-count" style={{ marginBottom: 6, fontSize: 12 }}>
+              Alvo: <b>{hashInfo.targetName}</b> (<CoordLink c={hashInfo.targetCoords} />){hashInfo.race ? ` · ${RACE_LABEL[hashInfo.race] ?? hashInfo.race}` : ""}
+              {hashSources.length > 1 && " — escolha qual frota importar:"}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {hashSources.map((s, i) => (
+                <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", background: "rgba(0,0,0,0.25)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
+                  <div style={{ flex: "1 1 220px", minWidth: 180 }}>
+                    <b>{s.label}</b> <span className="roid-count">· {fmt(s.total)} nave(s)</span>
+                    {s.detail && <span className="roid-count" style={{ fontSize: 11 }}> · {s.detail}</span>}
+                    <div className="roid-count" style={{ fontSize: 11, opacity: 0.8 }}>{Object.entries(s.units).map(([n, q]) => `${fmt(q)}× ${n}`).join(" · ")}</div>
+                  </div>
+                  <button onClick={() => applySource(s.units, "a")} title="Importar esta frota para o ATAQUE" style={{ padding: "4px 10px" }}>⚔️ Ataque</button>
+                  <button onClick={() => applySource(s.units, "d")} title="Importar esta frota para a DEFESA" style={{ padding: "4px 10px" }}>🛡️ Defesa</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {hashMsg && <div className="roid-count" style={{ marginTop: 6, fontSize: 12 }}>{hashMsg}</div>}
       </div>
 
