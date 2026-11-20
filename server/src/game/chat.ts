@@ -43,5 +43,17 @@ export async function resolveRoom(userId: string, logical: string): Promise<{ ke
     if (!mem) return null;
     return { key: `ali-${mem.allianceId}`, label: mem.alliance.tag };
   }
+  if (logical === "ataque") {
+    // Sala de ATAQUE da aliança (coordenação de alvos; o bot narra o Quadro).
+    const mem = await prisma.allianceMember.findUnique({ where: { planetId: planet.id }, include: { alliance: true } });
+    if (!mem) return null;
+    return { key: `aliatk-${mem.allianceId}`, label: `${mem.alliance.tag} · Ataque` };
+  }
   return null;
+}
+
+// Posta uma mensagem do BOT na sala de ataque de uma aliança (narração dos eventos
+// do Quadro de Ataque). Nome fixo "⚡ Comando" pra destacar do chat normal.
+export async function botAttackMessage(allianceId: string, body: string) {
+  await prisma.chatMessage.create({ data: { room: `aliatk-${allianceId}`, authorName: "⚡ Comando", body } });
 }

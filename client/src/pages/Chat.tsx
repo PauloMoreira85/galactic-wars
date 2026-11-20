@@ -14,6 +14,7 @@ const ROOMS: { key: string; label: string }[] = [
   { key: "universo", label: "🌌 Universal" },
   { key: "galaxia", label: "🪐 Galáxia" },
   { key: "alianca", label: "🤝 Aliança" },
+  { key: "ataque", label: "⚔️ Ataque" },
 ];
 
 // Renderiza o corpo da mensagem destacando menções (@Nome). Se um @ bate com

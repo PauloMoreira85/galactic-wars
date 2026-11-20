@@ -1,5 +1,6 @@
 import { prisma } from "../db.js";
 import { parseUnits, totalUnits } from "./unitmap.js";
+import { botAttackMessage } from "./chat.js";
 
 export const MAX_MEMBERS = 60;
 // dc = Defense Commander · ac = Attack Commander (ambos veem a movimentação).
@@ -190,6 +191,12 @@ async function requireAttackManager(planetId: string) {
   return mem;
 }
 
+// Nome do comandante de um planeta (pras narrações do bot).
+async function nameOfPlanet(planetId: string): Promise<string> {
+  const p = await prisma.planet.findUnique({ where: { id: planetId }, select: { user: { select: { username: true } } } });
+  return p?.user.username ?? "?";
+}
+
 // Trava/libera o quadro inteiro (mutar/desmutar a sala).
 export async function toggleAttackLock(planetId: string, locked: boolean) {
   const mem = await requireAttackManager(planetId);
@@ -198,6 +205,9 @@ export async function toggleAttackLock(planetId: string, locked: boolean) {
     update: { locked, updatedAt: new Date() },
     create: { allianceId: mem.allianceId, locked },
   });
+  await botAttackMessage(mem.allianceId, locked
+    ? "🔒 Quadro TRAVADO. Aguardem a liberação."
+    : "🔓 QUADRO LIBERADO! Peguem os alvos — digite !pego <coord> (ou clique em pegar).");
 }
 
 // Adiciona um alvo ao quadro.
@@ -210,6 +220,8 @@ export async function addAttackTarget(planetId: string, coord: string, note: str
     allianceId: mem.allianceId, galaxy: +m[1], system: +m[2], slot: +m[3],
     note: note.trim().slice(0, 120) || null, createdBy: planet?.user.username ?? "?",
   } });
+  const coordStr = `${+m[1]}:${+m[2]}:${+m[3]}`;
+  await botAttackMessage(mem.allianceId, `🎯 Novo alvo: ${coordStr}${note.trim() ? ` — ${note.trim()}` : ""}`);
 }
 
 export async function removeAttackTarget(planetId: string, targetId: string) {
@@ -227,17 +239,25 @@ export async function claimTarget(planetId: string, targetId: string) {
   const board = await prisma.attackBoard.findUnique({ where: { allianceId: mem.allianceId } });
   if (board?.locked ?? true) throw new Error("O quadro está travado — aguarde o comando liberar");
   // Transação: decide dono/parceiro de forma atômica (evita 2 "donos" no mesmo tick).
+  let becameOwner = false; let coordStr = "";
   await prisma.$transaction(async (tx) => {
     const t = await tx.attackTarget.findUnique({ where: { id: targetId } });
     if (!t || t.allianceId !== mem.allianceId) throw new Error("Alvo não é do seu quadro");
+    coordStr = `${t.galaxy}:${t.system}:${t.slot}`;
+    const already = await tx.attackClaim.findUnique({ where: { targetId_planetId: { targetId, planetId } } });
     if (!t.ownerPlanetId) {
-      // Primeiro a pegar = dono.
       await tx.attackTarget.update({ where: { id: targetId }, data: { ownerPlanetId: planetId } });
+      becameOwner = true;
     } else if (t.ownerPlanetId !== planetId && !t.shared) {
       throw new Error("Esse alvo já tem dono e está fechado — peça ao dono pra abrir pra MASS");
     }
-    await tx.attackClaim.upsert({ where: { targetId_planetId: { targetId, planetId } }, update: {}, create: { targetId, planetId } });
+    if (!already) await tx.attackClaim.create({ data: { targetId, planetId } });
+    else return; // já estava nele: não re-narra
   });
+  if (coordStr) {
+    const who = await nameOfPlanet(planetId);
+    await botAttackMessage(mem.allianceId, becameOwner ? `⚔️ ${who} pegou ${coordStr} (dono 👑)` : `👥 ${who} juntou-se ao MASS em ${coordStr}`);
+  }
 }
 
 // O DONO abre/fecha o alvo pra parceiros (MASS). Fechar não expulsa quem já entrou.
@@ -249,6 +269,8 @@ export async function setTargetShared(planetId: string, targetId: string, shared
   const isManager = mem && canManageAttack(mem.role);
   if (t.ownerPlanetId !== planetId && !isManager) throw new Error("Só o dono do alvo (ou o comando) pode abrir pra MASS");
   await prisma.attackTarget.update({ where: { id: targetId }, data: { shared } });
+  const coordStr = `${t.galaxy}:${t.system}:${t.slot}`;
+  await botAttackMessage(t.allianceId, shared ? `🟢 ${coordStr} aberto pra MASS — podem juntar!` : `🔴 ${coordStr} fechado pelo dono`);
 }
 
 // Membro larga um alvo que pegou. Se era o dono, passa a titularidade pro próximo
