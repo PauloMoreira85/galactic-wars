@@ -188,9 +188,9 @@ export interface AllianceView {
   pending?: { planetId: string; name: string; commander: string }[];
 }
 export const ROLE_LABEL: Record<string, string> = {
-  lider: "Líder", alto_comando: "Alto Comando", dc: "DC (Defesa)", ca: "CA (Ataque)", scanner: "Scanner", porta_voz: "Porta-Voz", recruta: "Recruta",
+  lider: "TL (Tag Leader)", alto_comando: "Alto Comando", dc: "DC (Defense Commander)", ac: "AC (Attack Commander)", scanner: "Scanner", porta_voz: "Porta-Voz", recruta: "Recruta",
 };
-export const ALLIANCE_ROLES = ["lider", "alto_comando", "dc", "ca", "scanner", "porta_voz", "recruta"];
+export const ALLIANCE_ROLES = ["lider", "alto_comando", "dc", "ac", "scanner", "porta_voz", "recruta"];
 
 export const api = {
   meta: () => request<{ tickIntervalSeconds: number; roundTicks: number; roundDurationMinutes: number; startTimes: string[]; dailySchedule?: boolean }>("/meta"),

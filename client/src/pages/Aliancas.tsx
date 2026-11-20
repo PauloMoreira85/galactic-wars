@@ -72,7 +72,7 @@ export function Aliancas() {
         </div>
       )}
 
-      {(a.myRole === "dc" || a.myRole === "ca") && <PainelMovimentacao />}
+      {(a.myRole === "dc" || a.myRole === "ac") && <PainelMovimentacao />}
 
       <div className="panel">
         <h2>Membros</h2>
@@ -109,13 +109,13 @@ function PainelMovimentacao() {
   async function load() { try { setData(await api.allianceFleets()); setErr(""); } catch (e: any) { setErr(e.message ?? "Sem acesso"); } }
   useEffect(() => { load(); const t = setInterval(load, REFRESH_MS); return () => clearInterval(t); }, []);
 
-  const isCA = data?.role === "ca";
-  // DC foca em defesa; CA foca em ataque. Ambos veem tudo, só muda a ordem/ênfase.
+  const isAC = data?.role === "ac";
+  // DC foca em defesa; AC foca em ataque. Ambos veem tudo, só muda a ordem/ênfase.
   return (
     <div className="panel" style={{ borderColor: "var(--accent)" }}>
-      <h2>🎯 Painel de Comando {isCA ? "— Ataque (CA)" : "— Defesa (DC)"}</h2>
+      <h2>🎯 Painel de Comando {isAC ? "— Ataque (AC)" : "— Defesa (DC)"}</h2>
       <div className="cost" style={{ marginBottom: 10 }}>
-        Movimentação da aliança — visível só pra <b>DC</b> e <b>CA</b>. Reporte-se ao Alto Comando e organize {isCA ? "as waves de ataque" : "a defesa dos aliados"}.
+        Movimentação da aliança — visível só pra <b>DC</b> e <b>AC</b>. Reporte-se ao Alto Comando e organize {isAC ? "as waves de ataque" : "a defesa dos aliados"}.
       </div>
       {err && <div className="error">{err}</div>}
 

@@ -2,14 +2,14 @@ import { prisma } from "../db.js";
 import { parseUnits, totalUnits } from "./unitmap.js";
 
 export const MAX_MEMBERS = 60;
-// dc = Defense Commander · ca = Comandante de Ataque (ambos veem a movimentação).
-export const ROLES = ["lider", "alto_comando", "dc", "ca", "scanner", "porta_voz", "recruta"];
+// dc = Defense Commander · ac = Attack Commander (ambos veem a movimentação).
+export const ROLES = ["lider", "alto_comando", "dc", "ac", "scanner", "porta_voz", "recruta"];
 export const ROLE_LABEL: Record<string, string> = {
-  lider: "Líder", alto_comando: "Alto Comando", dc: "DC (Defesa)", ca: "CA (Ataque)", scanner: "Scanner", porta_voz: "Porta-Voz", recruta: "Recruta",
+  lider: "TL (Tag Leader)", alto_comando: "Alto Comando", dc: "DC (Defense Commander)", ac: "AC (Attack Commander)", scanner: "Scanner", porta_voz: "Porta-Voz", recruta: "Recruta",
 };
 
-// Cargos que enxergam o painel de movimentação da aliança (DC e CA = os "olhos").
-export function canSeeFleets(role: string) { return role === "dc" || role === "ca"; }
+// Cargos que enxergam o painel de movimentação da aliança (DC e AC = os "olhos").
+export function canSeeFleets(role: string) { return role === "dc" || role === "ac"; }
 
 async function memberOf(planetId: string) {
   return prisma.allianceMember.findUnique({ where: { planetId } });
@@ -144,14 +144,14 @@ export async function allianceMateIds(planetId: string): Promise<string[]> {
   return mates.map((m) => m.planetId);
 }
 
-// ===== Painel de movimentação da aliança (só DC e CA) =====
+// ===== Painel de movimentação da aliança (só DC e AC) =====
 // Mostra: (1) frotas dos MEMBROS em movimento (defesas/ataques indo/voltando) e
-// (2) ataques INIMIGOS a caminho de qualquer membro. Permite ao DC/CA organizar
-// a defesa e aos CAs sincronizar waves — a informação fica restrita aos cargos.
+// (2) ataques INIMIGOS a caminho de qualquer membro. Permite ao DC/AC organizar
+// a defesa e aos ACs sincronizar waves — a informação fica restrita aos cargos.
 export async function allianceFleetsView(planetId: string) {
   const me = await prisma.allianceMember.findUnique({ where: { planetId } });
   if (!me) throw new Error("Voce nao esta em uma alianca");
-  if (!canSeeFleets(me.role)) throw new Error("Apenas DC e CA veem a movimentação da aliança");
+  if (!canSeeFleets(me.role)) throw new Error("Apenas DC e AC veem a movimentação da aliança");
 
   const members = await prisma.allianceMember.findMany({ where: { allianceId: me.allianceId }, select: { planetId: true } });
   const memberIds = members.map((m) => m.planetId);
