@@ -2,19 +2,20 @@ import { useEffect, useState, Fragment } from "react";
 import { api } from "../api";
 import { CoordLink } from "../components/CoordLink";
 import { IntelReport } from "../components/IntelReport";
+import { GLOSSARIO } from "../components/Termo";
 
 function fmt(n: number) {
   return n.toLocaleString("pt-BR");
 }
 
-type Tool = "universo" | "unidades" | "techtree" | "calculadora" | "sabocalc" | "procura" | "rankings" | "graficos" | "espionagem";
+type Tool = "universo" | "unidades" | "techtree" | "calculadora" | "sabocalc" | "procura" | "rankings" | "graficos" | "espionagem" | "glossario";
 
 const RACE_LABEL: Record<string, string> = {
   Humana: "Humanos", Daharan: "Daharan", Rakshasa: "Rakshasa", "c-Mech": "c-Mech", Insecta: "Insecta",
 };
 
 // Kit de Ferramentas — página separada com menu próprio (estilo toolkit do GW).
-const VALID_TOOLS = ["universo", "unidades", "techtree", "calculadora", "sabocalc", "procura", "rankings", "graficos", "espionagem"] as const;
+const VALID_TOOLS = ["universo", "unidades", "techtree", "calculadora", "sabocalc", "procura", "rankings", "graficos", "espionagem", "glossario"] as const;
 
 export function Ferramentas({ onClose }: { onClose: () => void }) {
   // Abre já numa ferramenta se veio por ?tool=... (ex: "Simular" da Galáxia).
@@ -36,6 +37,7 @@ export function Ferramentas({ onClose }: { onClose: () => void }) {
     { key: "rankings", label: "Rankings (Galáxias)" },
     { key: "graficos", label: "Gráficos Comparativos" },
     { key: "espionagem", label: "Visualizar Espionagem" },
+    { key: "glossario", label: "Glossário (siglas)" },
   ];
 
   return (
@@ -62,6 +64,7 @@ export function Ferramentas({ onClose }: { onClose: () => void }) {
         {tool === "rankings" && <RankingGalaxias />}
         {tool === "graficos" && <Graficos />}
         {tool === "espionagem" && <Espionagem />}
+        {tool === "glossario" && <Glossario />}
       </main>
     </div>
   );
@@ -639,5 +642,37 @@ function Espionagem() {
         )}
       </div>
     </>
+  );
+}
+
+// Glossário das siglas/jargões do jogo (consulta rápida pro novato).
+function Glossario() {
+  const GROUPS: { title: string; keys: string[] }[] = [
+    { title: "Inteligência & Sabotagem", keys: ["AE", "CE", "AC", "AM", "AD"] },
+    { title: "Combate & Frotas", keys: ["TEC", "PEM", "CMA", "roider"] },
+    { title: "Economia & Galáxia", keys: ["roid", "CG"] },
+  ];
+  return (
+    <div className="panel">
+      <h2>Glossário — siglas do jogo</h2>
+      <div className="cost" style={{ marginBottom: 12 }}>
+        As abreviações que mais confundem no começo. Elas também aparecem <b>sublinhadas</b> pelo jogo — passe o mouse pra ver a explicação.
+      </div>
+      {GROUPS.map((g) => (
+        <div key={g.title} style={{ marginBottom: 14 }}>
+          <div className="combat-ini" style={{ fontSize: 14, marginBottom: 6 }}>{g.title}</div>
+          <table>
+            <tbody>
+              {g.keys.filter((k) => GLOSSARIO[k]).map((k) => (
+                <tr key={k}>
+                  <td style={{ whiteSpace: "nowrap", verticalAlign: "top" }}><b>{k}</b></td>
+                  <td className="roid-count">{GLOSSARIO[k]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ))}
+    </div>
   );
 }
