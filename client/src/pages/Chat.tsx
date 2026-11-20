@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
+import { useEnterToSend } from "../hooks/useEnterToSend";
 
 type Msg = { id: string; author: string; body: string; at: string };
 function hhmm(s: string) { return new Date(s).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); }
@@ -42,8 +43,9 @@ export function Chat({ myName = "" }: { myName?: string }) {
   const [text, setText] = useState("");
   const [error, setError] = useState("");
   const boxRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const atBottom = useRef(true);
+  const [enterToSend, setEnterToSend] = useEnterToSend();
   const [loadingOld, setLoadingOld] = useState(false);
   const noMoreOld = useRef(false);
 
@@ -121,7 +123,7 @@ export function Chat({ myName = "" }: { myName?: string }) {
       <div
         ref={boxRef}
         onScroll={(e) => { const el = e.currentTarget; atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40; if (el.scrollTop < 60) loadOlder(); }}
-        style={{ height: 400, overflowY: "auto", background: "rgba(2,8,18,0.7)", border: "1px solid var(--border)", borderRadius: 6, padding: "10px 12px", fontFamily: "var(--mono)", fontSize: 13, lineHeight: 1.6 }}
+        style={{ height: 400, overflowY: "auto", background: "rgba(2,8,18,0.7)", border: "1px solid var(--border)", borderRadius: 6, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}
       >
         {!error && msgs.length > 0 && (
           <div className="roid-count" style={{ textAlign: "center", padding: "2px 0 6px", opacity: 0.6 }}>
@@ -131,24 +133,44 @@ export function Chat({ myName = "" }: { myName?: string }) {
         {error ? <div className="roid-count">{error}</div>
           : msgs.length === 0 ? <div className="roid-count">Sem mensagens nesta sala ainda. 👋</div>
           : msgs.map((m) => {
-            const citedMe = myName && new RegExp(`@${myName}\\b`, "i").test(m.body);
+            const mine = !!myName && m.author.toLowerCase() === myName.toLowerCase();
+            const citedMe = !mine && !!myName && new RegExp(`@${myName}\\b`, "i").test(m.body);
             return (
-              <div key={m.id} className="chat-line" style={citedMe ? { background: "rgba(255,176,32,0.08)", borderRadius: 4, padding: "1px 4px", margin: "0 -4px" } : undefined}>
-                <button title={`responder ${m.author}`} onClick={() => quote(m)}
-                  style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", padding: "0 4px 0 0", margin: 0, fontSize: 12 }}>↩</button>
-                <span style={{ color: "var(--muted)" }}>[{hhmm(m.at)}] </span>
-                <span onClick={() => mention(m.author)} title={`mencionar ${m.author}`} style={{ color: nickColor(m.author), fontWeight: 700, cursor: "pointer" }}>&lt;{m.author}&gt;</span>{" "}
-                <span style={{ color: "var(--text)" }}>{renderBody(m.body, myName, mention)}</span>
+              <div key={m.id} style={{ alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "82%" }}>
+                <div style={{
+                  background: mine ? "rgba(37,211,255,0.16)" : citedMe ? "rgba(255,176,32,0.12)" : "rgba(255,255,255,0.06)",
+                  border: `1px solid ${mine ? "var(--border-hi, var(--border))" : citedMe ? "rgba(255,176,32,0.4)" : "var(--border)"}`,
+                  borderRadius: 10, padding: "6px 11px", wordBreak: "break-word",
+                }}>
+                  {!mine && (
+                    <span onClick={() => mention(m.author)} title={`mencionar ${m.author}`}
+                      style={{ color: nickColor(m.author), fontWeight: 700, cursor: "pointer", fontSize: 12, display: "block", marginBottom: 1 }}>
+                      {m.author}
+                    </span>
+                  )}
+                  <span style={{ color: "var(--text)" }}>{renderBody(m.body, myName, mention)}</span>
+                </div>
+                <div style={{ display: "flex", gap: 8, justifyContent: mine ? "flex-end" : "flex-start", alignItems: "center", marginTop: 1 }}>
+                  <span className="roid-count" style={{ fontSize: 10 }}>{hhmm(m.at)}</span>
+                  {!mine && <button title={`responder ${m.author}`} onClick={() => quote(m)}
+                    style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", padding: 0, margin: 0, fontSize: 12 }}>↩ responder</button>}
+                </div>
               </div>
             );
           })}
       </div>
-      <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
-        <input ref={inputRef} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(); }}
-          placeholder={error ? "sala indisponível" : "digite e Enter para enviar..."} maxLength={400} disabled={!!error}
-          style={{ flex: 1, margin: 0 }} />
+      <div style={{ display: "flex", gap: 6, marginTop: 10, alignItems: "flex-end" }}>
+        <textarea ref={inputRef} value={text} onChange={(e) => setText(e.target.value)} rows={1}
+          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && enterToSend) { e.preventDefault(); send(); } }}
+          placeholder={error ? "sala indisponível" : enterToSend ? "mensagem... (Enter envia, Shift+Enter quebra linha)" : "mensagem... (Shift+Enter quebra linha)"}
+          maxLength={400} disabled={!!error}
+          style={{ flex: 1, margin: 0, resize: "none", minHeight: 38, maxHeight: 120, fontFamily: "inherit" }} />
         <button onClick={send} disabled={!!error}>enviar</button>
       </div>
+      <label style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8, fontSize: 12, color: "var(--muted)", cursor: "pointer", userSelect: "none" }}>
+        <input type="checkbox" checked={enterToSend} onChange={(e) => setEnterToSend(e.target.checked)} style={{ margin: 0, width: "auto" }} />
+        Enviar com Enter
+      </label>
     </div>
   );
 }

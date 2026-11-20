@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api, REFRESH_MS } from "../api";
 import { CoordLink } from "../components/CoordLink";
+import { useEnterToSend } from "../hooks/useEnterToSend";
 
 function hhmm(s: string) { return new Date(s).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); }
 function when(s: string) { return new Date(s).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }); }
@@ -22,6 +23,7 @@ export function Mensagens({ initialTo }: { initialTo?: string }) {
   const [newMode, setNewMode] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
   const atBottom = useRef(true);
+  const [enterToSend, setEnterToSend] = useEnterToSend();
 
   async function loadConvs() { try { setConvs((await api.pmConversations()).conversations); } catch (e: any) { setError(e.message ?? "Falha"); } }
   async function loadMsgs(otherId: string) {
@@ -129,12 +131,18 @@ export function Mensagens({ initialTo }: { initialTo?: string }) {
                     ))}
                 </div>
               )}
-              <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
-                <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-                  placeholder={newMode ? "escreva a mensagem..." : "mensagem... (Enter envia)"} maxLength={1000} disabled={busy || (newMode && !newTo.trim())}
-                  style={{ flex: 1, margin: 0 }} />
+              <div style={{ display: "flex", gap: 6, marginTop: 10, alignItems: "flex-end" }}>
+                <textarea value={text} onChange={(e) => setText(e.target.value)} rows={1}
+                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && enterToSend) { e.preventDefault(); send(); } }}
+                  placeholder={newMode ? "escreva a mensagem..." : enterToSend ? "mensagem... (Enter envia, Shift+Enter quebra linha)" : "mensagem... (Shift+Enter quebra linha)"}
+                  maxLength={1000} disabled={busy || (newMode && !newTo.trim())}
+                  style={{ flex: 1, margin: 0, resize: "none", minHeight: 38, maxHeight: 120, fontFamily: "inherit" }} />
                 <button onClick={send} disabled={busy || !text.trim() || (newMode && !newTo.trim())}>{busy ? "..." : "enviar"}</button>
               </div>
+              <label style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8, fontSize: 12, color: "var(--muted)", cursor: "pointer", userSelect: "none" }}>
+                <input type="checkbox" checked={enterToSend} onChange={(e) => setEnterToSend(e.target.checked)} style={{ margin: 0, width: "auto" }} />
+                Enviar com Enter
+              </label>
             </>
           )}
           {error && <div className="error" style={{ marginTop: 8 }}>{error}</div>}
