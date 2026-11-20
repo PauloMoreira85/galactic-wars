@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, REFRESH_MS } from "../api";
+import { linkifyCoords } from "../components/CoordLink";
 
 export function Noticias() {
   const [news, setNews] = useState<{ tick: number; message: string }[]>([]);
@@ -16,7 +17,7 @@ export function Noticias() {
           <thead><tr><th>Tick</th><th>Evento</th></tr></thead>
           <tbody>
             {news.map((n, i) => (
-              <tr key={i}><td className="rank-num">#{n.tick}</td><td>{n.message}</td></tr>
+              <tr key={i}><td className="rank-num">#{n.tick}</td><td>{linkifyCoords(n.message)}</td></tr>
             ))}
           </tbody>
         </table>
