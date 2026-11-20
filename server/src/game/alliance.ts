@@ -122,3 +122,19 @@ export async function allianceTags(planetIds: string[]): Promise<Record<string, 
   for (const m of mems) out[m.planetId] = m.alliance.tag;
   return out;
 }
+
+// Os dois planetas estão na MESMA aliança? (proteção: aliados não se atacam.)
+export async function sameAlliance(planetA: string, planetB: string): Promise<boolean> {
+  if (planetA === planetB) return false;
+  const mems = await prisma.allianceMember.findMany({ where: { planetId: { in: [planetA, planetB] } }, select: { planetId: true, allianceId: true } });
+  if (mems.length < 2) return false;
+  return mems[0].allianceId === mems[1].allianceId;
+}
+
+// IDs dos OUTROS membros da aliança de um planeta (pra avisar sobre ataque a aliado).
+export async function allianceMateIds(planetId: string): Promise<string[]> {
+  const me = await prisma.allianceMember.findUnique({ where: { planetId } });
+  if (!me) return [];
+  const mates = await prisma.allianceMember.findMany({ where: { allianceId: me.allianceId, NOT: { planetId } }, select: { planetId: true } });
+  return mates.map((m) => m.planetId);
+}

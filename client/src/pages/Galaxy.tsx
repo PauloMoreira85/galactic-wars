@@ -139,11 +139,15 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
   }
   const agentsIHave = data?.agents ?? { P: false, M: false, T: false, D: false };
 
-  // Alcance de ataque: 🟢 pode atacar / 🔴 não pode (mesma galáxia, proteção ou fora de range).
+  // Minha tag de aliança (pra marcar aliados de aliança em outras galáxias).
+  const myAllianceTag = data?.slots?.find((x: any) => `${galaxy}:${system}:${x.slot}` === myCoords)?.allianceTag ?? null;
+
+  // Alcance de ataque: 🟢 pode atacar / 🔴 não pode (mesma galáxia, aliança, proteção ou fora de range).
   const myScore = view.planet.score;
   function attackRange(sl: any): { ok: boolean; why: string } | null {
     if (`${galaxy}:${system}:${sl.slot}` === myCoords) return null; // é você
     if (sameGalaxy) return { ok: false, why: "Mesma galáxia (aliado) — só defesa" };
+    if (myAllianceTag && sl.allianceTag === myAllianceTag) return { ok: false, why: `Mesma aliança [${myAllianceTag}] — aliados não se atacam` };
     if (sl.protected) return { ok: false, why: "Sob proteção de novato" };
     if ((view.game?.tickNumber ?? 0) < 72) return { ok: false, why: "Proteção inicial do jogo (tick < 72)" };
     if (myScore > 0 && (sl.score ?? 0) < (myScore * 50) / 100) return { ok: false, why: "Fora de alcance (alvo < 50% da sua pontuação)" };

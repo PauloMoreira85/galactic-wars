@@ -7,7 +7,7 @@ import { travelTime } from "./travel.js";
 import { travelReductionTicks } from "./tech.js";
 import { unitByName, radarVisibleCount } from "./catalog.js";
 import { planetScore } from "./score.js";
-import { allianceTags } from "./alliance.js";
+import { allianceTags, sameAlliance, allianceMateIds } from "./alliance.js";
 import { hasActiveTreaty } from "./governance.js";
 import { nextFleetSlotCost, NEWBIE_PROTECTION_TICKS, ATTACK_RANGE_MIN_PCT, SLOTS_PER_SYSTEM } from "./constants.js";
 
@@ -176,6 +176,10 @@ export async function dispatchFleet(planetId: string, fleetId: string, target: C
       });
       // Slot vazio: não há planeta pra atacar.
       if (!tgt) throw new Error(`Coordenada ${target.galaxy}:${target.system}:${target.slot} está vazia — não há planeta nesse slot para atacar.`);
+      // Proteção de aliança: membros da mesma aliança não podem se atacar.
+      if (await sameAlliance(planetId, tgt.id)) {
+        throw new Error("Esse planeta é da sua aliança — aliados não se atacam.");
+      }
       if (nowTick < tgt.createdTick + NEWBIE_PROTECTION_TICKS) {
         const left = tgt.createdTick + NEWBIE_PROTECTION_TICKS - nowTick;
         throw new Error(`Alvo sob proteção de novato (${left} tick(s) restante(s))`);
@@ -222,6 +226,13 @@ export async function dispatchFleet(planetId: string, fleetId: string, target: C
         if (visible > 0) {
           await tx.news.create({ data: { planetId: tgtP.id, tick, message: `🚨 ATAQUE! ${planet.name} está te atacando com ${visible} nave(s) — chega em ${tt} tick(s)!` } });
           pushMsg = { userId: tgtP.userId, title: "🚨 ATAQUE a caminho!", body: `${planet.name} está te atacando com ${visible} nave(s) — chega em ${tt} tick(s)!`, tag: "ataque" };
+          // Avisa os aliados do ALVO pra correrem defender (mesmo radar: se não é
+          // visível, nem o aliado fica sabendo).
+          const mates = await allianceMateIds(tgtP.id);
+          if (mates.length) {
+            const coord = `${target.galaxy}:${target.system}:${target.slot}`;
+            await tx.news.createMany({ data: mates.map((pid) => ({ planetId: pid, tick, message: `🛡️ Aliado sob ataque! ${planet.name} está atacando o aliado em ${coord} — chega em ${tt}t. Mande defesa!` })) });
+          }
         }
       } else {
         await tx.news.create({ data: { planetId: tgtP.id, tick, message: `🛡️ Reforço a caminho: ${planet.name} mandou ${totalUnits(fleetUnits)} nave(s) pra te defender — chega em ${tt} tick(s).` } });
