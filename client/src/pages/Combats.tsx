@@ -187,7 +187,7 @@ export function Combats() {
         <div style={{ overflowX: "auto" }}>
         <table>
           <thead>
-            <tr><th>Tick</th><th>Papel</th><th>Oponente</th><th>Coord.</th><th>Perdi</th><th>Inimigo perdeu</th><th>Captura (M/C/P)</th><th></th></tr>
+            <tr><th>Tick</th><th>Papel</th><th>Oponente</th><th className="hide-sm">Coord.</th><th>Perdi</th><th className="hide-sm">Inimigo perdeu</th><th className="hide-sm">Captura (M/C/P)</th><th></th></tr>
           </thead>
           <tbody>
             {list.map((c) => {
@@ -205,10 +205,10 @@ export function Combats() {
                 }</td>
                 <td>{c.opponent}</td>
                 {/* stopPropagation: clicar na coord navega, não abre o relatório */}
-                <td onClick={(e) => e.stopPropagation()}><CoordLink c={c.opponentCoords} /></td>
+                <td className="hide-sm" onClick={(e) => e.stopPropagation()}><CoordLink c={c.opponentCoords} /></td>
                 <td style={{ color: c.myLost > 0 ? "var(--danger)" : undefined }}>{fmt(c.myLost)}</td>
-                <td style={{ color: c.oppLost > 0 ? "var(--carbonum)" : undefined }}>{fmt(c.oppLost)}</td>
-                <td className="roid-count">{fmt(c.captured.metalium)}/{fmt(c.captured.carbonum)}/{fmt(c.captured.plutonium)}</td>
+                <td className="hide-sm" style={{ color: c.oppLost > 0 ? "var(--carbonum)" : undefined }}>{fmt(c.oppLost)}</td>
+                <td className="hide-sm roid-count">{fmt(c.captured.metalium)}/{fmt(c.captured.carbonum)}/{fmt(c.captured.plutonium)}</td>
                 <td>{canOpen ? <button onClick={(e) => { e.stopPropagation(); open(c.id); }}>ver</button> : <span className="roid-count">—</span>}</td>
               </tr>
               );

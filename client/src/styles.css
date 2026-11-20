@@ -278,6 +278,9 @@ body::after {
 .discord-btn small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
 
 @media (max-width: 640px) {
+  /* Esconde colunas secundárias de tabela no celular (ex: Combates), pra
+     caber tudo sem rolar pro lado — inclusive o botão de ação. */
+  .hide-sm { display: none !important; }
   .race-show, .race-show.flip { flex-direction: column; }
   .race-show-char, .race-show-char img, .race-show-char video { width: 100%; }
   .race-show-char img, .race-show-char video { height: 360px; }
