@@ -252,7 +252,7 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
             <input type="text" inputMode="numeric" maxLength={3} placeholder="slot" title="Slot" value={dSlot} onChange={(e) => setDSlot(e.target.value.replace(/\D/g, ""))} style={{ width: 60, margin: 0, padding: "6px 6px", textAlign: "center" }} />
             <select
               value={dFake ? `${dMission}_fake` : dMission}
-              onChange={(e) => { const v = e.target.value; setDFake(v.endsWith("_fake")); setDMission(v.replace("_fake", "") as "attack" | "transport"); }}
+              onChange={(e) => { const v = e.target.value; const m = v.replace("_fake", "") as "attack" | "transport"; setDFake(v.endsWith("_fake")); setDMission(m); setDTicks((t) => Math.min(t, m === "transport" ? 6 : 3)); }}
               title="Falso = a frota vai até a órbita e volta SEM engajar (finta, pra enganar o inimigo)"
               style={{ width: "auto", margin: 0, background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
               <option value="attack">⚔️ Atacar</option>
@@ -262,9 +262,10 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
             </select>
             {!dFake && (
               <select value={dTicks} onChange={(e) => setDTicks(Number(e.target.value))} title={dMission === "attack" ? "ticks de combate" : "ticks de defesa"} style={{ width: "auto", margin: 0, background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
-                <option value={1}>{dMission === "attack" ? "atacar" : "defender"} 1 tick</option>
-                <option value={2}>{dMission === "attack" ? "atacar" : "defender"} 2 ticks</option>
-                <option value={3}>{dMission === "attack" ? "atacar" : "defender"} 3 ticks</option>
+                {/* ataque: máx 3 ticks · defesa: máx 6 */}
+                {Array.from({ length: dMission === "transport" ? 6 : 3 }, (_, i) => i + 1).map((n) => (
+                  <option key={n} value={n}>{dMission === "attack" ? "atacar" : "defender"} {n} tick{n > 1 ? "s" : ""}</option>
+                ))}
               </select>
             )}
             <select value={dFleet} onChange={(e) => setDFleet(e.target.value)} style={{ width: "auto", margin: 0, background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>

@@ -135,7 +135,9 @@ export async function transferUnits(planetId: string, fromId: string, toId: stri
 
 // Envia uma frota IDLE (já carregada) para um destino.
 export async function dispatchFleet(planetId: string, fleetId: string, target: Coords, mission: "attack" | "transport", ticks = 3, fake = false) {
-  const engageTicks = Math.max(1, Math.min(3, Math.floor(ticks)));
+  // Ataque engaja no máx. 3 ticks; defesa (transport) pode guarnecer até 6 ticks.
+  const maxTicks = mission === "transport" ? 6 : 3;
+  const engageTicks = Math.max(1, Math.min(maxTicks, Math.floor(ticks)));
   const result = await withWrite(() => prisma.$transaction(async (tx) => {
     const planet = await tx.planet.findUnique({ where: { id: planetId } });
     if (!planet) throw new Error("Planeta nao encontrado");

@@ -26,6 +26,7 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
   const [busy, setBusy] = useState(false);
   const [spy, setSpy] = useState<any | null>(null);
   const [atkTicks, setAtkTicks] = useState(3);
+  const [fake, setFake] = useState(false);
 
   // Frotas prontas na base (carregadas) que podem ser enviadas.
   const idleFleets = fleets.filter((f) => f.idle && f.totalShips > 0);
@@ -88,7 +89,7 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
     setBusy(true);
     setError("");
     try {
-      await api.dispatchFleet(fleetId, { galaxy, system, slot: target.slot, mission, ticks: atkTicks });
+      await api.dispatchFleet(fleetId, { galaxy, system, slot: target.slot, mission, ticks: atkTicks, fake });
       setTarget(null);
       await loadFleets();
       onChanged();
@@ -245,21 +246,35 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
             <span>Distância: <b>+{penalty ?? "?"}</b> tick(s)</span>
             <span>· missão:</span>
             <select
-              value={mission}
-              onChange={(e) => setMission(e.target.value as any)}
+              value={fake ? `${mission}_fake` : mission}
+              onChange={(e) => {
+                const v = e.target.value;
+                const f = v.endsWith("_fake");
+                const m = v.replace("_fake", "") as "attack" | "transport";
+                setFake(f); setMission(m);
+                // ataque: máx 3 ticks · defesa: máx 6. Ajusta se passou do teto.
+                setAtkTicks((t) => Math.min(t, m === "transport" ? 6 : 3));
+              }}
               disabled={sameGalaxy}
+              title="Falso = a frota vai até a órbita e volta SEM engajar (finta, pra enganar o inimigo)"
               style={{ width: "auto", margin: 0, background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px" }}
             >
-              {!sameGalaxy && <option value="attack">Atacar</option>}
-              <option value="transport">Defender</option>
+              {!sameGalaxy && <option value="attack">⚔️ Atacar</option>}
+              <option value="transport">🛡️ Defender</option>
+              {!sameGalaxy && <option value="attack_fake">🎭 Ataque falso</option>}
+              <option value="transport_fake">🎭 Defesa falsa</option>
             </select>
-            <span>· {mission === "attack" ? "atacar" : "defender"} por:</span>
-            <select value={atkTicks} onChange={(e) => setAtkTicks(Number(e.target.value))}
-              style={{ width: "auto", margin: 0, background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px" }}>
-              <option value={1}>1 tick</option>
-              <option value={2}>2 ticks</option>
-              <option value={3}>3 ticks</option>
-            </select>
+            {!fake && (
+              <>
+                <span>· {mission === "attack" ? "atacar" : "defender"} por:</span>
+                <select value={atkTicks} onChange={(e) => setAtkTicks(Number(e.target.value))}
+                  style={{ width: "auto", margin: 0, background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px" }}>
+                  {Array.from({ length: mission === "transport" ? 6 : 3 }, (_, i) => i + 1).map((n) => (
+                    <option key={n} value={n}>{n} tick{n > 1 ? "s" : ""}</option>
+                  ))}
+                </select>
+              </>
+            )}
           </div>
           {sameGalaxy && (
             <div className="cost" style={{ color: "var(--carbonum)" }}>
