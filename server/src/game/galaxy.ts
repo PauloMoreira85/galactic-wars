@@ -7,7 +7,7 @@ import { travelTime } from "./travel.js";
 import { travelReductionTicks } from "./tech.js";
 import { unitByName, radarVisibleCount } from "./catalog.js";
 import { planetScore } from "./score.js";
-import { allianceTags, sameAlliance, allianceMateIds } from "./alliance.js";
+import { allianceTagsForViewer, sameAlliance, allianceMateIds } from "./alliance.js";
 import { hasActiveTreaty } from "./governance.js";
 import { nextFleetSlotCost, NEWBIE_PROTECTION_TICKS, ATTACK_RANGE_MIN_PCT, SLOTS_PER_SYSTEM } from "./constants.js";
 
@@ -393,7 +393,8 @@ export async function viewSystem(galaxy: number, system: number, viewer: { id: s
   const nowTick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
   const inSystem = all.filter((p) => p.galaxy === galaxy && p.system === system);
   const byslot = new Map(inSystem.map((p) => [p.slot, p]));
-  const tags = await allianceTags(inSystem.map((p) => p.id));
+  // Tag de aliança só aparece pros planetas da MESMA aliança do viewer.
+  const tags = await allianceTagsForViewer(inSystem.map((p) => p.id), viewer?.id ?? null);
 
   // Cargo de governo de cada planeta (para colorir o nome): cg/me/mg/md.
   const roleOf = (id: string): string | null =>

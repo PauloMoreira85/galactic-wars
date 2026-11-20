@@ -423,6 +423,18 @@ export async function allianceTags(planetIds: string[]): Promise<Record<string, 
   return out;
 }
 
+// Tags visíveis PRO VIEWER: só revela a tag dos planetas que são da MESMA aliança
+// que a dele (a tag de terceiros é informação estratégica — fica oculta).
+export async function allianceTagsForViewer(planetIds: string[], viewerPlanetId: string | null): Promise<Record<string, string>> {
+  if (!viewerPlanetId) return {};
+  const me = await prisma.allianceMember.findUnique({ where: { planetId: viewerPlanetId }, include: { alliance: true } });
+  if (!me) return {}; // viewer sem aliança não vê tag de ninguém
+  const mems = await prisma.allianceMember.findMany({ where: { planetId: { in: planetIds }, allianceId: me.allianceId } });
+  const out: Record<string, string> = {};
+  for (const m of mems) out[m.planetId] = me.alliance.tag;
+  return out;
+}
+
 // Os dois planetas estão na MESMA aliança? (proteção: aliados não se atacam.)
 export async function sameAlliance(planetA: string, planetB: string): Promise<boolean> {
   if (planetA === planetB) return false;
