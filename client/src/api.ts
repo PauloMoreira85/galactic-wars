@@ -188,6 +188,16 @@ export interface AllianceView {
   members?: AllianceMemberView[];
   pending?: { planetId: string; name: string; commander: string }[];
 }
+export interface AttackBoardView {
+  locked: boolean;
+  canManage: boolean;
+  myPlanetId: string;
+  targets: {
+    id: string; coord: string; targetName: string | null; note: string | null; createdBy: string;
+    ownerPlanetId: string | null; shared: boolean; iAmOwner: boolean; mineClaimed: boolean;
+    claimers: { planetId: string; name: string; coords: string; isOwner: boolean }[];
+  }[];
+}
 export const ROLE_LABEL: Record<string, string> = {
   lider: "TL (Tag Leader)", alto_comando: "Alto Comando", dc: "DC (Defense Commander)", ac: "AC (Attack Commander)", scanner: "Scanner", porta_voz: "Porta-Voz", recruta: "Recruta",
 };
@@ -350,6 +360,13 @@ export const api = {
     request<AllianceView>("/game/alliance/kick", { method: "POST", body: JSON.stringify({ planetId }) }),
   allianceOrders: (text: string) =>
     request<AllianceView>("/game/alliance/orders", { method: "POST", body: JSON.stringify({ text }) }),
+  attackBoard: () => request<AttackBoardView>("/game/alliance/attack"),
+  attackLock: (locked: boolean) => request<AttackBoardView>("/game/alliance/attack/lock", { method: "POST", body: JSON.stringify({ locked }) }),
+  attackAdd: (coord: string, note: string) => request<AttackBoardView>("/game/alliance/attack/add", { method: "POST", body: JSON.stringify({ coord, note }) }),
+  attackRemove: (targetId: string) => request<AttackBoardView>("/game/alliance/attack/remove", { method: "POST", body: JSON.stringify({ targetId }) }),
+  attackClaim: (targetId: string) => request<AttackBoardView>("/game/alliance/attack/claim", { method: "POST", body: JSON.stringify({ targetId }) }),
+  attackUnclaim: (targetId: string) => request<AttackBoardView>("/game/alliance/attack/unclaim", { method: "POST", body: JSON.stringify({ targetId }) }),
+  attackShare: (targetId: string, shared: boolean) => request<AttackBoardView>("/game/alliance/attack/share", { method: "POST", body: JSON.stringify({ targetId, shared }) }),
   allianceRole: (planetId: string, role: string) =>
     request<AllianceView>("/game/alliance/role", { method: "POST", body: JSON.stringify({ planetId, role }) }),
 

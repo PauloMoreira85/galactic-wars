@@ -21,7 +21,7 @@ import { vote, appoint, setTax, setMarketFee, setMarketLocked, donate, contribut
 import { planetScore } from "../game/score.js";
 import { clampMorale, moraleMult } from "../game/morale.js";
 import { addNews, recentNews } from "../game/news.js";
-import { createAlliance, invitePlayer, acceptInvite, leaveAlliance, kickMember, setMemberRole, allianceView, allianceFleetsView, setOrders } from "../game/alliance.js";
+import { createAlliance, invitePlayer, acceptInvite, leaveAlliance, kickMember, setMemberRole, allianceView, allianceFleetsView, setOrders, attackBoardView, toggleAttackLock, addAttackTarget, removeAttackTarget, claimTarget, unclaimTarget, setTargetShared } from "../game/alliance.js";
 import { forumIndex, listTopics, createTopic, getTopic, reply as forumReply, isForum } from "../game/forum.js";
 import { sendChat, recentChat, olderChat, resolveRoom } from "../game/chat.js";
 import { pushPublicKey, saveSubscription, removeSubscription, PUSH_ENABLED } from "../game/push.js";
@@ -824,6 +824,50 @@ gameRouter.post("/alliance/orders", (req: AuthedRequest, res) => {
   const p = z.object({ text: z.string().max(500) }).safeParse(req.body);
   if (!p.success) return res.status(400).json({ error: "Pedido invalido" });
   return allianceAction(req, res, (id) => setOrders(id, p.data.text));
+});
+
+// ===== Quadro de Ataque da Aliança =====
+gameRouter.get("/alliance/attack", async (req: AuthedRequest, res) => {
+  const planet = await myPlanet(req.userId!);
+  if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
+  try { res.json(await attackBoardView(planet.id)); }
+  catch (e: any) { res.status(400).json({ error: e.message ?? "Falha" }); }
+});
+async function attackAction(req: AuthedRequest, res: any, fn: (planetId: string) => Promise<any>) {
+  const planet = await myPlanet(req.userId!);
+  if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
+  try { await fn(planet.id); res.json(await attackBoardView(planet.id)); }
+  catch (e: any) { res.status(400).json({ error: e.message ?? "Falha" }); }
+}
+gameRouter.post("/alliance/attack/lock", (req: AuthedRequest, res) => {
+  const p = z.object({ locked: z.boolean() }).safeParse(req.body);
+  if (!p.success) return res.status(400).json({ error: "Pedido invalido" });
+  return attackAction(req, res, (id) => toggleAttackLock(id, p.data.locked));
+});
+gameRouter.post("/alliance/attack/add", (req: AuthedRequest, res) => {
+  const p = z.object({ coord: z.string(), note: z.string().max(120).optional() }).safeParse(req.body);
+  if (!p.success) return res.status(400).json({ error: "Pedido invalido" });
+  return attackAction(req, res, (id) => addAttackTarget(id, p.data.coord, p.data.note ?? ""));
+});
+gameRouter.post("/alliance/attack/remove", (req: AuthedRequest, res) => {
+  const p = z.object({ targetId: z.string() }).safeParse(req.body);
+  if (!p.success) return res.status(400).json({ error: "Pedido invalido" });
+  return attackAction(req, res, (id) => removeAttackTarget(id, p.data.targetId));
+});
+gameRouter.post("/alliance/attack/claim", (req: AuthedRequest, res) => {
+  const p = z.object({ targetId: z.string() }).safeParse(req.body);
+  if (!p.success) return res.status(400).json({ error: "Pedido invalido" });
+  return attackAction(req, res, (id) => claimTarget(id, p.data.targetId));
+});
+gameRouter.post("/alliance/attack/unclaim", (req: AuthedRequest, res) => {
+  const p = z.object({ targetId: z.string() }).safeParse(req.body);
+  if (!p.success) return res.status(400).json({ error: "Pedido invalido" });
+  return attackAction(req, res, (id) => unclaimTarget(id, p.data.targetId));
+});
+gameRouter.post("/alliance/attack/share", (req: AuthedRequest, res) => {
+  const p = z.object({ targetId: z.string(), shared: z.boolean() }).safeParse(req.body);
+  if (!p.success) return res.status(400).json({ error: "Pedido invalido" });
+  return attackAction(req, res, (id) => setTargetShared(id, p.data.targetId, p.data.shared));
 });
 
 // ===== Sabotagem =====

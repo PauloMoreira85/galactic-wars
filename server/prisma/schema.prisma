@@ -245,6 +245,44 @@ model AllianceInvite {
   @@index([planetId])
 }
 
+// ===== Quadro de Ataque da Aliança (organizado pelo AC/TL/HC) =====
+// Estado "travado/liberado" da sala de ataque + estado por aliança.
+model AttackBoard {
+  allianceId String  @id // 1 quadro por aliança
+  locked     Boolean @default(true) // travado = membros só veem; liberado = podem pegar
+  updatedAt  DateTime @default(now())
+}
+
+// Um alvo colocado no quadro pelo comando. Quem pega PRIMEIRO vira dono e decide
+// se divide (aceita parceiros pra MASS) ou mantém exclusivo.
+model AttackTarget {
+  id            String   @id @default(cuid())
+  allianceId    String
+  galaxy        Int
+  system        Int
+  slot          Int
+  note          String?  // instrução/horário (ex: "wave 2, leva tudo", "20h")
+  createdBy     String   // nome de quem criou
+  ownerPlanetId String?  // 1º a pegar = dono; controla se aceita parceiros
+  shared        Boolean  @default(false) // dono abriu pra parceiros (MASS)?
+  createdAt     DateTime @default(now())
+  claims        AttackClaim[]
+
+  @@index([allianceId])
+}
+
+// "Peguei este alvo": um planeta se inscreve pra atacar um alvo do quadro.
+model AttackClaim {
+  id         String   @id @default(cuid())
+  targetId   String
+  target     AttackTarget @relation(fields: [targetId], references: [id], onDelete: Cascade)
+  planetId   String   // quem pegou
+  claimedAt  DateTime @default(now())
+
+  @@unique([targetId, planetId]) // não pega o mesmo alvo 2x
+  @@index([planetId])
+}
+
 // Acordo (tratado de não-agressão) entre duas galáxias, fechado pelos Ministros da Diplomacia.
 model GalaxyTreaty {
   id         String   @id @default(cuid())

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, REFRESH_MS, type AllianceView, ROLE_LABEL, ALLIANCE_ROLES } from "../api";
+import { api, REFRESH_MS, type AllianceView, type AttackBoardView, ROLE_LABEL, ALLIANCE_ROLES } from "../api";
 import { CoordLink } from "../components/CoordLink";
 
 export function Aliancas() {
@@ -60,6 +60,8 @@ export function Aliancas() {
       </div>
 
       <MuralOrdens a={a} act={act} />
+
+      <QuadroAtaque />
 
       {a.canInvite && (
         <div className="panel">
@@ -139,6 +141,94 @@ function MuralOrdens({ a, act }: { a: AllianceView; act: (fn: () => Promise<Alli
         </>
       ) : (
         <div className="roid-count">Sem ordens no momento.{a.canManage && " Clique em editar pra definir."}</div>
+      )}
+    </div>
+  );
+}
+
+// Quadro de Ataque — sala de alvos (estilo mIRC). Todos veem; comando organiza;
+// membro pega quando liberado. 1º a pegar vira dono e decide se abre pra MASS.
+function QuadroAtaque() {
+  const [b, setB] = useState<AttackBoardView | null>(null);
+  const [err, setErr] = useState("");
+  const [coord, setCoord] = useState("");
+  const [note, setNote] = useState("");
+  async function load() { try { setB(await api.attackBoard()); setErr(""); } catch (e: any) { setErr(e.message ?? "Falha"); } }
+  useEffect(() => { load(); const t = setInterval(load, REFRESH_MS); return () => clearInterval(t); }, []);
+  async function act(fn: () => Promise<AttackBoardView>) { setErr(""); try { setB(await fn()); } catch (e: any) { setErr(e.message ?? "Falha"); } }
+  if (!b) return null;
+
+  return (
+    <div className="panel" style={{ borderColor: "var(--danger)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+        <h2>⚔️ Quadro de Ataque {b.locked ? <span className="roid-count" style={{ fontSize: 13 }}>🔒 travado</span> : <span style={{ color: "var(--carbonum)", fontSize: 13 }}>🔓 liberado — pegue os alvos!</span>}</h2>
+        {b.canManage && (
+          <button onClick={() => act(() => api.attackLock(!b.locked))} style={{ padding: "4px 12px" }}>
+            {b.locked ? "🔓 liberar quadro" : "🔒 travar quadro"}
+          </button>
+        )}
+      </div>
+      <div className="cost" style={{ marginBottom: 8 }}>
+        {b.canManage ? "Coloque os alvos e trave/libere a sala. " : ""}
+        Quem pega o alvo primeiro é o <b>dono</b> e decide se divide (MASS) ou mantém pra si.
+      </div>
+
+      {b.canManage && (
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+          <input placeholder="coord (g:s:slot)" value={coord} onChange={(e) => setCoord(e.target.value)} style={{ width: 130, margin: 0, padding: "6px 8px" }} />
+          <input placeholder="nota (ex: wave 2, 20h, leva tudo)" value={note} onChange={(e) => setNote(e.target.value)} style={{ width: 240, margin: 0, padding: "6px 8px" }} />
+          <button disabled={!coord.trim()} onClick={() => act(async () => { const r = await api.attackAdd(coord.trim(), note.trim()); setCoord(""); setNote(""); return r; })}>+ alvo</button>
+        </div>
+      )}
+
+      {err && <div className="error" style={{ marginBottom: 8 }}>{err}</div>}
+
+      {b.targets.length === 0 ? (
+        <div className="roid-count">Nenhum alvo no quadro ainda.</div>
+      ) : (
+        <div style={{ overflowX: "auto" }}>
+          <table>
+            <thead><tr><th>Alvo</th><th>Nota</th><th>Quem vai</th><th></th></tr></thead>
+            <tbody>
+              {b.targets.map((t) => (
+                <tr key={t.id}>
+                  <td>
+                    <CoordLink c={t.coord} />{t.targetName && <span className="roid-count"> · {t.targetName}</span>}
+                    {t.shared && <span style={{ color: "var(--carbonum)", fontSize: 11 }}> · MASS aberto</span>}
+                  </td>
+                  <td className="roid-count">{t.note ?? "—"}</td>
+                  <td>
+                    {t.claimers.length === 0 ? <span className="roid-count">—</span> : t.claimers.map((c, i) => (
+                      <span key={c.planetId}>
+                        {i > 0 && ", "}
+                        <b style={{ color: c.isOwner ? "var(--accent)" : undefined }}>{c.name}</b>{c.isOwner && " 👑"}
+                      </span>
+                    ))}
+                  </td>
+                  <td style={{ whiteSpace: "nowrap" }}>
+                    {/* Pegar / largar */}
+                    {t.mineClaimed ? (
+                      <button className="link" onClick={() => act(() => api.attackUnclaim(t.id))}>largar</button>
+                    ) : (
+                      <button disabled={b.locked || (!!t.ownerPlanetId && !t.shared)} onClick={() => act(() => api.attackClaim(t.id))}
+                        title={b.locked ? "quadro travado" : (!!t.ownerPlanetId && !t.shared ? "alvo fechado pelo dono" : "pegar este alvo")}>
+                        pegar
+                      </button>
+                    )}
+                    {/* Dono abre/fecha MASS */}
+                    {t.iAmOwner && (
+                      <button className="link" style={{ marginLeft: 8 }} onClick={() => act(() => api.attackShare(t.id, !t.shared))}>
+                        {t.shared ? "fechar" : "abrir p/ MASS"}
+                      </button>
+                    )}
+                    {/* Comando remove o alvo */}
+                    {b.canManage && <button className="link" style={{ marginLeft: 8, color: "var(--danger)" }} onClick={() => act(() => api.attackRemove(t.id))}>remover</button>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

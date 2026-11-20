@@ -12,6 +12,9 @@ export const ROLE_LABEL: Record<string, string> = {
 // + TL e Alto Comando (coordenam os dois e tomam as decisões).
 export function canSeeFleets(role: string) { return role === "dc" || role === "ac" || role === "lider" || role === "alto_comando"; }
 
+// Quem organiza o Quadro de Ataque (criar/remover alvos, travar/liberar): AC + TL/HC.
+export function canManageAttack(role: string) { return role === "ac" || role === "lider" || role === "alto_comando"; }
+
 async function memberOf(planetId: string) {
   return prisma.allianceMember.findUnique({ where: { planetId } });
 }
@@ -136,6 +139,126 @@ export async function allianceView(planetId: string) {
     }).sort((a, b) => ROLES.indexOf(a.role) - ROLES.indexOf(b.role)),
     pending: pendingPlanets.map((p) => ({ planetId: p.id, name: p.name, commander: p.user.username })),
   };
+}
+
+// ===== Quadro de Ataque (sala de alvos estilo mIRC) =====
+// Monta a visão do quadro: alvos + quem pegou cada um + estado travado/liberado.
+// Todo membro VÊ; só pega quando liberado; só o comando (AC/TL/HC) organiza.
+export async function attackBoardView(planetId: string) {
+  const mem = await memberOf(planetId);
+  if (!mem) throw new Error("Voce nao esta em uma alianca");
+  const board = await prisma.attackBoard.findUnique({ where: { allianceId: mem.allianceId } });
+  const locked = board?.locked ?? true;
+  const targets = await prisma.attackTarget.findMany({ where: { allianceId: mem.allianceId }, orderBy: { createdAt: "asc" }, include: { claims: true } });
+  // Nomes/coords dos planetas que pegaram alvos.
+  const claimerIds = [...new Set(targets.flatMap((t) => t.claims.map((c) => c.planetId)))];
+  const planets = await prisma.planet.findMany({ where: { id: { in: claimerIds } }, select: { id: true, galaxy: true, system: true, slot: true, user: { select: { username: true } } } });
+  const pById = new Map(planets.map((p) => [p.id, p]));
+  // Nome/coord dos próprios alvos (se o slot tiver planeta).
+  const tgtPlanets = await prisma.planet.findMany({
+    where: { OR: targets.map((t) => ({ galaxy: t.galaxy, system: t.system, slot: t.slot })) },
+    select: { name: true, galaxy: true, system: true, slot: true },
+  });
+  const tgtName = new Map(tgtPlanets.map((p) => [`${p.galaxy}:${p.system}:${p.slot}`, p.name]));
+
+  return {
+    locked,
+    canManage: canManageAttack(mem.role),
+    myPlanetId: planetId,
+    targets: targets.map((t) => {
+      const coord = `${t.galaxy}:${t.system}:${t.slot}`;
+      return {
+        id: t.id, coord, targetName: tgtName.get(coord) ?? null, note: t.note ?? null, createdBy: t.createdBy,
+        ownerPlanetId: t.ownerPlanetId ?? null, shared: t.shared,
+        iAmOwner: t.ownerPlanetId === planetId,
+        mineClaimed: t.claims.some((c) => c.planetId === planetId),
+        claimers: t.claims.map((c) => {
+          const p: any = pById.get(c.planetId);
+          return { planetId: c.planetId, name: p?.user.username ?? "?", coords: p ? `${p.galaxy}:${p.system}:${p.slot}` : "?", isOwner: c.planetId === t.ownerPlanetId };
+        }),
+      };
+    }),
+  };
+}
+
+async function requireAttackManager(planetId: string) {
+  const mem = await memberOf(planetId);
+  if (!mem) throw new Error("Voce nao esta em uma alianca");
+  if (!canManageAttack(mem.role)) throw new Error("Apenas AC, TL ou Alto Comando organiza o quadro de ataque");
+  return mem;
+}
+
+// Trava/libera o quadro inteiro (mutar/desmutar a sala).
+export async function toggleAttackLock(planetId: string, locked: boolean) {
+  const mem = await requireAttackManager(planetId);
+  await prisma.attackBoard.upsert({
+    where: { allianceId: mem.allianceId },
+    update: { locked, updatedAt: new Date() },
+    create: { allianceId: mem.allianceId, locked },
+  });
+}
+
+// Adiciona um alvo ao quadro.
+export async function addAttackTarget(planetId: string, coord: string, note: string) {
+  const mem = await requireAttackManager(planetId);
+  const m = coord.trim().match(/^(\d+):(\d+):(\d+)$/);
+  if (!m) throw new Error("Coordenada inválida (use g:s:slot)");
+  const planet = await prisma.planet.findUnique({ where: { id: planetId }, select: { user: { select: { username: true } } } });
+  await prisma.attackTarget.create({ data: {
+    allianceId: mem.allianceId, galaxy: +m[1], system: +m[2], slot: +m[3],
+    note: note.trim().slice(0, 120) || null, createdBy: planet?.user.username ?? "?",
+  } });
+}
+
+export async function removeAttackTarget(planetId: string, targetId: string) {
+  const mem = await requireAttackManager(planetId);
+  const t = await prisma.attackTarget.findUnique({ where: { id: targetId } });
+  if (!t || t.allianceId !== mem.allianceId) throw new Error("Alvo não é do seu quadro");
+  await prisma.attackTarget.delete({ where: { id: targetId } });
+}
+
+// Membro "pega" um alvo (só com o quadro liberado). Quem pega 1º vira DONO; os
+// próximos só entram se o dono tiver aberto o alvo pra parceiros (MASS).
+export async function claimTarget(planetId: string, targetId: string) {
+  const mem = await memberOf(planetId);
+  if (!mem) throw new Error("Voce nao esta em uma alianca");
+  const board = await prisma.attackBoard.findUnique({ where: { allianceId: mem.allianceId } });
+  if (board?.locked ?? true) throw new Error("O quadro está travado — aguarde o comando liberar");
+  // Transação: decide dono/parceiro de forma atômica (evita 2 "donos" no mesmo tick).
+  await prisma.$transaction(async (tx) => {
+    const t = await tx.attackTarget.findUnique({ where: { id: targetId } });
+    if (!t || t.allianceId !== mem.allianceId) throw new Error("Alvo não é do seu quadro");
+    if (!t.ownerPlanetId) {
+      // Primeiro a pegar = dono.
+      await tx.attackTarget.update({ where: { id: targetId }, data: { ownerPlanetId: planetId } });
+    } else if (t.ownerPlanetId !== planetId && !t.shared) {
+      throw new Error("Esse alvo já tem dono e está fechado — peça ao dono pra abrir pra MASS");
+    }
+    await tx.attackClaim.upsert({ where: { targetId_planetId: { targetId, planetId } }, update: {}, create: { targetId, planetId } });
+  });
+}
+
+// O DONO abre/fecha o alvo pra parceiros (MASS). Fechar não expulsa quem já entrou.
+export async function setTargetShared(planetId: string, targetId: string, shared: boolean) {
+  const t = await prisma.attackTarget.findUnique({ where: { id: targetId } });
+  if (!t) throw new Error("Alvo não encontrado");
+  const mem = await memberOf(planetId);
+  // Dono OU comando pode abrir/fechar.
+  const isManager = mem && canManageAttack(mem.role);
+  if (t.ownerPlanetId !== planetId && !isManager) throw new Error("Só o dono do alvo (ou o comando) pode abrir pra MASS");
+  await prisma.attackTarget.update({ where: { id: targetId }, data: { shared } });
+}
+
+// Membro larga um alvo que pegou. Se era o dono, passa a titularidade pro próximo
+// (mais antigo) ou libera o alvo se ninguém mais estiver nele.
+export async function unclaimTarget(planetId: string, targetId: string) {
+  await prisma.$transaction(async (tx) => {
+    await tx.attackClaim.deleteMany({ where: { targetId, planetId } });
+    const t = await tx.attackTarget.findUnique({ where: { id: targetId } });
+    if (!t || t.ownerPlanetId !== planetId) return;
+    const next = await tx.attackClaim.findFirst({ where: { targetId }, orderBy: { claimedAt: "asc" } });
+    await tx.attackTarget.update({ where: { id: targetId }, data: { ownerPlanetId: next?.planetId ?? null, shared: next ? t.shared : false } });
+  });
 }
 
 // TL/HC define o mural de ordens da aliança (recado visível a todos os membros).
