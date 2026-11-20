@@ -286,7 +286,17 @@ export async function processFleets(uptoTick: number) {
     }
     if (fleet.status === "garrison") {
       // Guarnição: fica estacionada até arriveTick (= fim do reforço), aí volta.
-      if (fleet.arriveTick <= uptoTick) await scheduleReturn(fleet.id, fleet, parseUnits(fleet.units));
+      if (fleet.arriveTick <= uptoTick) {
+        const coord = `${fleet.targetGalaxy}:${fleet.targetSystem}:${fleet.targetSlot}`;
+        // Avisa o dono da frota e, se defendia outro planeta, o defendido.
+        await prisma.news.create({ data: { planetId: fleet.ownerPlanetId, tick: uptoTick, message: `🔙 Sua guarnição em ${coord} terminou — ${fleet.name} está voltando pra base` } });
+        const defended = await prisma.planet.findUnique({ where: { galaxy_system_slot: { galaxy: fleet.targetGalaxy, system: fleet.targetSystem, slot: fleet.targetSlot } }, select: { id: true } });
+        if (defended && defended.id !== fleet.ownerPlanetId) {
+          const sender = await prisma.planet.findUnique({ where: { id: fleet.ownerPlanetId }, select: { name: true } });
+          await prisma.news.create({ data: { planetId: defended.id, tick: uptoTick, message: `🔙 O reforço de ${sender?.name ?? "um aliado"} terminou a defesa e está voltando pra base` } });
+        }
+        await scheduleReturn(fleet.id, fleet, parseUnits(fleet.units));
+      }
       continue;
     }
     if (fleet.arriveTick > uptoTick) continue;
