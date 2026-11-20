@@ -285,6 +285,81 @@ export async function unclaimTarget(planetId: string, targetId: string) {
   });
 }
 
+// ===== Comandos de chat da sala de Ataque (bot estilo mIRC) =====
+// Interpreta "!comando ..." digitado na sala de ataque. Retorna true se consumiu
+// como comando (não deve virar mensagem normal). O bot responde na própria sala.
+export async function runAttackCommand(planetId: string, body: string): Promise<boolean> {
+  const text = body.trim();
+  if (!text.startsWith("!")) return false;
+  const mem = await memberOf(planetId);
+  if (!mem) return false; // sem aliança: não é comando válido (vira msg normal mesmo)
+  const [cmd, ...rest] = text.slice(1).split(/\s+/);
+  const arg = rest.join(" ").trim();
+  const who = await nameOfPlanet(planetId);
+  const coordRe = /^(\d+):(\d+):(\d+)$/;
+
+  const findTarget = async (coord: string) => {
+    const m = coord.match(coordRe); if (!m) return null;
+    return prisma.attackTarget.findFirst({ where: { allianceId: mem.allianceId, galaxy: +m[1], system: +m[2], slot: +m[3] } });
+  };
+
+  switch (cmd.toLowerCase()) {
+    case "pego": case "pegar": {
+      const t = await findTarget(arg);
+      if (!t) { await botAttackMessage(mem.allianceId, `❓ ${who}: alvo ${arg || "?"} não está no quadro.`); return true; }
+      try { await claimTarget(planetId, t.id); } // claimTarget já narra o sucesso
+      catch (e: any) { await botAttackMessage(mem.allianceId, `⛔ ${who}: ${e.message}`); }
+      return true;
+    }
+    case "largo": case "largar": {
+      const t = await findTarget(arg);
+      if (t) { await unclaimTarget(planetId, t.id); await botAttackMessage(mem.allianceId, `↩️ ${who} largou ${arg}.`); }
+      return true;
+    }
+    case "alvo": {
+      // !alvo 4:2:3 [nota] — só comando (AC/TL/HC)
+      const parts = arg.split(/\s+/); const coord = parts.shift() ?? "";
+      try { await addAttackTarget(planetId, coord, parts.join(" ")); } // já narra
+      catch (e: any) { await botAttackMessage(mem.allianceId, `⛔ ${who}: ${e.message}`); }
+      return true;
+    }
+    case "libera": case "liberar": {
+      try { await toggleAttackLock(planetId, false); } catch (e: any) { await botAttackMessage(mem.allianceId, `⛔ ${who}: ${e.message}`); }
+      return true;
+    }
+    case "trava": case "travar": {
+      try { await toggleAttackLock(planetId, true); } catch (e: any) { await botAttackMessage(mem.allianceId, `⛔ ${who}: ${e.message}`); }
+      return true;
+    }
+    case "abre": case "mass": {
+      const t = await findTarget(arg);
+      if (t) { try { await setTargetShared(planetId, t.id, true); } catch (e: any) { await botAttackMessage(mem.allianceId, `⛔ ${who}: ${e.message}`); } }
+      return true;
+    }
+    case "alvos": case "lista": {
+      const board = await prisma.attackBoard.findUnique({ where: { allianceId: mem.allianceId } });
+      const targets = await prisma.attackTarget.findMany({ where: { allianceId: mem.allianceId }, orderBy: { createdAt: "asc" }, include: { claims: true } });
+      const claimerIds = [...new Set(targets.flatMap((t) => t.claims.map((c) => c.planetId)))];
+      const planets = await prisma.planet.findMany({ where: { id: { in: claimerIds } }, select: { id: true, user: { select: { username: true } } } });
+      const nm = new Map(planets.map((p) => [p.id, p.user.username]));
+      const lines = targets.length === 0 ? ["(vazio)"] : targets.map((t) => {
+        const c = `${t.galaxy}:${t.system}:${t.slot}`;
+        const quem = t.claims.map((x) => nm.get(x.planetId) ?? "?").join(", ") || "livre";
+        return `${c}${t.shared ? " [MASS]" : ""} → ${quem}`;
+      });
+      await botAttackMessage(mem.allianceId, `📋 Quadro (${board?.locked ?? true ? "🔒 travado" : "🔓 liberado"}):\n${lines.join("\n")}`);
+      return true;
+    }
+    case "ajuda": case "help": {
+      await botAttackMessage(mem.allianceId, "📖 Comandos: !pego <coord> · !largo <coord> · !alvos · !alvo <coord> [nota] (comando) · !libera / !trava (comando) · !abre <coord> (dono/comando)");
+      return true;
+    }
+    default:
+      await botAttackMessage(mem.allianceId, `❓ ${who}: comando "!${cmd}" não existe. Use !ajuda.`);
+      return true;
+  }
+}
+
 // ===== Intel da Tag (espionagens compartilhadas) =====
 // Qualquer membro compartilha um relatório de espionagem seu com a aliança.
 export async function shareIntel(planetId: string, spyHash: string) {

@@ -21,7 +21,7 @@ import { vote, appoint, setTax, setMarketFee, setMarketLocked, donate, contribut
 import { planetScore } from "../game/score.js";
 import { clampMorale, moraleMult } from "../game/morale.js";
 import { addNews, recentNews } from "../game/news.js";
-import { createAlliance, invitePlayer, acceptInvite, leaveAlliance, kickMember, setMemberRole, allianceView, allianceFleetsView, setOrders, attackBoardView, toggleAttackLock, addAttackTarget, removeAttackTarget, claimTarget, unclaimTarget, setTargetShared, shareIntel, allianceIntelView, unshareIntel } from "../game/alliance.js";
+import { createAlliance, invitePlayer, acceptInvite, leaveAlliance, kickMember, setMemberRole, allianceView, allianceFleetsView, setOrders, attackBoardView, toggleAttackLock, addAttackTarget, removeAttackTarget, claimTarget, unclaimTarget, setTargetShared, shareIntel, allianceIntelView, unshareIntel, runAttackCommand } from "../game/alliance.js";
 import { forumIndex, listTopics, createTopic, getTopic, reply as forumReply, isForum } from "../game/forum.js";
 import { sendChat, recentChat, olderChat, resolveRoom } from "../game/chat.js";
 import { pushPublicKey, saveSubscription, removeSubscription, PUSH_ENABLED } from "../game/push.js";
@@ -1015,7 +1015,16 @@ gameRouter.post("/chat/:room", async (req: AuthedRequest, res) => {
   if (!p.success) return res.status(400).json({ error: "Pedido invalido" });
   const room = await resolveRoom(req.userId!, req.params.room);
   if (!room) return res.status(400).json({ error: "Sala indisponível" });
-  try { await sendChat(room.key, await myName(req.userId!), p.data.body); res.json({ label: room.label, messages: await recentChat(room.key) }); }
+  try {
+    // Sala de ataque: "!comando" é interpretado pelo bot (não vira msg normal).
+    if (req.params.room === "ataque" && p.data.body.trim().startsWith("!")) {
+      const planet = await myPlanet(req.userId!);
+      const handled = planet ? await runAttackCommand(planet.id, p.data.body) : false;
+      if (handled) return res.json({ label: room.label, messages: await recentChat(room.key) });
+    }
+    await sendChat(room.key, await myName(req.userId!), p.data.body);
+    res.json({ label: room.label, messages: await recentChat(room.key) });
+  }
   catch (e: any) { res.status(400).json({ error: e.message ?? "Falha" }); }
 });
 

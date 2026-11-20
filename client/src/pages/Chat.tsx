@@ -118,9 +118,15 @@ export function Chat({ myName = "" }: { myName?: string }) {
         ))}
       </div>
       <h2>Chat — {label || "..."}</h2>
-      <div className="cost" style={{ marginBottom: 8, fontSize: 12 }}>
-        Clique em <b>↩</b> pra responder alguém, ou digite <b>@</b> pra mencionar um planeta (fica laranja pra quem for citado).
-      </div>
+      {room === "ataque" ? (
+        <div className="cost" style={{ marginBottom: 8, fontSize: 12 }}>
+          ⚡ Sala de ataque. Comandos: <b>!pego 4:2:3</b> (pega o alvo) · <b>!largo</b> · <b>!alvos</b> (lista) · <b>!alvo 4:2:3 nota</b> · <b>!libera</b> / <b>!trava</b> (comando) · <b>!abre 4:2:3</b> · <b>!ajuda</b>.
+        </div>
+      ) : (
+        <div className="cost" style={{ marginBottom: 8, fontSize: 12 }}>
+          Clique em <b>↩</b> pra responder alguém, ou digite <b>@</b> pra mencionar um planeta (fica laranja pra quem for citado).
+        </div>
+      )}
       <div
         ref={boxRef}
         onScroll={(e) => { const el = e.currentTarget; atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40; if (el.scrollTop < 60) loadOlder(); }}
