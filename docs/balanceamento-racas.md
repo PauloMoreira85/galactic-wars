@@ -35,32 +35,17 @@ No placar agregado: **Humana 10V / 0D**, todas as outras 0 vitórias.
 
 ---
 
-## 🔴 Distorção 2 — Daharan não consegue matar (empate eterno)
+## ✅ Daharan "não mata" — é DESIGN, não bug
 
-O ataque Daharan **só paralisa (PEM), nunca destrói**. Contra uma frota resistente,
-ele **não causa nenhuma baixa real** — nem em 10 ticks:
-
-```
-Daharan atk x Humana (10 ticks): indefinido
-  Humana: Tanatos 500, Hermes 200, Apolo 150, Zeus 50  ← NENHUMA baixa
-```
-
-**Causa:** TODAS as naves de combate Daharan são tipo "PEM" (paralisam). Naves
-paralisadas sobrevivem e voltam. Se o Daharan não tem nenhuma nave que destrói,
-o combate dele vira empate perpétuo — ele trava o inimigo mas não resolve.
-
-**Efeito no jogo:** Daharan é um "muro" impenetrável na defesa (quase não perde
-nada), mas **inútil no ataque** (não conquista nada). No agregado quase todos os
-confrontos Daharan terminam 100%/100% ou ~95%/100%.
-
-**Sugestões:**
-- Dar ao Daharan **pelo menos uma nave que destrói** (não-PEM), pra ter poder ofensivo.
-- Ou: naves paralisadas por X ticks seguidos passam a ser destruídas / sofrem dano.
-- Ou: reduzir a duração/eficácia do PEM pra a frota inimiga revidar e o combate andar.
+O Daharan só paralisa (PEM), nunca destrói — **isso é intencional**. A vantagem
+dele é **atirar primeiro** (Ini altíssima): no combate COMBINADO ele trava a frota
+inimiga e os aliados destroem as naves paralisadas. Sozinho ele segura; em grupo
+é devastador. O teste 1x1 isolado (Daharan atk x Humana = 100%/100%) não reflete
+o uso real — por isso NÃO entra como distorção.
 
 ---
 
-## 🟡 Distorção 3 — c-Mech frágil em frota pequena
+## 🟡 Distorção 2 — c-Mech frágil em frota pequena
 
 Em frotas pequenas/médias o c-Mech atacando apanha muito (sobra 2–14% em vários
 confrontos). Em frota grande melhora (chega a assimilar e CRESCER: 1540 naves vs
@@ -75,6 +60,7 @@ ou o custo da assimilação, pra o c-Mech atacante não derreter em escala peque
 ## Observação metodológica
 
 Muitos confrontos dão "indefinido / 100% x 100%" porque o combate é **pedra-papel-
-tesoura por classe** (cada nave só acerta certas classes). Isso é intencional. O que
-NÃO é saudável: frotas realistas inteiras que não se tocam, e os dois casos vermelhos
-acima (Zeus imbatível, Daharan que não mata). Esses dois desequilibram de verdade.
+tesoura por classe** (cada nave só acerta certas classes) e, no caso do Daharan,
+porque ele paralisa em vez de destruir — ambos intencionais. A distorção real e
+isolada é o **Zeus (nave-mãe humana) quase imbatível**. O c-Mech frágil em escala
+pequena é secundário e parte do custo da assimilação.
