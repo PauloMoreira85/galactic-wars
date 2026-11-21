@@ -33,32 +33,59 @@ export async function createAlliance(planetId: string, name: string, tag: string
   return a;
 }
 
-// Convida um planeta (por username do comandante).
-export async function invitePlayer(inviterPlanetId: string, username: string) {
-  const mem = await memberOf(inviterPlanetId);
-  if (!mem || !canInvite(mem.role)) throw new Error("Apenas Lider ou Alto Comando pode convidar");
-  const target = await prisma.user.findUnique({ where: { username }, include: { planet: true } });
-  if (!target?.planet) throw new Error("Jogador nao encontrado");
-  if (await memberOf(target.planet.id)) throw new Error("Esse jogador ja esta em uma alianca");
-  const count = await prisma.allianceMember.count({ where: { allianceId: mem.allianceId } });
-  if (count >= MAX_MEMBERS) throw new Error(`Alianca cheia (max ${MAX_MEMBERS})`);
+// ===== Entrada por PEDIDO (o jogador pede; TL/HC aceita) =====
+// A tabela AllianceInvite passa a representar um PEDIDO pendente do jogador.
+
+// Jogador pede pra entrar numa aliança (por tag ou nome da aliança).
+export async function requestJoin(planetId: string, tagOrName: string) {
+  if (await memberOf(planetId)) throw new Error("Você já está em uma aliança");
+  const q = tagOrName.trim();
+  const alliance = await prisma.alliance.findFirst({ where: { OR: [{ tag: q }, { name: q }] } });
+  if (!alliance) throw new Error("Aliança não encontrada (confira a tag)");
+  const count = await prisma.allianceMember.count({ where: { allianceId: alliance.id } });
+  if (count >= MAX_MEMBERS) throw new Error(`Aliança cheia (máx ${MAX_MEMBERS})`);
   await prisma.allianceInvite.upsert({
-    where: { allianceId_planetId: { allianceId: mem.allianceId, planetId: target.planet.id } },
-    update: {}, create: { allianceId: mem.allianceId, planetId: target.planet.id },
+    where: { allianceId_planetId: { allianceId: alliance.id, planetId } },
+    update: {}, create: { allianceId: alliance.id, planetId },
   });
+  // Avisa os líderes (TL/HC) que há um pedido.
+  const leaders = await prisma.allianceMember.findMany({ where: { allianceId: alliance.id, role: { in: ["lider", "alto_comando"] } }, select: { planetId: true } });
+  const applicant = await prisma.planet.findUnique({ where: { id: planetId }, select: { name: true, galaxy: true, system: true, slot: true, user: { select: { username: true } } } });
+  const tick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
+  if (leaders.length && applicant) {
+    const coord = `${applicant.galaxy}:${applicant.system}:${applicant.slot}`;
+    await prisma.news.createMany({ data: leaders.map((l) => ({ planetId: l.planetId, tick, message: `🤝 ${applicant.user.username} (${coord}) pediu pra entrar na aliança — aceite ou recuse em Alianças.` })) });
+  }
 }
 
-// Aceita um convite.
-export async function acceptInvite(planetId: string, allianceId: string) {
-  if (await memberOf(planetId)) throw new Error("Voce ja esta em uma alianca");
-  const inv = await prisma.allianceInvite.findUnique({ where: { allianceId_planetId: { allianceId, planetId } } });
-  if (!inv) throw new Error("Convite nao encontrado");
-  const count = await prisma.allianceMember.count({ where: { allianceId } });
-  if (count >= MAX_MEMBERS) throw new Error("Alianca cheia");
+// Jogador cancela o próprio pedido.
+export async function cancelJoinRequest(planetId: string) {
+  await prisma.allianceInvite.deleteMany({ where: { planetId } });
+}
+
+// TL/HC aceita um pedido pendente (applicant vira recruta).
+export async function acceptRequest(actorPlanetId: string, applicantPlanetId: string) {
+  const mem = await memberOf(actorPlanetId);
+  if (!mem || !canInvite(mem.role)) throw new Error("Apenas TL ou Alto Comando pode aceitar pedidos");
+  const req = await prisma.allianceInvite.findUnique({ where: { allianceId_planetId: { allianceId: mem.allianceId, planetId: applicantPlanetId } } });
+  if (!req) throw new Error("Pedido não encontrado");
+  if (await memberOf(applicantPlanetId)) { await prisma.allianceInvite.deleteMany({ where: { planetId: applicantPlanetId } }); throw new Error("Esse jogador já entrou em uma aliança"); }
+  const count = await prisma.allianceMember.count({ where: { allianceId: mem.allianceId } });
+  if (count >= MAX_MEMBERS) throw new Error("Aliança cheia");
+  const tick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
+  const alliance = await prisma.alliance.findUnique({ where: { id: mem.allianceId }, select: { tag: true } });
   await prisma.$transaction([
-    prisma.allianceMember.create({ data: { planetId, allianceId, role: "recruta" } }),
-    prisma.allianceInvite.deleteMany({ where: { planetId } }), // limpa convites pendentes
+    prisma.allianceMember.create({ data: { planetId: applicantPlanetId, allianceId: mem.allianceId, role: "recruta" } }),
+    prisma.allianceInvite.deleteMany({ where: { planetId: applicantPlanetId } }), // limpa todos os pedidos dele
+    prisma.news.create({ data: { planetId: applicantPlanetId, tick, message: `✅ Seu pedido foi aceito — você entrou na aliança [${alliance?.tag ?? "?"}]!` } }),
   ]);
+}
+
+// TL/HC recusa um pedido.
+export async function rejectRequest(actorPlanetId: string, applicantPlanetId: string) {
+  const mem = await memberOf(actorPlanetId);
+  if (!mem || !canInvite(mem.role)) throw new Error("Apenas TL ou Alto Comando pode recusar pedidos");
+  await prisma.allianceInvite.deleteMany({ where: { allianceId: mem.allianceId, planetId: applicantPlanetId } });
 }
 
 export async function leaveAlliance(planetId: string) {
@@ -114,8 +141,9 @@ export async function setMemberRole(actorPlanetId: string, targetPlanetId: strin
 export async function allianceView(planetId: string) {
   const mem = await memberOf(planetId);
   if (!mem) {
-    const invites = await prisma.allianceInvite.findMany({ where: { planetId }, include: { alliance: true } });
-    return { inAlliance: false, invites: invites.map((i) => ({ allianceId: i.allianceId, name: i.alliance.name, tag: i.alliance.tag })) };
+    // Sem aliança: mostra o(s) pedido(s) pendente(s) DELE (pra poder cancelar).
+    const reqs = await prisma.allianceInvite.findMany({ where: { planetId }, include: { alliance: true } });
+    return { inAlliance: false, myRequests: reqs.map((i) => ({ allianceId: i.allianceId, name: i.alliance.name, tag: i.alliance.tag })) };
   }
   const alliance = await prisma.alliance.findUnique({ where: { id: mem.allianceId } });
   const members = await prisma.allianceMember.findMany({ where: { allianceId: mem.allianceId } });

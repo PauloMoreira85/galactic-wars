@@ -181,12 +181,12 @@ export interface GovView {
 export interface AllianceMemberView { planetId: string; role: string; name: string; commander: string; coords: string }
 export interface AllianceView {
   inAlliance: boolean;
-  invites?: { allianceId: string; name: string; tag: string }[];
+  myRequests?: { allianceId: string; name: string; tag: string }[]; // pedidos pendentes DELE (sem aliança)
   id?: string; name?: string; tag?: string; maxMembers?: number;
   myRole?: string; canInvite?: boolean; isLeader?: boolean; canManage?: boolean;
   orders?: string | null; ordersBy?: string | null; ordersAt?: string | null;
   members?: AllianceMemberView[];
-  pending?: { planetId: string; name: string; commander: string }[];
+  pending?: { planetId: string; name: string; commander: string }[]; // pedidos recebidos (TL/HC veem)
 }
 export interface AttackBoardView {
   locked: boolean;
@@ -355,10 +355,14 @@ export const api = {
   }>("/game/alliance/fleets"),
   allianceCreate: (name: string, tag: string) =>
     request<AllianceView>("/game/alliance/create", { method: "POST", body: JSON.stringify({ name, tag }) }),
-  allianceInvite: (username: string) =>
-    request<AllianceView>("/game/alliance/invite", { method: "POST", body: JSON.stringify({ username }) }),
-  allianceAccept: (allianceId: string) =>
-    request<AllianceView>("/game/alliance/accept", { method: "POST", body: JSON.stringify({ allianceId }) }),
+  allianceRequest: (tag: string) =>
+    request<AllianceView>("/game/alliance/request", { method: "POST", body: JSON.stringify({ tag }) }),
+  allianceRequestCancel: () =>
+    request<AllianceView>("/game/alliance/request/cancel", { method: "POST" }),
+  allianceRequestAccept: (planetId: string) =>
+    request<AllianceView>("/game/alliance/request/accept", { method: "POST", body: JSON.stringify({ planetId }) }),
+  allianceRequestReject: (planetId: string) =>
+    request<AllianceView>("/game/alliance/request/reject", { method: "POST", body: JSON.stringify({ planetId }) }),
   allianceLeave: () => request<AllianceView>("/game/alliance/leave", { method: "POST" }),
   allianceKick: (planetId: string) =>
     request<AllianceView>("/game/alliance/kick", { method: "POST", body: JSON.stringify({ planetId }) }),

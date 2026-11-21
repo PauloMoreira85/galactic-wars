@@ -21,7 +21,7 @@ import { vote, appoint, setTax, setMarketFee, setMarketLocked, donate, contribut
 import { planetScore } from "../game/score.js";
 import { clampMorale, moraleMult } from "../game/morale.js";
 import { addNews, recentNews } from "../game/news.js";
-import { createAlliance, invitePlayer, acceptInvite, leaveAlliance, kickMember, setMemberRole, allianceView, allianceFleetsView, setOrders, attackBoardView, toggleAttackLock, addAttackTarget, removeAttackTarget, claimTarget, unclaimTarget, setTargetShared, shareIntel, allianceIntelView, unshareIntel, runAttackCommand } from "../game/alliance.js";
+import { createAlliance, requestJoin, cancelJoinRequest, acceptRequest, rejectRequest, leaveAlliance, kickMember, setMemberRole, allianceView, allianceFleetsView, setOrders, attackBoardView, toggleAttackLock, addAttackTarget, removeAttackTarget, claimTarget, unclaimTarget, setTargetShared, shareIntel, allianceIntelView, unshareIntel, runAttackCommand } from "../game/alliance.js";
 import { forumIndex, listTopics, createTopic, getTopic, reply as forumReply, isForum } from "../game/forum.js";
 import { sendChat, recentChat, olderChat, resolveRoom } from "../game/chat.js";
 import { pushPublicKey, saveSubscription, removeSubscription, PUSH_ENABLED } from "../game/push.js";
@@ -788,26 +788,32 @@ gameRouter.post("/alliance/create", (req: AuthedRequest, res) => {
   if (!p.success) return res.status(400).json({ error: "Pedido invalido" });
   return allianceAction(req, res, (id) => createAlliance(id, p.data.name, p.data.tag));
 });
-gameRouter.post("/alliance/invite", async (req: AuthedRequest, res) => {
-  const p = z.object({ username: z.string() }).safeParse(req.body);
+// Jogador PEDE pra entrar numa aliança (por tag/nome).
+gameRouter.post("/alliance/request", async (req: AuthedRequest, res) => {
+  const p = z.object({ tag: z.string() }).safeParse(req.body);
   if (!p.success) return res.status(400).json({ error: "Pedido invalido" });
-  // Anti multi-conta: não pode convidar uma conta do mesmo IP pra sua aliança.
-  const target = await prisma.user.findUnique({ where: { username: p.data.username }, select: { id: true } });
-  if (target && (await isLinked(req.userId!, target.id))) return res.status(403).json({ error: MULTI_BLOCK_MSG });
-  return allianceAction(req, res, (id) => invitePlayer(id, p.data.username));
-});
-gameRouter.post("/alliance/accept", async (req: AuthedRequest, res) => {
-  const p = z.object({ allianceId: z.string() }).safeParse(req.body);
-  if (!p.success) return res.status(400).json({ error: "Pedido invalido" });
-  // Anti multi-conta: não pode entrar numa aliança que contenha conta do mesmo IP.
-  const members = await prisma.allianceMember.findMany({ where: { allianceId: p.data.allianceId }, select: { planetId: true } });
-  if (members.length) {
+  // Anti multi-conta: não pode pedir pra entrar numa aliança com conta do mesmo IP.
+  const alliance = await prisma.alliance.findFirst({ where: { OR: [{ tag: p.data.tag.trim() }, { name: p.data.tag.trim() }] }, select: { id: true } });
+  if (alliance) {
+    const members = await prisma.allianceMember.findMany({ where: { allianceId: alliance.id }, select: { planetId: true } });
     const owners = await prisma.planet.findMany({ where: { id: { in: members.map((m) => m.planetId) } }, select: { userId: true } });
-    for (const o of owners) {
-      if (await isLinked(req.userId!, o.userId)) return res.status(403).json({ error: MULTI_BLOCK_MSG });
-    }
+    for (const o of owners) if (await isLinked(req.userId!, o.userId)) return res.status(403).json({ error: MULTI_BLOCK_MSG });
   }
-  return allianceAction(req, res, (id) => acceptInvite(id, p.data.allianceId));
+  return allianceAction(req, res, (id) => requestJoin(id, p.data.tag));
+});
+// Jogador cancela o próprio pedido.
+gameRouter.post("/alliance/request/cancel", (req: AuthedRequest, res) => allianceAction(req, res, (id) => cancelJoinRequest(id)));
+// TL/HC aceita um pedido pendente.
+gameRouter.post("/alliance/request/accept", (req: AuthedRequest, res) => {
+  const p = z.object({ planetId: z.string() }).safeParse(req.body);
+  if (!p.success) return res.status(400).json({ error: "Pedido invalido" });
+  return allianceAction(req, res, (id) => acceptRequest(id, p.data.planetId));
+});
+// TL/HC recusa um pedido pendente.
+gameRouter.post("/alliance/request/reject", (req: AuthedRequest, res) => {
+  const p = z.object({ planetId: z.string() }).safeParse(req.body);
+  if (!p.success) return res.status(400).json({ error: "Pedido invalido" });
+  return allianceAction(req, res, (id) => rejectRequest(id, p.data.planetId));
 });
 gameRouter.post("/alliance/leave", (req: AuthedRequest, res) => allianceAction(req, res, (id) => leaveAlliance(id)));
 gameRouter.post("/alliance/kick", (req: AuthedRequest, res) => {

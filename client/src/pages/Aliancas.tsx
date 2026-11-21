@@ -29,27 +29,33 @@ export function Aliancas() {
     return (
       <>
         <div className="panel">
-          <h2>Criar aliança</h2>
-          <div className="cost">Você vira o Líder. Depois é só convidar jogadores pelo nome (login).</div>
+          <h2>Pedir pra entrar numa aliança</h2>
+          <div className="cost">Digite a <b>tag</b> (ou o nome) da aliança. Os líderes recebem seu pedido e aceitam ou recusam.</div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+            <input placeholder="tag da aliança (ex: OS)" value={invite} onChange={(e) => setInvite(e.target.value)} style={{ width: 200, margin: 0, padding: "6px 8px" }} />
+            <button disabled={!invite.trim()} onClick={() => act(async () => { const r = await api.allianceRequest(invite.trim()); setInvite(""); return r; })}>pedir pra entrar</button>
+          </div>
+          {(a.myRequests?.length ?? 0) > 0 && (
+            <div style={{ marginTop: 10 }}>
+              <div className="cost">Seus pedidos pendentes:</div>
+              {a.myRequests!.map((i) => (
+                <div className="roid-row" key={i.allianceId}>
+                  <div><b>{i.name}</b> <span className="roid-count">[{i.tag}]</span> <span className="roid-count">· aguardando aprovação</span></div>
+                  <button className="link" onClick={() => act(() => api.allianceRequestCancel())}>cancelar</button>
+                </div>
+              ))}
+            </div>
+          )}
+          {error && <div className="error" style={{ marginTop: 8 }}>{error}</div>}
+        </div>
+        <div className="panel">
+          <h2>Criar sua própria aliança</h2>
+          <div className="cost">Você vira o TL (Tag Leader) e passa a receber pedidos de entrada.</div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
             <input placeholder="Nome da aliança" value={name} onChange={(e) => setName(e.target.value)} style={{ width: 220, margin: 0, padding: "6px 8px" }} />
             <input placeholder="Tag" value={tag} onChange={(e) => setTag(e.target.value)} style={{ width: 100, margin: 0, padding: "6px 8px" }} />
             <button disabled={!name.trim() || !tag.trim()} onClick={() => act(() => api.allianceCreate(name.trim(), tag.trim()))}>criar</button>
           </div>
-          {error && <div className="error" style={{ marginTop: 8 }}>{error}</div>}
-        </div>
-        <div className="panel">
-          <h2>Convites recebidos</h2>
-          {(a.invites?.length ?? 0) === 0 ? (
-            <div className="roid-count">Nenhum convite no momento.</div>
-          ) : (
-            a.invites!.map((i) => (
-              <div className="roid-row" key={i.allianceId}>
-                <div><b>{i.name}</b> <span className="roid-count">[{i.tag}]</span></div>
-                <button onClick={() => act(() => api.allianceAccept(i.allianceId))}>aceitar</button>
-              </div>
-            ))
-          )}
         </div>
       </>
     );
@@ -73,14 +79,20 @@ export function Aliancas() {
       <IntelDaTag />
 
       {a.canInvite && (
-        <div className="panel">
-          <h2>Convidar jogador</h2>
-          <div style={{ display: "flex", gap: 6 }}>
-            <input placeholder="nome (login) do jogador" value={invite} onChange={(e) => setInvite(e.target.value)} style={{ width: 240, margin: 0, padding: "6px 8px" }} />
-            <button disabled={!invite.trim()} onClick={() => act(async () => { const r = await api.allianceInvite(invite.trim()); setInvite(""); return r; })}>convidar</button>
-          </div>
-          {(a.pending?.length ?? 0) > 0 && (
-            <div className="cost" style={{ marginTop: 8 }}>Convites pendentes: {a.pending!.map((p) => p.commander).join(", ")}</div>
+        <div className="panel" style={(a.pending?.length ?? 0) > 0 ? { borderColor: "var(--accent)" } : undefined}>
+          <h2>📥 Pedidos de entrada {(a.pending?.length ?? 0) > 0 && <span className="roid-count">({a.pending!.length})</span>}</h2>
+          {(a.pending?.length ?? 0) === 0 ? (
+            <div className="roid-count">Nenhum pedido no momento. Quem quiser entrar pede pela tag <b>[{a.tag}]</b>.</div>
+          ) : (
+            a.pending!.map((p) => (
+              <div className="roid-row" key={p.planetId}>
+                <div><b>{p.commander}</b> <span className="roid-count">· planeta {p.name}</span></div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => act(() => api.allianceRequestAccept(p.planetId))}>aceitar</button>
+                  <button className="link" style={{ color: "var(--danger)" }} onClick={() => act(() => api.allianceRequestReject(p.planetId))}>recusar</button>
+                </div>
+              </div>
+            ))
           )}
         </div>
       )}
