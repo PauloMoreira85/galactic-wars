@@ -108,7 +108,10 @@ function GalaxiaPrivada({ onChanged }: { onChanged: () => void }) {
           {pv.invites.map((i) => (
             <div className="roid-row" key={i.galaxy}>
               <div>🔒 {i.name} <span className="roid-count">(galáxia {i.galaxy})</span></div>
-              <button disabled={busy} onClick={() => act(() => api.privateJoin(i.galaxy))}>entrar</button>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button disabled={busy} onClick={() => act(() => api.privateJoin(i.galaxy))}>entrar</button>
+                <button className="link" disabled={busy} style={{ color: "var(--danger)" }} onClick={() => act(() => api.privateDecline(i.galaxy))}>recusar</button>
+              </div>
             </div>
           ))}
         </div>

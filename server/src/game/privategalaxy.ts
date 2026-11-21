@@ -52,7 +52,7 @@ export async function invitePrivate(ownerPlanetId: string, username: string) {
     update: {}, create: { galaxy: st.galaxy, planetId: user.planet.id },
   });
   const tick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
-  await prisma.news.create({ data: { planetId: user.planet.id, tick, message: `🔒 Você foi convidado para a galáxia privada "${st.name}"` } });
+  await prisma.news.create({ data: { planetId: user.planet.id, tick, message: `🔒 Você foi convidado para a galáxia privada "${st.name}" — aceite ou recuse em Associados (ou na aba Galáxia).` } });
   return { ok: true };
 }
 
@@ -63,6 +63,11 @@ export async function joinPrivate(planetId: string, galaxy: number) {
   const r = await relocate(planetId, galaxy);
   await prisma.galaxyInvite.deleteMany({ where: { planetId, galaxy } });
   return r;
+}
+
+// Convidado RECUSA o convite (remove sem entrar).
+export async function declinePrivate(planetId: string, galaxy: number) {
+  await prisma.galaxyInvite.deleteMany({ where: { planetId, galaxy } });
 }
 
 // Visão de galáxia privada para um planeta: a que ele possui + convites recebidos.

@@ -69,6 +69,10 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
     return () => clearInterval(t);
   }, []);
   useEffect(() => { api.markSeen("galaxy"); }, []); // missão tutorial
+  // Convites de galáxia privada pendentes (mostra banner no topo pra aceitar/recusar).
+  const [gInvites, setGInvites] = useState<{ galaxy: number; name: string }[]>([]);
+  async function loadInvites() { try { setGInvites((await api.privateView()).invites ?? []); } catch {} }
+  useEffect(() => { loadInvites(); }, []);
   // Mapeia a espionagem mais recente que EU tenho de cada coordenada (pra "Simular").
   useEffect(() => {
     api.spyReports().then((d) => {
@@ -156,6 +160,17 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
 
   return (
     <>
+      {gInvites.map((inv) => (
+        <div className="panel" key={inv.galaxy} style={{ borderColor: "var(--accent)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+            <div>🔒 Convite para a galáxia privada <b>"{inv.name}"</b> — quer entrar?</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button disabled={busy} onClick={async () => { setBusy(true); try { await api.privateJoin(inv.galaxy); await loadInvites(); onChanged(); } finally { setBusy(false); } }}>aceitar e mudar pra lá</button>
+              <button className="link" disabled={busy} style={{ color: "var(--danger)" }} onClick={async () => { setBusy(true); try { await api.privateDecline(inv.galaxy); await loadInvites(); } finally { setBusy(false); } }}>recusar</button>
+            </div>
+          </div>
+        </div>
+      ))}
       <div className="panel">
         {/* Cabeçalho da galáxia */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 10 }}>

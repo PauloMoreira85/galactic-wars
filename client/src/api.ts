@@ -557,6 +557,8 @@ export const api = {
     request<PrivateView>("/game/private/invite", { method: "POST", body: JSON.stringify({ username }) }),
   privateJoin: (galaxy: number) =>
     request<PrivateView>("/game/private/join", { method: "POST", body: JSON.stringify({ galaxy }) }),
+  privateDecline: (galaxy: number) =>
+    request<PrivateView>("/game/private/decline", { method: "POST", body: JSON.stringify({ galaxy }) }),
 
   // ===== Anúncios =====
   ads: (placement?: AdPlacement) => request<{ ads: Ad[] }>(`/ads${placement ? `?placement=${placement}` : ""}`),
