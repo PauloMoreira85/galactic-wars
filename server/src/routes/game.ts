@@ -1061,13 +1061,19 @@ gameRouter.get("/combats", async (req: AuthedRequest, res) => {
     const sumLost = (rows: { lost: number }[]) => rows.reduce((s, x) => s + x.lost, 0);
     // Registro de DEFESA (sem combate): atacante = quem defendeu; defensor = planeta protegido.
     const isDefense = r.winner === "defense";
-    const role = isDefense ? (iAmAttacker ? "defense-sent" : "defense-received") : (iAmAttacker ? "attacker" : "defender");
+    // Relatório de ALIADO que defendeu COM combate: ele é o defenderPlanetId.
+    const isAllyDefense = r.winner === "ally-defense";
+    const role = isAllyDefense ? "defender" // viu a batalha pelo lado da defesa
+      : isDefense ? (iAmAttacker ? "defense-sent" : "defense-received")
+      : (iAmAttacker ? "attacker" : "defender");
     return {
       id: r.id, tick: r.tick, role,
-      opponent: iAmAttacker ? r.defenderName : r.attackerName,
-      opponentCoords: iAmAttacker ? r.defenderCoords : r.attackerCoords,
-      myLost: isDefense ? 0 : sumLost(iAmAttacker ? detail.attacker : detail.defender),
-      oppLost: isDefense ? 0 : sumLost(iAmAttacker ? detail.defender : detail.attacker),
+      // No ally-defense o "oponente" é quem foi defendido (defendedName), não o def.name genérico.
+      opponent: isAllyDefense ? (detail.defendedName ?? r.attackerName) : (iAmAttacker ? r.defenderName : r.attackerName),
+      opponentCoords: isAllyDefense ? (detail.defendedCoords ?? r.attackerCoords) : (iAmAttacker ? r.defenderCoords : r.attackerCoords),
+      // Perdas do MEU lado: atacante olha detail.attacker; defensor (base ou aliado) olha detail.defender.
+      myLost: isDefense ? 0 : sumLost((iAmAttacker && !isAllyDefense ? detail.attacker : detail.defender) ?? []),
+      oppLost: isDefense ? 0 : sumLost((iAmAttacker && !isAllyDefense ? detail.defender : detail.attacker) ?? []),
       captured: { metalium: r.capturedMetalium, carbonum: r.capturedCarbonum, plutonium: r.capturedPlutonium },
     };
   });

@@ -394,6 +394,22 @@ export async function resolveSiege(target: { galaxy: number; system: number; slo
       report: JSON.stringify({ ...baseReport, attackerRace: raceTable(raceOf(atk.user.race)) }),
     }});
   }
+  // Relatório também pros ALIADOS que mandaram defesa (donos das guarnições): sem
+  // isso, quem veio defender não via o combate que participou. defenderPlanetId =
+  // o aliado, pra ele achar o relatório e aparecer como "fui defendido/defensor".
+  const garrOwners = new Set(garr.map((f) => f.ownerPlanetId));
+  garrOwners.delete(def.id); // o dono da base já vê pelo relatório do atacante
+  for (const allyId of garrOwners) {
+    const ally = await prisma.planet.findUnique({ where: { id: allyId } });
+    if (!ally) continue;
+    await prisma.battleReport.create({ data: {
+      tick, attackerPlanetId: def.id, defenderPlanetId: ally.id, // "defenderPlanetId" = o aliado (pra ele achar)
+      attackerName: def.name, defenderName: ally.name,
+      attackerCoords: `${def.galaxy}:${def.system}:${def.slot}`, defenderCoords: `${ally.galaxy}:${ally.system}:${ally.slot}`,
+      winner: "ally-defense",
+      report: JSON.stringify({ ...baseReport, allyDefense: true, defendedCoords: `${def.galaxy}:${def.system}:${def.slot}`, defendedName: def.name }),
+    }});
+  }
   // Moral do combate (canon): atacar planeta MAIS FORTE (+7/tick); atacar alvo
   // bem mais fraco = bullying (−1/tick); defensor perdendo roids p/ bem mais forte (+3/tick).
   for (const ownerId of atkOwners) {

@@ -474,6 +474,8 @@ export const api = {
       iAmAttacker: boolean;
       detail: {
         defense?: boolean; // registro de defesa (frota guarneceu, sem combate)
+        allyDefense?: boolean; // aliado que defendeu um planeta COM combate
+        defendedName?: string; defendedCoords?: string; // planeta que o aliado defendeu
         attackerRace?: string;
         defenderRace?: string;
         ticks: number;

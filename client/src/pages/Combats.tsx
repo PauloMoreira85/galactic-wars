@@ -81,9 +81,14 @@ export function Combats() {
       <>
         <button className="link" onClick={() => setDetail(null)}>← voltar aos combates</button>
         <div className="panel" style={{ marginTop: 10 }}>
-          <h2>Relatório de Combate</h2>
+          <h2>{d.allyDefense ? "🛡️ Relatório de Defesa (combate)" : "Relatório de Combate"}</h2>
+          {d.allyDefense && (
+            <div className="cost" style={{ color: "var(--carbonum)" }}>
+              Você enviou defesa pro aliado <b>{d.defendedName}</b> (<CoordLink c={d.defendedCoords ?? ""} />) e participou do combate. Suas naves estão no lado <b>defensor</b> abaixo.
+            </div>
+          )}
           <div className="cost">
-            Combate ocorrido no tick <b>#{detail.tick}</b> ({d.ticks ?? 3} ticks), em órbita de <b>{detail.defenderName}</b> (<CoordLink c={detail.defenderCoords} />).
+            Combate ocorrido no tick <b>#{detail.tick}</b> ({d.ticks ?? 3} ticks), em órbita de <b>{d.allyDefense ? d.defendedName : detail.defenderName}</b> (<CoordLink c={d.allyDefense ? (d.defendedCoords ?? "") : detail.defenderCoords} />).
           </div>
           <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginTop: 8 }}>
             <div><div className="roid-count">Atacante {iAmAtk && "(você)"}</div><b style={{ color: "var(--danger)" }}>{detail.attackerName}</b> <span className="roid-count">(<CoordLink c={detail.attackerCoords} />) · {d.attackerRace}</span></div>
