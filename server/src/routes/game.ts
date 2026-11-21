@@ -8,7 +8,7 @@ import { RACES, isRaceKey, RACE_KEYS } from "../game/races.js";
 import { startUpgrade, buildUnit, buildAgent, parseTech, cancelOrder } from "../game/fleet.js";
 import { AGENTS, AGENT_KEYS, AGENT_FULL_NAME, isAgentKey, parseAgents, stringifyAgents, isShielded, ceNeeded, spySuccessChance, ROIDS_POR_CE } from "../game/agents.js";
 import { createFleet, setFleetComposition, transferUnits, renameFleet, dispatchFleet, fuelCost, viewSystem, galaxyTraffic, type ShipCounts } from "../game/galaxy.js";
-import { galaxyId, galaxyDecompose } from "../game/geo.js";
+import { galaxyId, galaxyDecompose, NUM_SETORES, NUM_PARALELOS } from "../game/geo.js";
 import { recallFleet, BATTLE_TICKS, simulateCombat } from "../game/combat.js";
 import { unitsOfRace, isUnitUnlocked, CLASS_LABEL, unitByName, shipImage, radarVisibleCount } from "../game/catalog.js";
 import { UNIT_TABLE } from "../game/unitTable.js";
@@ -1371,6 +1371,48 @@ gameRouter.post("/private/decline", async (req: AuthedRequest, res) => {
   try { await declinePrivate(planet.id, galaxy); }
   catch (e: any) { return res.status(400).json({ error: e.message ?? "Falha" }); }
   res.json(await privateView(planet.id));
+});
+
+// Visão de UNIVERSO: grade de setores×paralelos com resumo de cada galáxia +
+// distância (em ticks de penalidade) até a galáxia do jogador.
+gameRouter.get("/universe", async (req: AuthedRequest, res) => {
+  const planet = await prisma.planet.findUnique({ where: { userId: req.userId! } });
+  if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
+  const myGal = galaxyId(planet.galaxy, planet.system);
+  // Minha aliança (pra marcar galáxias com aliado meu).
+  const myMem = await prisma.allianceMember.findUnique({ where: { planetId: planet.id } });
+  // Agrega planetas públicos por galáxia.
+  const planets = await prisma.planet.findMany({ where: { galaxy: { lte: NUM_SETORES } }, select: { id: true, galaxy: true, system: true } });
+  const myAllyPlanetIds = myMem
+    ? new Set((await prisma.allianceMember.findMany({ where: { allianceId: myMem.allianceId }, select: { planetId: true } })).map((m) => m.planetId))
+    : new Set<string>();
+  const states = await prisma.galaxyState.findMany({ where: { isPrivate: false }, select: { galaxy: true, name: true } });
+  const nameOf = new Map(states.map((s) => [s.galaxy, s.name]));
+
+  const agg: Record<number, { planets: number; hasAlly: boolean }> = {};
+  for (const p of planets) {
+    const gid = galaxyId(p.galaxy, p.system);
+    const a = (agg[gid] ??= { planets: 0, hasAlly: false });
+    a.planets++;
+    if (myAllyPlanetIds.has(p.id)) a.hasAlly = true;
+  }
+
+  const galaxies = [];
+  for (let setor = 1; setor <= NUM_SETORES; setor++) {
+    for (let paralelo = 1; paralelo <= NUM_PARALELOS; paralelo++) {
+      const gid = galaxyId(setor, paralelo);
+      const a = agg[gid] ?? { planets: 0, hasAlly: false };
+      galaxies.push({
+        setor, paralelo, coord: `${setor}:${paralelo}`,
+        name: nameOf.get(gid) ?? null,
+        planets: a.planets,
+        hasAlly: a.hasAlly,
+        isMine: gid === myGal,
+        distanceTicks: galaxyPenalty(myGal, gid), // 0 = minha · 2 = mesmo setor/paralelo · 4 = cruzado
+      });
+    }
+  }
+  res.json({ setores: NUM_SETORES, paralelos: NUM_PARALELOS, myCoord: `${planet.galaxy}:${planet.system}`, galaxies });
 });
 
 // ===== Ferramentas (kit de apoio) =====

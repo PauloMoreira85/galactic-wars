@@ -515,6 +515,11 @@ export const api = {
     }>("/game/ranking"),
   allianceRanking: () =>
     request<{ ranking: { id: string; name: string; tag: string; score: number; members: number; avg: number }[] }>("/game/ranking/alliances"),
+  universe: () =>
+    request<{
+      setores: number; paralelos: number; myCoord: string;
+      galaxies: { setor: number; paralelo: number; coord: string; name: string | null; planets: number; hasAlly: boolean; isMine: boolean; distanceTicks: number }[];
+    }>("/game/universe"),
 
   toolUnits: () =>
     request<{ units: {

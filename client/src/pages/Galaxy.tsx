@@ -69,10 +69,13 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
     return () => clearInterval(t);
   }, []);
   useEffect(() => { api.markSeen("galaxy"); }, []); // missão tutorial
-  // Visão da galáxia: mapa visual ou lista (tabela). Lembra a escolha no navegador.
-  const [gview, setGview] = useState<"map" | "list">(() => { try { return (localStorage.getItem("gw_galaxy_view") as "map" | "list") || "map"; } catch { return "map"; } });
-  function setGalaxyView(v: "map" | "list") { setGview(v); try { localStorage.setItem("gw_galaxy_view", v); } catch {} }
+  // Visão: universo (grade de setores) · mapa (radar do sistema) · lista (tabela).
+  const [gview, setGview] = useState<"universe" | "map" | "list">(() => { try { return (localStorage.getItem("gw_galaxy_view") as any) || "map"; } catch { return "map"; } });
+  function setGalaxyView(v: "universe" | "map" | "list") { setGview(v); try { localStorage.setItem("gw_galaxy_view", v); } catch {} }
   const [mapSel, setMapSel] = useState<number | null>(null); // planeta selecionado no mapa
+  // Dados do universo (grade de galáxias) — carregado quando entra na visão universo.
+  const [universe, setUniverse] = useState<Awaited<ReturnType<typeof api.universe>> | null>(null);
+  useEffect(() => { if (gview === "universe" && !universe) api.universe().then(setUniverse).catch(() => {}); }, [gview, universe]);
   // Tráfego entrante (frotas a caminho do setor) — pras linhas do mapa tático.
   const [traffic, setTraffic] = useState<Awaited<ReturnType<typeof api.traffic>>["fleets"]>([]);
   async function loadTraffic() { try { setTraffic((await api.traffic()).fleets); } catch {} }
@@ -208,10 +211,38 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, margin: "8px 0" }}>
           <div className="roid-count">seu planeta: {myCoords} · agentes que você tem: {(["P","M","T","D"] as const).filter(a=>agentsIHave[a]).join(" ") || "nenhum"}</div>
           <div className="auth-tabs" style={{ margin: 0 }}>
-            <button className={gview === "map" ? "active" : ""} onClick={() => setGalaxyView("map")}>🗺️ Mapa</button>
+            <button className={gview === "universe" ? "active" : ""} onClick={() => setGalaxyView("universe")}>🌌 Universo</button>
+            <button className={gview === "map" ? "active" : ""} onClick={() => setGalaxyView("map")}>🗺️ Setor</button>
             <button className={gview === "list" ? "active" : ""} onClick={() => setGalaxyView("list")}>📋 Lista</button>
           </div>
         </div>
+
+        {gview === "universe" && (
+          <div>
+            <div className="gmap-legend" style={{ marginBottom: 8 }}>
+              <span><i className="dot" style={{ background: "#4ea8ff" }} />você</span>
+              <span><i className="dot" style={{ background: "#38d6a0" }} />tem aliado</span>
+              <span>· distância: <b>0</b> aqui · <b>2</b> mesmo setor/paralelo · <b>4</b> cruzado (ticks + TEC da frota)</span>
+            </div>
+            {!universe ? <div className="roid-count">Carregando universo…</div> : (
+              <div className="universe-grid" style={{ gridTemplateColumns: `repeat(${universe.paralelos}, 1fr)` }}>
+                {universe.galaxies.map((g) => {
+                  const k = g.isMine ? "u-mine" : g.hasAlly ? "u-ally" : g.planets > 0 ? "u-occ" : "u-empty";
+                  return (
+                    <button key={g.coord} className={`ugal ${k}`}
+                      title={`${g.name ?? "Galáxia"} ${g.coord} · ${g.planets} planeta(s) · distância ${g.distanceTicks}t`}
+                      onClick={() => { setGalaxy(g.setor); setSystem(g.paralelo); setGalaxyView("map"); }}>
+                      <div className="ugal-coord">{g.coord}</div>
+                      {g.name && <div className="ugal-name">{g.name}</div>}
+                      <div className="ugal-meta">{g.planets > 0 ? `${g.planets}🪐` : "—"}{!g.isMine && <span className="ugal-dist"> · {g.distanceTicks}t</span>}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            <div className="roid-count" style={{ marginTop: 8, fontSize: 11 }}>Clique numa galáxia pra abrir o radar dela (setor:paralelo). Linhas = setores · colunas = paralelos.</div>
+          </div>
+        )}
 
         {gview === "map" && data && (() => {
           // ===== Radar de setor: planetas em círculo + linhas de tráfego =====

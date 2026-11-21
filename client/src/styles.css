@@ -612,3 +612,19 @@ td { font-family: var(--mono); }
 .planet-slot { text-anchor: middle; fill: #04101e; font-size: 15px; font-weight: 800; pointer-events: none; }
 .planet-slot.dim { fill: #8aa0b8; }
 .planet-prot-bg { fill: #0a1220; stroke: #9fb2c8; stroke-width: 1; }
+
+/* ===== Visão de universo (grade de galáxias) ===== */
+.universe-grid { display: grid; gap: 8px; }
+.ugal { border: 1px solid var(--border); border-radius: 10px; padding: 10px 6px; cursor: pointer; text-align: center;
+  background: linear-gradient(180deg, rgba(10,20,38,0.8), rgba(4,10,22,0.8)); color: var(--text);
+  transition: transform .1s, box-shadow .1s, border-color .1s; font: inherit; min-height: 64px; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+.ugal:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,0.4); border-color: var(--accent); }
+.ugal-coord { font-family: var(--mono, monospace); font-size: 13px; font-weight: 700; color: #eafcff; }
+.ugal-name { font-size: 10.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ugal-meta { font-size: 11px; color: var(--muted); }
+.ugal-dist { color: var(--accent); }
+.ugal.u-mine { border-color: #4ea8ff; box-shadow: inset 0 0 0 1px rgba(78,168,255,0.4), 0 0 14px rgba(78,168,255,0.25); }
+.ugal.u-ally { border-color: #38d6a0; }
+.ugal.u-occ  { border-color: #3a4c6c; }
+.ugal.u-empty { opacity: 0.45; }
+@media (max-width: 560px) { .ugal { padding: 7px 3px; min-height: 54px; } .ugal-coord { font-size: 12px; } .ugal-name { display: none; } }
