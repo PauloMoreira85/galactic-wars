@@ -221,21 +221,22 @@ export async function dispatchFleet(planetId: string, fleetId: string, target: C
     const tgtP = await tx.planet.findUnique({ where: { galaxy_system_slot: { galaxy: target.galaxy, system: target.system, slot: target.slot } }, select: { id: true, userId: true } });
     let pushMsg: { userId: string; title: string; body: string; tag: string } | null = null;
     if (tgtP && tgtP.id !== planetId) {
+      const fromCoord = `${planet.galaxy}:${planet.system}:${planet.slot}`; // coord de quem envia (pra passar AT)
       if (mission === "attack") {
         const visible = radarVisibleCount(fleetUnits);
         if (visible > 0) {
-          await tx.news.create({ data: { planetId: tgtP.id, tick, message: `🚨 ATAQUE! ${planet.name} está te atacando com ${visible} nave(s) — chega em ${tt} tick(s)!` } });
-          pushMsg = { userId: tgtP.userId, title: "🚨 ATAQUE a caminho!", body: `${planet.name} está te atacando com ${visible} nave(s) — chega em ${tt} tick(s)!`, tag: "ataque" };
+          await tx.news.create({ data: { planetId: tgtP.id, tick, message: `🚨 ATAQUE! ${planet.name} (${fromCoord}) está te atacando com ${visible} nave(s) — chega em ${tt} tick(s)!` } });
+          pushMsg = { userId: tgtP.userId, title: "🚨 ATAQUE a caminho!", body: `${planet.name} (${fromCoord}) está te atacando com ${visible} nave(s) — chega em ${tt} tick(s)!`, tag: "ataque" };
           // Avisa os aliados do ALVO pra correrem defender (mesmo radar: se não é
           // visível, nem o aliado fica sabendo).
           const mates = await allianceMateIds(tgtP.id);
           if (mates.length) {
             const coord = `${target.galaxy}:${target.system}:${target.slot}`;
-            await tx.news.createMany({ data: mates.map((pid) => ({ planetId: pid, tick, message: `🛡️ Aliado sob ataque! ${planet.name} está atacando o aliado em ${coord} — chega em ${tt}t. Mande defesa!` })) });
+            await tx.news.createMany({ data: mates.map((pid) => ({ planetId: pid, tick, message: `🛡️ Aliado sob ataque! ${planet.name} (${fromCoord}) está atacando o aliado em ${coord} — chega em ${tt}t. Mande defesa!` })) });
           }
         }
       } else {
-        await tx.news.create({ data: { planetId: tgtP.id, tick, message: `🛡️ Reforço a caminho: ${planet.name} mandou ${totalUnits(fleetUnits)} nave(s) pra te defender — chega em ${tt} tick(s).` } });
+        await tx.news.create({ data: { planetId: tgtP.id, tick, message: `🛡️ Reforço a caminho: ${planet.name} (${fromCoord}) mandou ${totalUnits(fleetUnits)} nave(s) pra te defender — chega em ${tt} tick(s).` } });
       }
     }
     return { ok: true, arriveIn: tt, pushMsg };
@@ -303,8 +304,9 @@ export async function processFleets(uptoTick: number) {
         await prisma.news.create({ data: { planetId: fleet.ownerPlanetId, tick: uptoTick, message: `🔙 Sua guarnição em ${coord} terminou — ${fleet.name} está voltando pra base` } });
         const defended = await prisma.planet.findUnique({ where: { galaxy_system_slot: { galaxy: fleet.targetGalaxy, system: fleet.targetSystem, slot: fleet.targetSlot } }, select: { id: true } });
         if (defended && defended.id !== fleet.ownerPlanetId) {
-          const sender = await prisma.planet.findUnique({ where: { id: fleet.ownerPlanetId }, select: { name: true } });
-          await prisma.news.create({ data: { planetId: defended.id, tick: uptoTick, message: `🔙 O reforço de ${sender?.name ?? "um aliado"} terminou a defesa e está voltando pra base` } });
+          const sender = await prisma.planet.findUnique({ where: { id: fleet.ownerPlanetId }, select: { name: true, galaxy: true, system: true, slot: true } });
+          const sc = sender ? ` (${sender.galaxy}:${sender.system}:${sender.slot})` : "";
+          await prisma.news.create({ data: { planetId: defended.id, tick: uptoTick, message: `🔙 O reforço de ${sender?.name ?? "um aliado"}${sc} terminou a defesa e está voltando pra base` } });
         }
         await scheduleReturn(fleet.id, fleet, parseUnits(fleet.units));
       }
@@ -336,7 +338,8 @@ export async function processFleets(uptoTick: number) {
       // Avisa o planeta defendido que chegou reforço (se não for a própria frota dele).
       const sender = await prisma.planet.findUnique({ where: { id: fleet.ownerPlanetId }, select: { name: true, galaxy: true, system: true, slot: true } });
       if (targetPlanet.id !== fleet.ownerPlanetId) {
-        await prisma.news.create({ data: { planetId: targetPlanet.id, tick: uptoTick, message: `🛡️ Reforço chegou: a frota de ${sender?.name ?? "um aliado"} está defendendo seu planeta (${totalUnits(parseUnits(fleet.units))} nave[s])` } });
+        const sc = sender ? ` (${sender.galaxy}:${sender.system}:${sender.slot})` : "";
+        await prisma.news.create({ data: { planetId: targetPlanet.id, tick: uptoTick, message: `🛡️ Reforço chegou: a frota de ${sender?.name ?? "um aliado"}${sc} está defendendo seu planeta (${totalUnits(parseUnits(fleet.units))} nave[s])` } });
       }
       // Registro de DEFESA no menu Combates (mesmo sem combate): comprova que a
       // frota chegou e guarneceu. role "defense" (atacante = quem defendeu).
