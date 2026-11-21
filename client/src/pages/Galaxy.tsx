@@ -335,7 +335,7 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
                 <svg viewBox={`0 0 ${W} ${H}`} className="gmap-radar" preserveAspectRatio="xMidYMid meet">
                   <defs>
                     <clipPath id="planet-clip"><circle cx="0" cy="0" r="17" /></clipPath>
-                    <clipPath id="roid-clip"><circle cx="5.5" cy="5.5" r="5.5" /></clipPath>
+                    <clipPath id="roid-clip" clipPathUnits="objectBoundingBox"><circle cx="0.5" cy="0.5" r="0.5" /></clipPath>
                   </defs>
                   {/* anéis de radar */}
                   {[R, R * 0.62, R * 0.28].map((rr, k) => <circle key={k} cx={cx} cy={cy} r={rr} className="radar-ring" />)}
