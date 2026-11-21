@@ -301,14 +301,27 @@ export async function resolveSiege(target: { galaxy: number; system: number; slo
   // depois a cota é repartida entre os recursos proporcional ao que o alvo tem, sem
   // perder roids pro arredondamento (o floor por-recurso antigo comia quase tudo).
   const tickCap = Math.floor(targetRoidsTotal * st.rate);
-  let room = Math.min(capacity, tickCap);
+  const room = Math.min(capacity, tickCap);
   const roundCap = { metalium: 0, carbonum: 0, plutonium: 0 };
-  // Rouba recurso a recurso até esgotar a cota; começa pelo que o alvo tem mais.
-  const order = (["metalium", "carbonum", "plutonium"] as const).slice().sort((a, b) => roids[b] - roids[a]);
-  for (const r of order) {
-    if (room <= 0) break;
-    const take = Math.min(room, roids[r]);
-    if (take > 0) { roids[r] -= take; room -= take; roundCap[r] += take; }
+  // Reparte a cota PROPORCIONALMENTE ao que o alvo tem de cada recurso (não concentra
+  // num só). Ex: alvo 50M/30C/20P e cota 10 → ~5M/3C/2P. O resto do arredondamento
+  // vai pros maiores fracionários; nunca tira mais do que o alvo tem de cada recurso.
+  const keys = ["metalium", "carbonum", "plutonium"] as const;
+  if (room > 0 && targetRoidsTotal > 0) {
+    const parts = keys.map((r) => {
+      const exact = room * (roids[r] / targetRoidsTotal);
+      return { r, floor: Math.min(roids[r], Math.floor(exact)), frac: exact - Math.floor(exact) };
+    });
+    let assigned = 0;
+    for (const p of parts) { roundCap[p.r] = p.floor; assigned += p.floor; }
+    let left = room - assigned;
+    // Distribui a sobra pros recursos com maior fração, respeitando o que o alvo ainda tem.
+    parts.sort((a, b) => b.frac - a.frac);
+    for (let i = 0; i < parts.length && left > 0; i++) {
+      const p = parts[i];
+      if (roundCap[p.r] < roids[p.r]) { roundCap[p.r]++; left--; }
+    }
+    for (const r of keys) roids[r] -= roundCap[r];
   }
 
   // Sobreviventes -> distribui de volta a cada frota/contribuinte.
