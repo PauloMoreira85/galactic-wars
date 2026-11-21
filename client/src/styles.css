@@ -609,3 +609,6 @@ td { font-family: var(--mono); }
 .traffic-dot.atk { fill: #ff7a7a; } .traffic-dot.def { fill: #5ae0a8; }
 .gmap-sel-panel { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
   margin-top: 10px; padding: 10px 12px; border: 1px solid var(--accent); border-radius: 10px; background: rgba(37,211,255,0.06); }
+.planet-slot { text-anchor: middle; fill: #04101e; font-size: 15px; font-weight: 800; pointer-events: none; }
+.planet-slot.dim { fill: #8aa0b8; }
+.planet-prot-bg { fill: #0a1220; stroke: #9fb2c8; stroke-width: 1; }

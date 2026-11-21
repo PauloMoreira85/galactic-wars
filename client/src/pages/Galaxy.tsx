@@ -270,7 +270,7 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
                   {/* planetas */}
                   {slots.map((sl) => {
                     const p = slotPos[sl.slot];
-                    if (!sl.occupied) return <g key={sl.slot}><circle cx={p.x} cy={p.y} r="10" className="planet-empty" /><text x={p.x} y={p.y + 26} className="planet-label dim">{sl.slot} · vazio</text></g>;
+                    if (!sl.occupied) return <g key={sl.slot}><circle cx={p.x} cy={p.y} r="13" className="planet-empty" /><text x={p.x} y={p.y + 4} className="planet-slot dim">{sl.slot}</text><text x={p.x} y={p.y + 30} className="planet-label dim">vazio</text></g>;
                     const k = kindOf(sl); const col = ORB[k];
                     const sel = sl.slot === selSlot;
                     return (
@@ -278,10 +278,12 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
                         {sel && <circle cx={p.x} cy={p.y} r="26" className="planet-sel" />}
                         <circle cx={p.x} cy={p.y} r="17" fill={col} style={{ filter: `drop-shadow(0 0 8px ${col})` }} />
                         <circle cx={p.x - 5} cy={p.y - 5} r="5" fill="#ffffff55" />
+                        {/* número do SLOT no centro do planeta */}
+                        <text x={p.x} y={p.y + 5} className="planet-slot">{sl.slot}</text>
                         {sl.online === true && <circle cx={p.x + 13} cy={p.y - 13} r="4" className="planet-online" />}
-                        {sl.protected && <text x={p.x} y={p.y + 4} className="planet-prot">P</text>}
+                        {sl.protected && <g><circle cx={p.x + 14} cy={p.y + 13} r="7" className="planet-prot-bg" /><text x={p.x + 14} y={p.y + 16} className="planet-prot">P</text></g>}
                         <text x={p.x} y={p.y + 34} className="planet-label"><tspan className="pl-name">{sl.name}</tspan></text>
-                        <text x={p.x} y={p.y + 48} className="planet-label dim">{sl.commander} · 💎{fmt(sl.roids ?? 0)}</text>
+                        <text x={p.x} y={p.y + 48} className="planet-label dim">{galaxy}:{system}:{sl.slot} · {sl.commander} · 💎{fmt(sl.roids ?? 0)}</text>
                       </g>
                     );
                   })}
