@@ -1381,38 +1381,47 @@ gameRouter.get("/universe", async (req: AuthedRequest, res) => {
   const myGal = galaxyId(planet.galaxy, planet.system);
   // Minha aliança (pra marcar galáxias com aliado meu).
   const myMem = await prisma.allianceMember.findUnique({ where: { planetId: planet.id } });
-  // Agrega planetas públicos por galáxia.
-  const planets = await prisma.planet.findMany({ where: { galaxy: { lte: NUM_SETORES } }, select: { id: true, galaxy: true, system: true } });
+  // TODOS os planetas (inclui setores privados 6+). Agrega por galáxia.
+  const planets = await prisma.planet.findMany({ select: { id: true, galaxy: true, system: true } });
   const myAllyPlanetIds = myMem
     ? new Set((await prisma.allianceMember.findMany({ where: { allianceId: myMem.allianceId }, select: { planetId: true } })).map((m) => m.planetId))
     : new Set<string>();
-  const states = await prisma.galaxyState.findMany({ where: { isPrivate: false }, select: { galaxy: true, name: true } });
+  const states = await prisma.galaxyState.findMany({ select: { galaxy: true, name: true } });
   const nameOf = new Map(states.map((s) => [s.galaxy, s.name]));
 
-  const agg: Record<number, { planets: number; hasAlly: boolean }> = {};
+  const agg: Record<string, { planets: number; hasAlly: boolean }> = {};
   for (const p of planets) {
-    const gid = galaxyId(p.galaxy, p.system);
-    const a = (agg[gid] ??= { planets: 0, hasAlly: false });
+    const key = `${p.galaxy}:${p.system}`;
+    const a = (agg[key] ??= { planets: 0, hasAlly: false });
     a.planets++;
     if (myAllyPlanetIds.has(p.id)) a.hasAlly = true;
   }
 
+  // Grade cobre os setores/paralelos que EXISTEM (público 1..NUM_SETORES + onde houver
+  // planeta, ex: a galáxia privada do próprio jogador no setor 7). Garante incluir a minha.
+  const maxSetor = Math.max(NUM_SETORES, planet.galaxy, ...planets.map((p) => p.galaxy));
+  const maxParalelo = Math.max(NUM_PARALELOS, planet.system, ...planets.map((p) => p.system));
+
   const galaxies = [];
-  for (let setor = 1; setor <= NUM_SETORES; setor++) {
-    for (let paralelo = 1; paralelo <= NUM_PARALELOS; paralelo++) {
+  for (let setor = 1; setor <= maxSetor; setor++) {
+    for (let paralelo = 1; paralelo <= maxParalelo; paralelo++) {
+      const key = `${setor}:${paralelo}`;
+      const a = agg[key] ?? { planets: 0, hasAlly: false };
       const gid = galaxyId(setor, paralelo);
-      const a = agg[gid] ?? { planets: 0, hasAlly: false };
+      // Distância canônica: mesma galáxia 0 · mesmo setor OU mesmo paralelo 2 · cruzado 4.
+      const dist = (setor === planet.galaxy && paralelo === planet.system) ? 0
+        : (setor === planet.galaxy || paralelo === planet.system) ? 2 : 4;
       galaxies.push({
-        setor, paralelo, coord: `${setor}:${paralelo}`,
+        setor, paralelo, coord: key,
         name: nameOf.get(gid) ?? null,
         planets: a.planets,
         hasAlly: a.hasAlly,
-        isMine: gid === myGal,
-        distanceTicks: galaxyPenalty(myGal, gid), // 0 = minha · 2 = mesmo setor/paralelo · 4 = cruzado
+        isMine: setor === planet.galaxy && paralelo === planet.system,
+        distanceTicks: dist,
       });
     }
   }
-  res.json({ setores: NUM_SETORES, paralelos: NUM_PARALELOS, myCoord: `${planet.galaxy}:${planet.system}`, galaxies });
+  res.json({ setores: maxSetor, paralelos: maxParalelo, myCoord: `${planet.galaxy}:${planet.system}`, galaxies });
 });
 
 // ===== Ferramentas (kit de apoio) =====

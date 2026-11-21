@@ -222,7 +222,7 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
             <div className="gmap-legend" style={{ marginBottom: 8 }}>
               <span><i className="dot" style={{ background: "#4ea8ff" }} />você</span>
               <span><i className="dot" style={{ background: "#38d6a0" }} />tem aliado</span>
-              <span>· distância: <b>0</b> aqui · <b>2</b> mesmo setor/paralelo · <b>4</b> cruzado (ticks + TEC da frota)</span>
+              <span>· distância pra sua galáxia: <b>0t</b> aqui · <b>2t</b> mesma linha ou coluna que você · <b>4t</b> cruzado (+ a TEC da sua frota)</span>
             </div>
             {!universe ? <div className="roid-count">Carregando universo…</div> : (
               <div className="universe-grid" style={{ gridTemplateColumns: `repeat(${universe.paralelos}, 1fr)` }}>
