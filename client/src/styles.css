@@ -594,6 +594,10 @@ td { font-family: var(--mono); }
   border: 1px solid var(--border); border-radius: 12px; padding: 6px; }
 .gmap-radar { width: 100%; height: auto; display: block; }
 
+/* Estatísticas de combate */
+.stat-line { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; padding: 2px 0; color: #cfe3f5; }
+.stat-line span { color: var(--muted); }
+
 /* Mapa estelar do universo / vizinhança */
 .universe-map-wrap { background: radial-gradient(circle at 50% 50%, rgba(2,8,18,0.25), rgba(2,8,18,0.72)), url("/art/mapa-galaxia.jpg") center/cover no-repeat;
   border: 1px solid var(--border); border-radius: 12px; padding: 6px; }

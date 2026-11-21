@@ -3,6 +3,7 @@ import { api, REFRESH_MS } from "../api";
 import { CoordLink } from "../components/CoordLink";
 import { ShipName } from "../components/ShipIcon";
 import { CombatChart } from "../components/CombatChart";
+import { CombatStats } from "../components/CombatStats";
 
 function fmt(n: number) {
   return n.toLocaleString("pt-BR");
@@ -188,6 +189,8 @@ export function Combats() {
 
         {d.log && d.log.length > 0 && (
           <>
+          <CombatStats log={d.log} />
+
           <div className="panel">
             <h2>Troca de tiros</h2>
             <div className="cost" style={{ marginBottom: 8 }}>Quem atirou em quem nesta rodada — a cor mostra o efeito e a grossura, quantas naves foram abatidas.</div>
@@ -204,12 +207,14 @@ export function Combats() {
                   const who = e.side === "a" ? "Atacante" : "Defensor";
                   const verbo = e.action === "pem" ? "paralisando" : e.action === "assim" ? "assimilando" : "destruindo";
                   const chanceLabel = e.action === "pem" ? "Chance de vencer a resistência ao PEM" : "Chance média de atingir";
+                  const porNave = e.count > 0 ? (e.shots / e.count) : 0;
                   return (
                     <div key={i} className="combat-line">
                       <span style={{ color: e.side === "a" ? "var(--danger)" : "var(--carbonum)" }}>{who}:</span>{" "}
-                      {fmt(e.count)} {e.ship} direcionaram <b>{fmt(e.shots)}</b> tiro(s) em {e.target}, {verbo} {fmt(e.amount)} naves
+                      {fmt(e.count)} {e.ship} dispararam <b>{fmt(e.shots)}</b> tiro(s)
+                      <span className="roid-count"> ({porNave.toFixed(1)}/nave)</span> em {e.target}, {verbo} <b>{fmt(e.amount)}</b> naves
                       {e.action === "assim" && (e.assimCost ?? 0) > 0 && <span style={{ color: "var(--danger)" }}> — ao custo de {fmt(e.assimCost!)} naves</span>}
-                      <span className="roid-count"> ({chanceLabel} — {e.chance}%)</span>
+                      <span className="roid-count"> · {chanceLabel}: {e.chance}%</span>
                     </div>
                   );
                 })}
