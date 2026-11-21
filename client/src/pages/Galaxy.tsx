@@ -69,13 +69,13 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
     return () => clearInterval(t);
   }, []);
   useEffect(() => { api.markSeen("galaxy"); }, []); // missão tutorial
-  // Visão: universo (grade de setores) · mapa (radar do sistema) · lista (tabela).
-  const [gview, setGview] = useState<"universe" | "map" | "list">(() => { try { return (localStorage.getItem("gw_galaxy_view") as any) || "map"; } catch { return "map"; } });
-  function setGalaxyView(v: "universe" | "map" | "list") { setGview(v); try { localStorage.setItem("gw_galaxy_view", v); } catch {} }
+  // Visão: universo (grade toda) · vizinhanca (+2t) · mapa (radar da galáxia) · lista.
+  const [gview, setGview] = useState<"universe" | "vizinhanca" | "map" | "list">(() => { try { return (localStorage.getItem("gw_galaxy_view") as any) || "map"; } catch { return "map"; } });
+  function setGalaxyView(v: "universe" | "vizinhanca" | "map" | "list") { setGview(v); try { localStorage.setItem("gw_galaxy_view", v); } catch {} }
   const [mapSel, setMapSel] = useState<number | null>(null); // planeta selecionado no mapa
   // Dados do universo (grade de galáxias) — carregado quando entra na visão universo.
   const [universe, setUniverse] = useState<Awaited<ReturnType<typeof api.universe>> | null>(null);
-  useEffect(() => { if (gview === "universe" && !universe) api.universe().then(setUniverse).catch(() => {}); }, [gview, universe]);
+  useEffect(() => { if ((gview === "universe" || gview === "vizinhanca") && !universe) api.universe().then(setUniverse).catch(() => {}); }, [gview, universe]);
   // Tráfego entrante (frotas a caminho do setor) — pras linhas do mapa tático.
   const [traffic, setTraffic] = useState<Awaited<ReturnType<typeof api.traffic>>["fleets"]>([]);
   async function loadTraffic() { try { setTraffic((await api.traffic()).fleets); } catch {} }
@@ -212,10 +212,49 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
           <div className="roid-count">seu planeta: {myCoords} · agentes que você tem: {(["P","M","T","D"] as const).filter(a=>agentsIHave[a]).join(" ") || "nenhum"}</div>
           <div className="auth-tabs" style={{ margin: 0 }}>
             <button className={gview === "universe" ? "active" : ""} onClick={() => setGalaxyView("universe")}>🌌 Universo</button>
-            <button className={gview === "map" ? "active" : ""} onClick={() => setGalaxyView("map")}>🗺️ Setor</button>
+            <button className={gview === "vizinhanca" ? "active" : ""} onClick={() => setGalaxyView("vizinhanca")}>🧭 Vizinhança</button>
+            <button className={gview === "map" ? "active" : ""} onClick={() => setGalaxyView("map")}>🗺️ Galáxia</button>
             <button className={gview === "list" ? "active" : ""} onClick={() => setGalaxyView("list")}>📋 Lista</button>
           </div>
         </div>
+
+        {gview === "vizinhanca" && (
+          <div>
+            <div className="gmap-legend" style={{ marginBottom: 8 }}>
+              <span>🧭 Galáxias a <b>+2 ticks</b> de você — mesmo <b>setor</b> (linha {galaxy}) ou mesmo <b>paralelo</b> (coluna {system}).</span>
+              <span><i className="dot" style={{ background: "#4ea8ff" }} />você</span>
+              <span><i className="dot" style={{ background: "#38d6a0" }} />tem aliado</span>
+            </div>
+            {!universe ? <div className="roid-count">Carregando…</div> : (() => {
+              const near = universe.galaxies.filter((g) => g.setor === galaxy || g.paralelo === system);
+              const bySetor = near.filter((g) => g.setor === galaxy).sort((a, b) => a.paralelo - b.paralelo);
+              const byParalelo = near.filter((g) => g.paralelo === system && g.setor !== galaxy).sort((a, b) => a.setor - b.setor);
+              const cell = (g: typeof near[0]) => {
+                const k = g.isMine ? "u-mine" : g.hasAlly ? "u-ally" : g.planets > 0 ? "u-occ" : "u-empty";
+                return (
+                  <button key={g.coord} className={`ugal ${k}`} title={`${g.name ?? "Galáxia"} ${g.coord} · ${g.planets} planeta(s) · +${g.distanceTicks}t`}
+                    onClick={() => { setGalaxy(g.setor); setSystem(g.paralelo); setGalaxyView("map"); }}>
+                    <div className="ugal-coord">{g.coord}</div>
+                    {g.name && <div className="ugal-name">{g.name}</div>}
+                    <div className="ugal-meta">{g.planets > 0 ? `${g.planets}🪐` : "—"}{!g.isMine && <span className="ugal-dist"> · +{g.distanceTicks}t</span>}</div>
+                  </button>
+                );
+              };
+              return (
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  <div>
+                    <div className="roid-count" style={{ marginBottom: 6 }}>↔ Seu setor (linha {galaxy}) — paralelos vizinhos:</div>
+                    <div className="universe-grid" style={{ gridTemplateColumns: `repeat(${universe.paralelos}, 1fr)` }}>{bySetor.map(cell)}</div>
+                  </div>
+                  <div>
+                    <div className="roid-count" style={{ marginBottom: 6 }}>↕ Seu paralelo (coluna {system}) — setores vizinhos:</div>
+                    <div className="universe-grid" style={{ gridTemplateColumns: `repeat(${Math.min(byParalelo.length, universe.paralelos) || 1}, 1fr)` }}>{byParalelo.map(cell)}</div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
 
         {gview === "universe" && (
           <div>
@@ -324,7 +363,7 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
                   })}
                   {/* núcleo */}
                   <circle cx={cx} cy={cy} r="6" className="radar-core" />
-                  <text x={cx} y={cy + 20} className="planet-label dim">setor {galaxy}:{system}</text>
+                  <text x={cx} y={cy + 20} className="planet-label dim">galáxia {galaxy}:{system}</text>
                 </svg>
               </div>
               {/* painel do planeta selecionado */}
