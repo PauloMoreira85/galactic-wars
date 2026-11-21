@@ -253,12 +253,16 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
                   {[R, R * 0.62, R * 0.28].map((rr, k) => <circle key={k} cx={cx} cy={cy} r={rr} className="radar-ring" />)}
                   <line x1={cx - R} y1={cy} x2={cx + R} y2={cy} className="radar-cross" />
                   <line x1={cx} y1={cy - R} x2={cx} y2={cy + R} className="radar-cross" />
-                  {/* linhas de tráfego: da borda (origem) ao planeta-alvo */}
+                  {/* linhas de tráfego: do planeta de ORIGEM (se neste setor) ou da borda (se vem de fora) até o alvo */}
                   {incoming.map((f, i) => {
                     const tslot = Number(f.target.split(":")[2]); const p = slotPos[tslot]; if (!p) return null;
-                    // origem: um ponto na borda, na direção oposta ao alvo (vem "de fora")
-                    const ang = Math.atan2(p.y - cy, p.x - cx);
-                    const ox = cx + (R + 60) * Math.cos(ang + 0.5), oy = cy + (R + 60) * Math.sin(ang + 0.5);
+                    const [og, os, oslot] = f.origin.split(":").map(Number);
+                    // Se a frota saiu de um planeta DESTE setor, liga planeta→planeta;
+                    // senão (veio de outro setor), entra pela borda do radar.
+                    const originHere = og === galaxy && os === system && slotPos[oslot];
+                    let ox: number, oy: number;
+                    if (originHere) { ox = slotPos[oslot].x; oy = slotPos[oslot].y; }
+                    else { const ang = Math.atan2(p.y - cy, p.x - cx); ox = cx + (R + 60) * Math.cos(ang + 0.5); oy = cy + (R + 60) * Math.sin(ang + 0.5); }
                     const cls = f.mission === "attack" ? "traffic atk" : "traffic def";
                     return <g key={i}>
                       <line x1={ox} y1={oy} x2={p.x} y2={p.y} className={cls} />
