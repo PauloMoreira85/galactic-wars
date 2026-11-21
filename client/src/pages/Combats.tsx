@@ -33,7 +33,39 @@ export function Combats() {
 
   if (detail) {
     const d = detail.detail;
-    const cap = d.captured;
+
+    // Registro de DEFESA (frota guarneceu, sem combate): mostra as naves que defenderam.
+    if (d.defense) {
+      const ships = d.attacker ?? []; // defRows = naves da frota que defendeu
+      const iAmSender = detail.iAmAttacker; // "atacante" aqui = quem mandou a defesa
+      return (
+        <>
+          <button className="link" onClick={() => setDetail(null)}>← voltar aos combates</button>
+          <div className="panel" style={{ marginTop: 10 }}>
+            <h2>🛡️ Relatório de Defesa</h2>
+            <div className="cost">
+              No tick <b>#{detail.tick}</b>, a frota de <b>{detail.attackerName}</b> (<CoordLink c={detail.attackerCoords} />) guarneceu o planeta <b>{detail.defenderName}</b> (<CoordLink c={detail.defenderCoords} />) por {d.ticks ?? 1} tick(s).
+              {iAmSender ? " Você mandou essa defesa." : " Você foi defendido."}
+            </div>
+          </div>
+          <div className="panel">
+            <h2>Naves em defesa ({ships.reduce((s, x) => s + x.survivors, 0).toLocaleString("pt-BR")})</h2>
+            {ships.length === 0 ? <div className="roid-count">Sem naves registradas.</div> : (
+              <div style={{ overflowX: "auto" }}>
+                <table>
+                  <thead><tr><th>Nave</th><th>Quantidade</th></tr></thead>
+                  <tbody>
+                    {ships.map((r) => <tr key={r.name}><td className="fg-name"><b>{r.name}</b></td><td>{fmt(r.survivors || r.before)}</td></tr>)}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </>
+      );
+    }
+
+    const cap = d.captured ?? { metalium: 0, carbonum: 0, plutonium: 0 };
     const iAmAtk = detail.iAmAttacker;
     type Row = { name: string; before: number; lost: number; pem: number; assim: number; survivors: number };
     const defMap = new Map<string, Row>(d.defender.map((r) => [r.name, r]));
@@ -191,11 +223,10 @@ export function Combats() {
           </thead>
           <tbody>
             {list.map((c) => {
-              const canOpen = c.role !== "defense-sent" && c.role !== "defense-received";
               return (
-              <tr key={c.id} onClick={() => canOpen && open(c.id)}
-                  style={canOpen ? { cursor: "pointer" } : undefined}
-                  title={canOpen ? "ver relatório do combate" : undefined}>
+              <tr key={c.id} onClick={() => open(c.id)}
+                  style={{ cursor: "pointer" }}
+                  title="ver relatório">
                 <td className="rank-num">#{c.tick}</td>
                 <td>{
                   c.role === "attacker" ? "⚔️ ataque" :
@@ -209,7 +240,7 @@ export function Combats() {
                 <td style={{ color: c.myLost > 0 ? "var(--danger)" : undefined }}>{fmt(c.myLost)}</td>
                 <td className="hide-sm" style={{ color: c.oppLost > 0 ? "var(--carbonum)" : undefined }}>{fmt(c.oppLost)}</td>
                 <td className="hide-sm roid-count">{fmt(c.captured.metalium)}/{fmt(c.captured.carbonum)}/{fmt(c.captured.plutonium)}</td>
-                <td>{canOpen ? <button onClick={(e) => { e.stopPropagation(); open(c.id); }}>ver</button> : <span className="roid-count">—</span>}</td>
+                <td><button onClick={(e) => { e.stopPropagation(); open(c.id); }}>ver</button></td>
               </tr>
               );
             })}

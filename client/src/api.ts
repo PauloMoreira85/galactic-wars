@@ -469,10 +469,11 @@ export const api = {
       defenderCoords: string;
       iAmAttacker: boolean;
       detail: {
-        attackerRace: string;
-        defenderRace: string;
+        defense?: boolean; // registro de defesa (frota guarneceu, sem combate)
+        attackerRace?: string;
+        defenderRace?: string;
         ticks: number;
-        captured: Record<Resource, number>;
+        captured?: Record<Resource, number>;
         raid?: { capacity: number; ratePct: number; targetRoids?: number; captured: number; rows: { name: string; active: number; cargo: number; capacity: number }[] };
         attacker: { name: string; before: number; lost: number; pem: number; assim: number; survivors: number }[];
         defender: { name: string; before: number; lost: number; pem: number; assim: number; survivors: number }[];
