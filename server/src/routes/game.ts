@@ -7,7 +7,7 @@ import { buildRoid, totalRoids } from "../game/roids.js";
 import { RACES, isRaceKey, RACE_KEYS } from "../game/races.js";
 import { startUpgrade, buildUnit, buildAgent, parseTech, cancelOrder } from "../game/fleet.js";
 import { AGENTS, AGENT_KEYS, AGENT_FULL_NAME, isAgentKey, parseAgents, stringifyAgents, isShielded, ceNeeded, spySuccessChance, ROIDS_POR_CE } from "../game/agents.js";
-import { createFleet, setFleetComposition, transferUnits, renameFleet, dispatchFleet, fuelCost, viewSystem, galaxyTraffic, type ShipCounts } from "../game/galaxy.js";
+import { createFleet, setFleetComposition, transferUnits, renameFleet, dispatchFleet, fuelCost, viewSystem, galaxyTraffic, viewedTraffic, type ShipCounts } from "../game/galaxy.js";
 import { galaxyId, galaxyDecompose, NUM_SETORES, NUM_PARALELOS } from "../game/geo.js";
 import { recallFleet, BATTLE_TICKS, simulateCombat } from "../game/combat.js";
 import { unitsOfRace, isUnitUnlocked, CLASS_LABEL, unitByName, shipImage, radarVisibleCount } from "../game/catalog.js";
@@ -347,6 +347,13 @@ gameRouter.get("/traffic", async (req: AuthedRequest, res) => {
   const planet = await prisma.planet.findUnique({ where: { userId: req.userId! } });
   if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
   res.json(await galaxyTraffic(planet.id));
+});
+// Tráfego pra desenhar no radar da galáxia que está sendo VISUALIZADA (inclui as
+// minhas frotas indo pra lá — ex: a linha do meu ataque).
+gameRouter.get("/traffic-at/:galaxy/:system", async (req: AuthedRequest, res) => {
+  const planet = await prisma.planet.findUnique({ where: { userId: req.userId! } });
+  if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
+  res.json(await viewedTraffic(planet.id, Number(req.params.galaxy), Number(req.params.system)));
 });
 
 gameRouter.post("/fleets/:id/recall", async (req: AuthedRequest, res) => {

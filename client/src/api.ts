@@ -515,6 +515,8 @@ export const api = {
     }>("/game/ranking"),
   allianceRanking: () =>
     request<{ ranking: { id: string; name: string; tag: string; score: number; members: number; avg: number }[] }>("/game/ranking/alliances"),
+  trafficAt: (galaxy: number, system: number) =>
+    request<{ fleets: { origin: string; target: string; mission: string; status: string; ships: number; ticks: number; own: boolean }[] }>(`/game/traffic-at/${galaxy}/${system}`),
   universe: () =>
     request<{
       setores: number; paralelos: number; myCoord: string;

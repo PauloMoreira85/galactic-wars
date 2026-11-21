@@ -77,9 +77,10 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
   const [universe, setUniverse] = useState<Awaited<ReturnType<typeof api.universe>> | null>(null);
   useEffect(() => { if ((gview === "universe" || gview === "vizinhanca") && !universe) api.universe().then(setUniverse).catch(() => {}); }, [gview, universe]);
   // Tráfego entrante (frotas a caminho do setor) — pras linhas do mapa tático.
-  const [traffic, setTraffic] = useState<Awaited<ReturnType<typeof api.traffic>>["fleets"]>([]);
-  async function loadTraffic() { try { setTraffic((await api.traffic()).fleets); } catch {} }
-  useEffect(() => { loadTraffic(); const t = setInterval(loadTraffic, REFRESH_MS); return () => clearInterval(t); }, []);
+  const [traffic, setTraffic] = useState<Awaited<ReturnType<typeof api.trafficAt>>["fleets"]>([]);
+  async function loadTraffic() { try { setTraffic((await api.trafficAt(galaxy, system)).fleets); } catch {} }
+  // Recarrega o tráfego da galáxia VISUALIZADA (muda ao navegar entre galáxias).
+  useEffect(() => { loadTraffic(); const t = setInterval(loadTraffic, REFRESH_MS); return () => clearInterval(t); }, [galaxy, system]);
   // Convites de galáxia privada pendentes (mostra banner no topo pra aceitar/recusar).
   const [gInvites, setGInvites] = useState<{ galaxy: number; name: string }[]>([]);
   async function loadInvites() { try { setGInvites((await api.privateView()).invites ?? []); } catch {} }

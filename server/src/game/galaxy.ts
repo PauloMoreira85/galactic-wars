@@ -507,3 +507,28 @@ export async function galaxyTraffic(planetId: string) {
     movements,
   };
 }
+
+// Tráfego pra desenhar no radar da galáxia que o jogador está VISUALIZANDO (não só
+// a dele). Mostra: (a) se é a galáxia do jogador, todo o tráfego entrante; (b) em
+// qualquer galáxia, as frotas DELE a caminho de lá (pra ver a própria linha de ataque).
+export async function viewedTraffic(planetId: string, galaxy: number, system: number) {
+  const nowTick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
+  const me = await prisma.planet.findUnique({ where: { id: planetId }, select: { galaxy: true, system: true } });
+  const isMine = !!me && me.galaxy === galaxy && me.system === system;
+  // Frotas com destino nessa galáxia. Se não é a minha, só as MINHAS (evita vazar
+  // ataques de terceiros contra outros).
+  const where = isMine
+    ? { targetGalaxy: galaxy, targetSystem: system, status: { in: ["outbound", "engaged"] } }
+    : { ownerPlanetId: planetId, targetGalaxy: galaxy, targetSystem: system, status: { in: ["outbound", "engaged"] } };
+  const fleets = await prisma.fleet.findMany({ where: where as any });
+  const fleetsOut = fleets.map((f) => ({
+    origin: `${f.originGalaxy}:${f.originSystem}:${f.originSlot}`,
+    target: `${f.targetGalaxy}:${f.targetSystem}:${f.targetSlot}`,
+    mission: f.mission,
+    status: f.status,
+    ships: radarVisibleCount(parseUnits(f.units)),
+    ticks: Math.max(0, f.arriveTick - nowTick),
+    own: f.ownerPlanetId === planetId,
+  })).sort((a, b) => a.ticks - b.ticks);
+  return { fleets: fleetsOut };
+}
