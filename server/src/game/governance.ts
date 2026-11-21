@@ -179,7 +179,7 @@ export async function setMarketLocked(mePlanetId: string, locked: boolean) {
   await prisma.galaxyState.update({ where: { galaxy: g }, data: { marketLocked: locked } });
 }
 
-// ME doa recursos do fundo para um planeta (cap 20% do fundo, cooldown por planeta).
+// ME doa recursos do fundo para um planeta (cap 50% do total do fundo, cooldown por planeta).
 // QUALQUER planeta da galáxia doa recursos PRA o fundo (voluntário). O ME depois
 // distribui com donate(). Desconta do planeta e soma no fundo; registra no livro
 // caixa (from = planeta, to = "Fundo da galáxia").
@@ -222,12 +222,13 @@ export async function donate(mePlanetId: string, toPlanetId: string, amounts: { 
   if (m > st.fundMetalium || c > st.fundCarbonum || p > st.fundPlutonium) {
     throw new Error(`Fundo insuficiente. Disponível no fundo: ${st.fundMetalium} M · ${st.fundCarbonum} C · ${st.fundPlutonium} P.`);
   }
-  // Cap de 20% do fundo (por recurso) numa doação.
-  const maxM = Math.floor(st.fundMetalium * DONATION_MAX_PCT / 100);
-  const maxC = Math.floor(st.fundCarbonum * DONATION_MAX_PCT / 100);
-  const maxP = Math.floor(st.fundPlutonium * DONATION_MAX_PCT / 100);
-  if (m > maxM || c > maxC || p > maxP) {
-    throw new Error(`Máximo ${DONATION_MAX_PCT}% do fundo por doação. Limite agora: ${maxM} M · ${maxC} C · ${maxP} P.`);
+  // Cap de 50% sobre a SOMA de todos os recursos do fundo (não por recurso).
+  // Assim o ME distribui livremente entre M/C/P — pode doar metade do fundo todo
+  // só em plutônio, p.ex. — só não esvazia numa doação. (Comportamento clássico.)
+  const fundTotal = st.fundMetalium + st.fundCarbonum + st.fundPlutonium;
+  const maxTotal = Math.floor(fundTotal * DONATION_MAX_PCT / 100);
+  if (m + c + p > maxTotal) {
+    throw new Error(`Máximo ${DONATION_MAX_PCT}% do total do fundo por doação. Limite agora: ${maxTotal} (soma de M+C+P). Você pediu ${m + c + p}.`);
   }
   // Cooldown POR RECURSO: o planeta pode receber 1 de cada recurso por janela.
   // (Antes era 1 doação de qualquer coisa, então o fundo entupia de plutônio.)
