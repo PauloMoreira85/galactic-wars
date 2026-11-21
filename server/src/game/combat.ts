@@ -430,9 +430,17 @@ export async function finalize(fleetId: string, tick: number) {
   let propLevel = 0;
   try { propLevel = atkP ? travelReductionTicks(JSON.parse(atkP.tech)) : 0; } catch {}
   const arrived = fleet.status === "engaged" || tick >= fleet.arriveTick;
+  // Recuo NO MESMO TICK do lançamento: a frota nem saiu — devolve as naves na HORA
+  // (sem tempo de volta). Só vale pra quem ainda não chegou (outbound) e partiu agora.
+  const ticksTraveled = tick - fleet.departTick;
+  if (!arrived && ticksTraveled <= 0 && totalUnits(atkSurv) > 0) {
+    // Vira idle JÁ, mantendo as naves (inline pra evitar import circular de galaxy.ts).
+    await prisma.fleet.update({ where: { id: fleetId }, data: { status: "idle", departTick: 0, arriveTick: 0, capMetalium: 0, capCarbonum: 0, capPlutonium: 0 } });
+    return;
+  }
   const back = arrived
     ? travelTime(galaxyId(fleet.targetGalaxy, fleet.targetSystem), galaxyId(fleet.originGalaxy, fleet.originSystem), atkSurv, propLevel)
-    : Math.max(1, tick - fleet.departTick);
+    : Math.max(1, ticksTraveled);
   if (totalUnits(atkSurv) <= 0) {
     await prisma.fleet.update({ where: { id: fleetId }, data: { status: "idle", units: "{}", battleState: null, departTick: 0, arriveTick: 0, capMetalium: 0, capCarbonum: 0, capPlutonium: 0 } });
     if (atkP) await addNews(atkP.id, tick, `💥 Sua frota foi dizimada no combate em ${fleet.targetGalaxy}:${fleet.targetSystem}:${fleet.targetSlot}`);
