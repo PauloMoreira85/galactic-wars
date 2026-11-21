@@ -7,7 +7,7 @@ import { signToken } from "../auth.js";
 import { sendMail } from "../email.js";
 import { clientIp, recordIp } from "../game/ipguard.js";
 import { STARTING, SLOTS_PER_SYSTEM, GALAXIES } from "../game/constants.js";
-import { galaxyId, galaxyDecompose, NUM_SETORES } from "../game/geo.js";
+import { galaxyId, galaxyDecompose, NUM_SETORES, NUM_PARALELOS } from "../game/geo.js";
 import { RACE_KEYS, publicRaces, type RaceKey } from "../game/races.js";
 import { unitsOfRace, CLASS_LABEL } from "../game/catalog.js";
 
@@ -58,29 +58,34 @@ export async function allocateSlot() {
     where: { galaxy: { lte: NUM_SETORES } }, // só públicas (privadas usam setor 6-10)
     select: { galaxy: true, system: true, slot: true },
   });
-  // Quantos planetas em cada galáxia (id 1..GALAXIES).
+  // Contagem por galáxia (id) e por SETOR.
   const count = new Array(GALAXIES + 1).fill(0);
+  const bySetor = new Array(NUM_SETORES + 1).fill(0);
   const taken = new Set<string>();
   for (const p of planets) {
     taken.add(`${p.galaxy}:${p.system}:${p.slot}`);
     const id = galaxyId(p.galaxy, p.system);
     if (id >= 1 && id <= GALAXIES) count[id]++;
+    if (p.galaxy >= 1 && p.galaxy <= NUM_SETORES) bySetor[p.galaxy]++;
   }
-  const total = planets.length;
-  const open = Math.min(GALAXIES, Math.max(2, Math.ceil((total + 1) / SLOTS_PER_SYSTEM)));
 
-  // Procura a galáxia mais vazia com vaga. 1ª passada nas `open`; se todas cheias,
-  // libera as demais até GALAXIES.
-  for (const limit of [open, GALAXIES]) {
-    let best = -1;
-    for (let id = 1; id <= limit; id++) {
+  // Espalha por SETOR (round-robin): o novato cai no setor com menos gente, pra
+  // preencher o mapa por igual (não deixar setores inteiros vazios). Dentro do
+  // setor escolhido, vai pra galáxia (paralelo) mais vazia com vaga.
+  const setorOrder = Array.from({ length: NUM_SETORES }, (_, i) => i + 1)
+    .sort((a, b) => bySetor[a] - bySetor[b]); // setores mais vazios primeiro
+
+  for (const setor of setorOrder) {
+    // galáxia (paralelo) mais vazia desse setor que tenha vaga
+    let bestPar = -1, bestCount = Infinity;
+    for (let paralelo = 1; paralelo <= NUM_PARALELOS; paralelo++) {
+      const id = galaxyId(setor, paralelo);
       if (count[id] >= SLOTS_PER_SYSTEM) continue;
-      if (best === -1 || count[id] < count[best]) best = id;
+      if (count[id] < bestCount) { bestCount = count[id]; bestPar = paralelo; }
     }
-    if (best === -1) continue;
-    const { setor, paralelo } = galaxyDecompose(best);
+    if (bestPar === -1) continue; // setor cheio, tenta o próximo
     for (let slot = 1; slot <= SLOTS_PER_SYSTEM; slot++) {
-      if (!taken.has(`${setor}:${paralelo}:${slot}`)) return { galaxy: setor, system: paralelo, slot };
+      if (!taken.has(`${setor}:${bestPar}:${slot}`)) return { galaxy: setor, system: bestPar, slot };
     }
   }
   throw new Error("Universo cheio (todas as galáxias lotadas)");
