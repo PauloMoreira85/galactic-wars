@@ -1,10 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, Fragment } from "react";
 import { api, REFRESH_MS, type PlanetView } from "../api";
 import { CoordLink } from "../components/CoordLink";
 import { IntelReport } from "../components/IntelReport";
 
 function fmt(n: number) {
   return n.toLocaleString("pt-BR");
+}
+
+// Cor de cada paralelo (coluna) — tom distinto por coluna, pra identificar o paralelo.
+function paraColor(paralelo: number, total: number): string {
+  const h = Math.round(((paralelo - 1) / Math.max(1, total)) * 320); // espalha no círculo de cor
+  return `hsl(${h}, 70%, 60%)`;
 }
 
 // Cores dos cargos de governo (igual ao original): CG amarelo, MG vermelho, ME azul, MD laranja.
@@ -264,22 +270,36 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
               <span>· distância (soma no TEC da frota): <b>+0</b> na sua galáxia · <b>+2</b> mesma linha/coluna que você · <b>+4</b> cruzado</span>
             </div>
             {!universe ? <div className="roid-count">Carregando universo…</div> : (
-              <div className="universe-grid" style={{ gridTemplateColumns: `repeat(${universe.paralelos}, 1fr)` }}>
-                {universe.galaxies.map((g) => {
-                  const k = g.isMine ? "u-mine" : g.hasAlly ? "u-ally" : g.planets > 0 ? "u-occ" : "u-empty";
-                  return (
-                    <button key={g.coord} className={`ugal ${k}`}
-                      title={`${g.name ?? "Galáxia"} ${g.coord} · ${g.planets} planeta(s) · +${g.distanceTicks} ticks de viagem`}
-                      onClick={() => { setGalaxy(g.setor); setSystem(g.paralelo); setGalaxyView("map"); }}>
-                      <div className="ugal-coord">{g.coord}</div>
-                      {g.name && <div className="ugal-name">{g.name}</div>}
-                      <div className="ugal-meta">{g.planets > 0 ? `${g.planets}🪐` : "—"}{!g.isMine && <span className="ugal-dist"> · +{g.distanceTicks}t</span>}</div>
-                    </button>
-                  );
-                })}
+              <div className="universe-grid" style={{ gridTemplateColumns: `auto repeat(${universe.paralelos}, 1fr)` }}>
+                {/* cabeçalho: cantinho + cada paralelo (coluna) colorido */}
+                <div className="ugrid-corner">↓setor ↔paralelo</div>
+                {Array.from({ length: universe.paralelos }, (_, j) => j + 1).map((par) => (
+                  <div key={`h${par}`} className={`ugrid-head ${par === system ? "mine" : ""}`} style={{ color: paraColor(par, universe.paralelos) }}>P{par}</div>
+                ))}
+                {Array.from({ length: universe.setores }, (_, i) => i + 1).map((setor) => (
+                  <Fragment key={`r${setor}`}>
+                    <div className={`ugrid-head ${setor === galaxy ? "mine" : ""}`}>S{setor}</div>
+                    {universe.galaxies.filter((g) => g.setor === setor).sort((a, b) => a.paralelo - b.paralelo).map((g) => {
+                      const dcls = g.isMine ? "ud-self" : `ud-${g.distanceTicks}`; // fundo por distância
+                      const onAxis = (g.setor === galaxy || g.paralelo === system) && !g.isMine; // atalho +2t
+                      return (
+                        <button key={g.coord} className={`ugal ${dcls} ${onAxis ? "u-axis" : ""}`}
+                          style={{ borderColor: paraColor(g.paralelo, universe.paralelos) }}
+                          title={`${g.name ?? "Galáxia"} ${g.coord} · ${g.planets} planeta(s) · +${g.distanceTicks} ticks de viagem`}
+                          onClick={() => { setGalaxy(g.setor); setSystem(g.paralelo); setGalaxyView("map"); }}>
+                          <div className="ugal-coord">{g.coord}{g.isMine && " ★"}</div>
+                          {g.name && <div className="ugal-name">{g.name}</div>}
+                          <div className="ugal-meta">{g.planets > 0 ? `${g.planets}🪐` : "—"}{!g.isMine && <span className="ugal-dist"> +{g.distanceTicks}t</span>}</div>
+                        </button>
+                      );
+                    })}
+                  </Fragment>
+                ))}
               </div>
             )}
-            <div className="roid-count" style={{ marginTop: 8, fontSize: 11 }}>Clique numa galáxia pra abrir o radar dela (setor:paralelo). Linhas = setores · colunas = paralelos.</div>
+            <div className="roid-count" style={{ marginTop: 8, fontSize: 11 }}>
+              ★ = sua galáxia · fundo = tempo de viagem (verde +0 · azul +2 · cinza +4) · borda colorida = paralelo (coluna) · linhas realçadas = seu setor/paralelo (atalhos de +2t). Clique pra abrir.
+            </div>
           </div>
         )}
 
