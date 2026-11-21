@@ -408,7 +408,7 @@ gameRouter.post("/fleets/:id/rename", async (req: AuthedRequest, res) => {
 const dispatchSchema = z.object({
   galaxy: z.number().int().min(1), system: z.number().int().min(1), slot: z.number().int().min(1),
   mission: z.enum(["attack", "transport"]),
-  ticks: z.number().int().min(1).max(3).optional(),
+  ticks: z.number().int().min(1).max(6).optional(), // ataque clampa 3, defesa 6 (em dispatchFleet)
   fake: z.boolean().optional(),
 });
 gameRouter.post("/fleets/:id/dispatch", async (req: AuthedRequest, res) => {
