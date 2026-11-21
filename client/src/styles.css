@@ -623,20 +623,16 @@ td { font-family: var(--mono); }
 .ugal-name { font-size: 10.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ugal-meta { font-size: 11px; color: var(--muted); }
 .ugal-dist { color: var(--accent); }
-.ugal.u-mine { border-color: #4ea8ff; box-shadow: inset 0 0 0 1px rgba(78,168,255,0.4), 0 0 14px rgba(78,168,255,0.25); }
+.ugal.u-mine { border-color: #4ea8ff; background: linear-gradient(180deg, rgba(78,168,255,0.28), rgba(78,168,255,0.08)); box-shadow: inset 0 0 0 1px rgba(78,168,255,0.5), 0 0 14px rgba(78,168,255,0.3); }
 .ugal.u-ally { border-color: #38d6a0; }
 .ugal.u-occ  { border-color: #3a4c6c; }
 .ugal.u-empty { opacity: 0.45; }
-@media (max-width: 560px) { .ugal { padding: 7px 3px; min-height: 54px; } .ugal-coord { font-size: 12px; } .ugal-name { display: none; } }
-
-/* ===== Universo turbinado: cor por distância + eixo realçado + cabeçalhos ===== */
+/* Universo: setor E paralelo do jogador = mesma cor (verde, +2t) · resto neutro */
+.ugal.u-axis { border-color: #38d6a0; background: linear-gradient(180deg, rgba(56,214,160,0.16), rgba(56,214,160,0.03)); }
+.ugal.u-axis .ugal-dist { color: #5ae0a8; }
+.ugal.u-far { border-color: var(--border); opacity: 0.82; }
+/* cabeçalhos de setor (linha) e paralelo (coluna) */
 .ugrid-corner { font-size: 9px; color: var(--muted); display: flex; align-items: center; justify-content: center; text-align: center; opacity: .7; }
 .ugrid-head { display: flex; align-items: center; justify-content: center; font-family: var(--mono, monospace); font-size: 12px; font-weight: 700; color: var(--muted); }
-.ugrid-head.mine { color: var(--accent); text-shadow: 0 0 6px var(--glow); }
-/* fundo por distância de viagem */
-.ugal.ud-self { background: linear-gradient(180deg, rgba(78,168,255,0.28), rgba(78,168,255,0.08)); box-shadow: inset 0 0 0 1px rgba(78,168,255,0.5), 0 0 14px rgba(78,168,255,0.3); }
-.ugal.ud-0 { background: linear-gradient(180deg, rgba(56,214,160,0.18), rgba(56,214,160,0.04)); }
-.ugal.ud-2 { background: linear-gradient(180deg, rgba(37,160,255,0.16), rgba(37,160,255,0.03)); }
-.ugal.ud-4 { background: linear-gradient(180deg, rgba(120,140,170,0.10), rgba(120,140,170,0.02)); }
-.ugal.u-axis { box-shadow: inset 0 0 0 1px rgba(37,211,255,0.35); } /* mesma linha/coluna = atalho +2t */
-.ugal .ugal-dist { color: #cfe3f5; font-weight: 700; }
+.ugrid-head.axis { color: #5ae0a8; text-shadow: 0 0 6px rgba(56,214,160,0.5); }
+@media (max-width: 560px) { .ugal { padding: 7px 3px; min-height: 54px; } .ugal-coord { font-size: 12px; } .ugal-name { display: none; } }

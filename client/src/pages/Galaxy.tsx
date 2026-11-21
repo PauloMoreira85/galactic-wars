@@ -7,12 +7,6 @@ function fmt(n: number) {
   return n.toLocaleString("pt-BR");
 }
 
-// Cor de cada paralelo (coluna) — tom distinto por coluna, pra identificar o paralelo.
-function paraColor(paralelo: number, total: number): string {
-  const h = Math.round(((paralelo - 1) / Math.max(1, total)) * 320); // espalha no círculo de cor
-  return `hsl(${h}, 70%, 60%)`;
-}
-
 // Cores dos cargos de governo (igual ao original): CG amarelo, MG vermelho, ME azul, MD laranja.
 const ROLE_COLOR: Record<string, string> = { cg: "#ffd23f", mg: "#ff5050", me: "#3aa0ff", md: "#ff9a2b" };
 const ROLE_TAG: Record<string, string> = { cg: "(CG)", mg: "(MG)", me: "(ME)", md: "(MD)" };
@@ -271,20 +265,19 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
             </div>
             {!universe ? <div className="roid-count">Carregando universo…</div> : (
               <div className="universe-grid" style={{ gridTemplateColumns: `auto repeat(${universe.paralelos}, 1fr)` }}>
-                {/* cabeçalho: cantinho + cada paralelo (coluna) colorido */}
+                {/* cabeçalho: cantinho + cada paralelo (coluna); o seu em destaque */}
                 <div className="ugrid-corner">↓setor ↔paralelo</div>
                 {Array.from({ length: universe.paralelos }, (_, j) => j + 1).map((par) => (
-                  <div key={`h${par}`} className={`ugrid-head ${par === system ? "mine" : ""}`} style={{ color: paraColor(par, universe.paralelos) }}>P{par}</div>
+                  <div key={`h${par}`} className={`ugrid-head ${par === system ? "axis" : ""}`}>P{par}</div>
                 ))}
                 {Array.from({ length: universe.setores }, (_, i) => i + 1).map((setor) => (
                   <Fragment key={`r${setor}`}>
-                    <div className={`ugrid-head ${setor === galaxy ? "mine" : ""}`}>S{setor}</div>
+                    <div className={`ugrid-head ${setor === galaxy ? "axis" : ""}`}>S{setor}</div>
                     {universe.galaxies.filter((g) => g.setor === setor).sort((a, b) => a.paralelo - b.paralelo).map((g) => {
-                      const dcls = g.isMine ? "ud-self" : `ud-${g.distanceTicks}`; // fundo por distância
-                      const onAxis = (g.setor === galaxy || g.paralelo === system) && !g.isMine; // atalho +2t
+                      // Mesma cor pro setor E paralelo do jogador (os +2t = TEC menor). Resto neutro.
+                      const cls = g.isMine ? "u-mine" : (g.setor === galaxy || g.paralelo === system) ? "u-axis" : "u-far";
                       return (
-                        <button key={g.coord} className={`ugal ${dcls} ${onAxis ? "u-axis" : ""}`}
-                          style={{ borderColor: paraColor(g.paralelo, universe.paralelos) }}
+                        <button key={g.coord} className={`ugal ${cls}`}
                           title={`${g.name ?? "Galáxia"} ${g.coord} · ${g.planets} planeta(s) · +${g.distanceTicks} ticks de viagem`}
                           onClick={() => { setGalaxy(g.setor); setSystem(g.paralelo); setGalaxyView("map"); }}>
                           <div className="ugal-coord">{g.coord}{g.isMine && " ★"}</div>
@@ -298,7 +291,7 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
               </div>
             )}
             <div className="roid-count" style={{ marginTop: 8, fontSize: 11 }}>
-              ★ = sua galáxia · fundo = tempo de viagem (verde +0 · azul +2 · cinza +4) · borda colorida = paralelo (coluna) · linhas realçadas = seu setor/paralelo (atalhos de +2t). Clique pra abrir.
+              ★ = sua galáxia · <b style={{ color: "#38d6a0" }}>destacadas</b> = seu setor e paralelo (chegam em <b>+2t</b>, mais rápido) · o resto do universo é <b>+4t</b>. Clique pra abrir.
             </div>
           </div>
         )}
