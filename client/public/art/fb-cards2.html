@@ -32,6 +32,8 @@
 
   .kicker { font-family:"Orbitron"; font-weight:600; letter-spacing:8px; font-size:26px; color:var(--accent); text-transform:uppercase; opacity:.9; text-align:center; }
   .icon { font-size:260px; line-height:1; filter: drop-shadow(0 0 40px var(--glow)); }
+  .icon-svg { filter: drop-shadow(0 0 40px var(--glow)); display:flex; }
+  .icon-svg svg { width:300px; height:300px; }
   .title { font-family:"Orbitron"; font-weight:900; font-size:72px; line-height:1.05; text-align:center; text-transform:uppercase;
            text-shadow: 0 0 28px var(--glow), 0 4px 10px #000a; letter-spacing:1px; }
   .title.sm { font-size:60px; }
@@ -97,7 +99,33 @@
     <div class="frame"></div>
     <div class="kicker">Inteligência</div>
     <div class="center">
-      <div class="icon">🕵️</div>
+      <div class="icon-svg">
+        <svg viewBox="0 0 200 200" width="230" height="230" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- ondas de scan -->
+          <circle cx="100" cy="100" r="88" stroke="#b98cff" stroke-opacity="0.18" stroke-width="1.5"/>
+          <circle cx="100" cy="100" r="66" stroke="#b98cff" stroke-opacity="0.28" stroke-width="1.5"/>
+          <circle cx="100" cy="100" r="44" stroke="#b98cff" stroke-opacity="0.4" stroke-width="1.5"/>
+          <!-- varredura radial -->
+          <path d="M100 100 L100 12 A88 88 0 0 1 180 70 Z" fill="#b98cff" fill-opacity="0.10"/>
+          <!-- crosshair -->
+          <line x1="100" y1="6" x2="100" y2="30" stroke="#d9c2ff" stroke-width="2" stroke-linecap="round"/>
+          <line x1="100" y1="170" x2="100" y2="194" stroke="#d9c2ff" stroke-width="2" stroke-linecap="round"/>
+          <line x1="6" y1="100" x2="30" y2="100" stroke="#d9c2ff" stroke-width="2" stroke-linecap="round"/>
+          <line x1="170" y1="100" x2="194" y2="100" stroke="#d9c2ff" stroke-width="2" stroke-linecap="round"/>
+          <!-- olho ótico / lente de satélite no centro -->
+          <circle cx="100" cy="100" r="30" fill="#1c1030" stroke="#b98cff" stroke-width="2.5"/>
+          <circle cx="100" cy="100" r="30" fill="url(#eye)" fill-opacity="0.5"/>
+          <ellipse cx="100" cy="100" rx="30" ry="13" fill="none" stroke="#b98cff" stroke-opacity="0.5" stroke-width="1.5"/>
+          <circle cx="100" cy="100" r="13" fill="#b98cff"/>
+          <circle cx="100" cy="100" r="6" fill="#0b0618"/>
+          <circle cx="95" cy="95" r="3" fill="#ffffff" fill-opacity="0.8"/>
+          <!-- blips de alvo detectado -->
+          <circle cx="142" cy="60" r="4" fill="#ff5a7a"/>
+          <circle cx="58" cy="135" r="3" fill="#5ae0ff"/>
+          <circle cx="150" cy="140" r="3" fill="#5ae0ff"/>
+          <defs><radialGradient id="eye" cx="0.4" cy="0.35" r="0.7"><stop offset="0" stop-color="#d9c2ff"/><stop offset="1" stop-color="#4a1b7a"/></radialGradient></defs>
+        </svg>
+      </div>
       <div class="title">A informação<br>vence guerras</div>
       <div class="lead">Espione a frota, a tecnologia e os roids do inimigo. <b>Sabote</b> sua produção sem enviar uma única nave.</div>
     </div>
