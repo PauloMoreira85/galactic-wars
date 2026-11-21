@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, REFRESH_MS, type PlanetView } from "../api";
+import { ShipIcon } from "../components/ShipIcon";
 
 function fmt(n: number) {
   return n.toLocaleString("pt-BR");
@@ -128,7 +129,7 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
               <tbody>
                 {shipNames.map((name) => (
                   <tr key={name}>
-                    <td className="fg-name"><b>{name}</b><div className="roid-count" style={{ fontSize: 10.5, opacity: 0.85 }}>🎯 {alvosOf(name)}</div></td>
+                    <td className="fg-name"><span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}><ShipIcon name={name} size={26} /><span><b>{name}</b><div className="roid-count" style={{ fontSize: 10.5, opacity: 0.85 }}>🎯 {alvosOf(name)}</div></span></span></td>
                     <td>{fmt(baseOf(name))}</td>
                     {fleets.map((f) => (
                       <td key={f.id} className={!f.idle && !(f.units[name]) ? "fg-zero" : ""}>

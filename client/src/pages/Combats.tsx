@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, REFRESH_MS } from "../api";
 import { CoordLink } from "../components/CoordLink";
+import { ShipName } from "../components/ShipIcon";
 
 function fmt(n: number) {
   return n.toLocaleString("pt-BR");
@@ -55,7 +56,7 @@ export function Combats() {
                 <table>
                   <thead><tr><th>Nave</th><th>Quantidade</th></tr></thead>
                   <tbody>
-                    {ships.map((r) => <tr key={r.name}><td className="fg-name"><b>{r.name}</b></td><td>{fmt(r.survivors || r.before)}</td></tr>)}
+                    {ships.map((r) => <tr key={r.name}><td className="fg-name"><ShipName name={r.name} /></td><td>{fmt(r.survivors || r.before)}</td></tr>)}
                   </tbody>
                 </table>
               </div>
@@ -125,7 +126,7 @@ export function Combats() {
               <tbody>
                 {names.map((n) => (
                   <tr key={n}>
-                    <td className="fg-name"><b>{n}</b></td>
+                    <td className="fg-name"><ShipName name={n} /></td>
                     {cell(defMap.get(n))}
                     {cell(atkMap.get(n))}
                   </tr>
