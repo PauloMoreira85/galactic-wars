@@ -72,6 +72,11 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
   // Visão da galáxia: mapa visual ou lista (tabela). Lembra a escolha no navegador.
   const [gview, setGview] = useState<"map" | "list">(() => { try { return (localStorage.getItem("gw_galaxy_view") as "map" | "list") || "map"; } catch { return "map"; } });
   function setGalaxyView(v: "map" | "list") { setGview(v); try { localStorage.setItem("gw_galaxy_view", v); } catch {} }
+  const [mapSel, setMapSel] = useState<number | null>(null); // planeta selecionado no mapa
+  // Tráfego entrante (frotas a caminho do setor) — pras linhas do mapa tático.
+  const [traffic, setTraffic] = useState<Awaited<ReturnType<typeof api.traffic>>["fleets"]>([]);
+  async function loadTraffic() { try { setTraffic((await api.traffic()).fleets); } catch {} }
+  useEffect(() => { loadTraffic(); const t = setInterval(loadTraffic, REFRESH_MS); return () => clearInterval(t); }, []);
   // Convites de galáxia privada pendentes (mostra banner no topo pra aceitar/recusar).
   const [gInvites, setGInvites] = useState<{ galaxy: number; name: string }[]>([]);
   async function loadInvites() { try { setGInvites((await api.privateView()).invites ?? []); } catch {} }
@@ -208,49 +213,109 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
           </div>
         </div>
 
-        {gview === "map" && (
-          <div className="galaxy-map">
-            {data?.slots.map((sl) => {
-              const coord = `${galaxy}:${system}:${sl.slot}`;
-              const isSelf = coord === myCoords;
-              if (!sl.occupied) return (
-                <div key={sl.slot} className="gmap-planet gmap-empty"><div className="gmap-slot">{sl.slot}</div><div className="gmap-void">vazio</div></div>
-              );
-              // Relação (cor): você · aliado de galáxia · aliado de aliança · protegido · alvo (pode/não atacar)
-              const r = attackRange(sl);
-              let kind = "enemy-no"; // inimigo fora de alcance (default)
-              if (isSelf) kind = "self";
-              else if (sameGalaxy) kind = "ally-gal";
-              else if (myAllianceTag && sl.allianceTag === myAllianceTag) kind = "ally-tag";
-              else if (sl.protected) kind = "prot";
-              else if (r?.ok) kind = "enemy-ok";
-              return (
-                <button key={sl.slot} className={`gmap-planet gmap-${kind}`} title={r?.why ?? undefined}
-                  onClick={() => { if (!isSelf) pickTarget(sl.slot, sl.name!); }}>
-                  <div className="gmap-slot">{sl.slot} {sl.online === true && <span title="online">🟢</span>}</div>
-                  <div className="gmap-orb" />
-                  <div className="gmap-name"><b>{sl.name}</b></div>
-                  <div className="gmap-cmd">{sl.commander} {sl.role && <span style={{ color: ROLE_COLOR[sl.role] }}>{ROLE_TAG[sl.role]}</span>}</div>
-                  <div className="gmap-meta">[{sl.raceTag ?? "?"}]{sl.allianceTag ? ` {${sl.allianceTag}}` : ""} · 💎{fmt(sl.roids ?? 0)}</div>
-                  <div className="gmap-badges">
-                    {sl.protected && <span className="gmap-badge prot">P</span>}
-                    {isSelf ? <span className="gmap-badge you">VOCÊ</span>
-                      : <span className="gmap-badge" style={{ color: r?.ok ? "var(--danger)" : "var(--muted)" }}>{r?.ok ? "⚔ alvo" : "🔒"}</span>}
-                  </div>
-                  {!isSelf && (
-                    <div className="gmap-actions" onClick={(e) => e.stopPropagation()}>
-                      <span title="Enviar frota" onClick={() => pickTarget(sl.slot, sl.name!)}>🚀</span>
-                      <span title="Mensagem" onClick={() => onMessage?.(coord)}>✉</span>
-                      {(["P","M","T","D"] as const).map((a) => agentsIHave[a] && (
-                        <span key={a} title={`Espionar (${a})`} onClick={() => doSpy(sl.slot, a)} style={{ fontSize: 11 }}>{a}</span>
-                      ))}
+        {gview === "map" && data && (() => {
+          // ===== Radar de setor: planetas em círculo + linhas de tráfego =====
+          const slots = data.slots;
+          const N = slots.length;
+          const W = 680, H = 520, cx = W / 2, cy = H / 2, R = 180; // raio do anel de planetas
+          const pos = (i: number) => { const ang = -Math.PI / 2 + (i * 2 * Math.PI) / N; return { x: cx + R * Math.cos(ang), y: cy + R * Math.sin(ang) }; };
+          const slotPos: Record<number, { x: number; y: number }> = {};
+          slots.forEach((sl, i) => { slotPos[sl.slot] = pos(i); });
+          const kindOf = (sl: any) => {
+            const coord = `${galaxy}:${system}:${sl.slot}`;
+            if (coord === myCoords) return "self";
+            if (sameGalaxy) return "ally-gal";
+            if (myAllianceTag && sl.allianceTag === myAllianceTag) return "ally-tag";
+            if (sl.protected) return "prot";
+            return attackRange(sl)?.ok ? "enemy-ok" : "enemy-no";
+          };
+          const ORB: Record<string, string> = { self: "#4ea8ff", "ally-gal": "#38d6a0", "ally-tag": "#25d3ff", prot: "#8aa0b8", "enemy-ok": "#ff6a6a", "enemy-no": "#b87a7a" };
+          // Frotas entrando num slot DESTE sistema (linhas): só as visíveis.
+          const incoming = traffic.filter((f) => {
+            const [g, s] = f.target.split(":").map(Number); return g === galaxy && s === system && f.ships > 0;
+          });
+          const [selSlot, setSel] = [mapSel, setMapSel];
+          const selStd = slots.find((s) => s.slot === selSlot && s.occupied) ?? null;
+          return (
+            <div>
+              <div className="gmap-legend">
+                <span><i className="dot" style={{ background: "#4ea8ff" }} />você</span>
+                <span><i className="dot" style={{ background: "#38d6a0" }} />aliado (galáxia)</span>
+                <span><i className="dot" style={{ background: "#25d3ff" }} />aliado (tag)</span>
+                <span><i className="dot" style={{ background: "#ff6a6a" }} />alvo</span>
+                <span><i className="dot" style={{ background: "#8aa0b8" }} />protegido</span>
+                <span><i className="line atk" />ataque a caminho</span>
+                <span><i className="line def" />defesa a caminho</span>
+              </div>
+              <div className="gmap-radar-wrap">
+                <svg viewBox={`0 0 ${W} ${H}`} className="gmap-radar" preserveAspectRatio="xMidYMid meet">
+                  {/* anéis de radar */}
+                  {[R, R * 0.62, R * 0.28].map((rr, k) => <circle key={k} cx={cx} cy={cy} r={rr} className="radar-ring" />)}
+                  <line x1={cx - R} y1={cy} x2={cx + R} y2={cy} className="radar-cross" />
+                  <line x1={cx} y1={cy - R} x2={cx} y2={cy + R} className="radar-cross" />
+                  {/* linhas de tráfego: da borda (origem) ao planeta-alvo */}
+                  {incoming.map((f, i) => {
+                    const tslot = Number(f.target.split(":")[2]); const p = slotPos[tslot]; if (!p) return null;
+                    // origem: um ponto na borda, na direção oposta ao alvo (vem "de fora")
+                    const ang = Math.atan2(p.y - cy, p.x - cx);
+                    const ox = cx + (R + 60) * Math.cos(ang + 0.5), oy = cy + (R + 60) * Math.sin(ang + 0.5);
+                    const cls = f.mission === "attack" ? "traffic atk" : "traffic def";
+                    return <g key={i}>
+                      <line x1={ox} y1={oy} x2={p.x} y2={p.y} className={cls} />
+                      <circle r="3.5" className={`traffic-dot ${f.mission === "attack" ? "atk" : "def"}`}>
+                        <animateMotion dur="2.2s" repeatCount="indefinite" path={`M ${ox} ${oy} L ${p.x} ${p.y}`} />
+                      </circle>
+                    </g>;
+                  })}
+                  {/* planetas */}
+                  {slots.map((sl) => {
+                    const p = slotPos[sl.slot];
+                    if (!sl.occupied) return <g key={sl.slot}><circle cx={p.x} cy={p.y} r="10" className="planet-empty" /><text x={p.x} y={p.y + 26} className="planet-label dim">{sl.slot} · vazio</text></g>;
+                    const k = kindOf(sl); const col = ORB[k];
+                    const sel = sl.slot === selSlot;
+                    return (
+                      <g key={sl.slot} className="planet-node" onClick={() => setSel(sel ? null : sl.slot)} style={{ cursor: "pointer" }}>
+                        {sel && <circle cx={p.x} cy={p.y} r="26" className="planet-sel" />}
+                        <circle cx={p.x} cy={p.y} r="17" fill={col} style={{ filter: `drop-shadow(0 0 8px ${col})` }} />
+                        <circle cx={p.x - 5} cy={p.y - 5} r="5" fill="#ffffff55" />
+                        {sl.online === true && <circle cx={p.x + 13} cy={p.y - 13} r="4" className="planet-online" />}
+                        {sl.protected && <text x={p.x} y={p.y + 4} className="planet-prot">P</text>}
+                        <text x={p.x} y={p.y + 34} className="planet-label"><tspan className="pl-name">{sl.name}</tspan></text>
+                        <text x={p.x} y={p.y + 48} className="planet-label dim">{sl.commander} · 💎{fmt(sl.roids ?? 0)}</text>
+                      </g>
+                    );
+                  })}
+                  {/* núcleo */}
+                  <circle cx={cx} cy={cy} r="6" className="radar-core" />
+                  <text x={cx} y={cy + 20} className="planet-label dim">setor {galaxy}:{system}</text>
+                </svg>
+              </div>
+              {/* painel do planeta selecionado */}
+              {selStd && (() => {
+                const coord = `${galaxy}:${system}:${selStd.slot}`; const isSelf = coord === myCoords; const r = attackRange(selStd);
+                return (
+                  <div className="gmap-sel-panel">
+                    <div>
+                      <b style={{ fontSize: 15 }}>{selStd.name}</b> <span className="roid-count">[{selStd.raceTag ?? "?"}]{selStd.allianceTag ? ` {${selStd.allianceTag}}` : ""}</span>
+                      <div className="roid-count">{selStd.commander}{selStd.role && <span style={{ color: ROLE_COLOR[selStd.role] }}> {ROLE_TAG[selStd.role]}</span>} · <CoordLink c={coord} /> · 💎{fmt(selStd.roids ?? 0)} · {fmt(selStd.score ?? 0)} pts · {selStd.rank}º</div>
+                      {!isSelf && r && <div className="roid-count" style={{ color: r.ok ? "var(--carbonum)" : "var(--muted)" }}>{r.ok ? "🟢 " : "🔴 "}{r.why}</div>}
                     </div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        )}
+                    {!isSelf && (
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <button onClick={() => pickTarget(selStd.slot, selStd.name!)}>🚀 frota</button>
+                        <button onClick={() => onMessage?.(coord)}>✉ msg</button>
+                        {(["P","M","T","D"] as const).map((a) => (
+                          <button key={a} disabled={!agentsIHave[a]} title={agentsIHave[a] ? `Espionar (${a})` : `Sem agentes ${a}`} onClick={() => doSpy(selStd.slot, a)} style={{ opacity: agentsIHave[a] ? 1 : 0.3 }}>{a}</button>
+                        ))}
+                      </div>
+                    )}
+                    {isSelf && <span className="roid-count">seu planeta</span>}
+                  </div>
+                );
+              })()}
+            </div>
+          );
+        })()}
 
         {gview === "list" && (
         <table>
