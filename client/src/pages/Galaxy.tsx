@@ -333,6 +333,9 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
               </div>
               <div className="gmap-radar-wrap">
                 <svg viewBox={`0 0 ${W} ${H}`} className="gmap-radar" preserveAspectRatio="xMidYMid meet">
+                  <defs>
+                    <clipPath id="planet-clip"><circle cx="0" cy="0" r="17" /></clipPath>
+                  </defs>
                   {/* anéis de radar */}
                   {[R, R * 0.62, R * 0.28].map((rr, k) => <circle key={k} cx={cx} cy={cy} r={rr} className="radar-ring" />)}
                   <line x1={cx - R} y1={cy} x2={cx + R} y2={cy} className="radar-cross" />
@@ -364,10 +367,13 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
                     return (
                       <g key={sl.slot} className="planet-node" onClick={() => setSel(sel ? null : sl.slot)} style={{ cursor: "pointer" }}>
                         {sel && <circle cx={p.x} cy={p.y} r="26" className="planet-sel" />}
-                        <circle cx={p.x} cy={p.y} r="17" fill={col} style={{ filter: `drop-shadow(0 0 8px ${col})` }} />
-                        <circle cx={p.x - 5} cy={p.y - 5} r="5" fill="#ffffff55" />
-                        {/* número do SLOT no centro do planeta */}
-                        <text x={p.x} y={p.y + 5} className="planet-slot">{sl.slot}</text>
+                        {/* arte (skin) do planeta recortada em círculo; o anel colorido marca o tipo/cargo */}
+                        <g transform={`translate(${p.x} ${p.y})`} style={{ filter: `drop-shadow(0 0 8px ${col})` }}>
+                          <image href={`/art/planets/${sl.skin ?? "terra"}.jpg`} x={-17} y={-17} width={34} height={34} clipPath="url(#planet-clip)" preserveAspectRatio="xMidYMid slice" />
+                          <circle cx={0} cy={0} r="17" fill="none" stroke={col} strokeWidth="2.5" />
+                        </g>
+                        {/* número do SLOT no canto (não cobre a arte) */}
+                        <text x={p.x} y={p.y - 20} className="planet-slot">{sl.slot}</text>
                         {sl.online === true && <circle cx={p.x + 13} cy={p.y - 13} r="4" className="planet-online" />}
                         {sl.protected && <g><circle cx={p.x + 14} cy={p.y + 13} r="7" className="planet-prot-bg" /><text x={p.x + 14} y={p.y + 16} className="planet-prot">P</text></g>}
                         <text x={p.x} y={p.y + 34} className="planet-label"><tspan className="pl-name">{sl.name}</tspan></text>

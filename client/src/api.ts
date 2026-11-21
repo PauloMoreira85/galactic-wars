@@ -272,6 +272,7 @@ export const api = {
         name?: string;
         preposition?: string;
         commander?: string;
+        skin?: string;
         race?: string | null;
         raceTag?: string | null;
         allianceTag?: string | null;
@@ -557,6 +558,8 @@ export const api = {
     request<AssociadoView>("/game/associado/join", { method: "POST" }),
   associadoRename: (name: string) =>
     request<AssociadoView>("/game/associado/rename", { method: "POST", body: JSON.stringify({ name }) }),
+  associadoSkin: (skin: string) =>
+    request<AssociadoView>("/game/associado/skin", { method: "POST", body: JSON.stringify({ skin }) }),
 
   privateView: () =>
     request<PrivateView>("/game/private"),
@@ -598,4 +601,6 @@ export interface AssociadoView {
   nameChanges: number;
   nameChangesLeft: number;
   maxNameChanges: number;
+  skins?: { key: string; name: string }[];
+  skin?: string;
 }

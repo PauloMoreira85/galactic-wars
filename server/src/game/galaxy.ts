@@ -424,6 +424,7 @@ export async function viewSystem(galaxy: number, system: number, viewer: { id: s
     slots.push({
       slot, occupied: true, planetId: p.id, name: p.name, preposition: p.preposition,
       commander: p.user.username,
+      skin: typeof p.skin === "string" && p.skin ? p.skin : "terra",
       race: showRace ? p.user.race : null,
       raceTag: showRace ? (RACE_TAG[p.user.race] ?? "?") : null,
       role: roleOf(p.id),

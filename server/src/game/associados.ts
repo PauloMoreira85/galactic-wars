@@ -1,4 +1,5 @@
 import { prisma } from "../db.js";
+import { PLANET_SKINS, isSkinKey, DEFAULT_SKIN } from "./skins.js";
 
 export const MAX_NAME_CHANGES = 3;
 
@@ -26,8 +27,21 @@ export async function changeName(userId: string, newName: string) {
   return { username: name, nameChanges: user.nameChanges + 1, remaining: MAX_NAME_CHANGES - (user.nameChanges + 1) };
 }
 
+// Trocar a aparência (skin) do planeta — recurso de ASSOCIADO. Cosmético e neutro
+// quanto à raça (não revela a raça no mapa); sem limite de trocas. Quem não é
+// associado fica com a skin padrão ("terra").
+export async function changeSkin(userId: string, skin: string) {
+  if (!isSkinKey(skin)) throw new Error("Skin inválida");
+  const user = await prisma.user.findUnique({ where: { id: userId }, include: { planet: true } });
+  if (!user) throw new Error("Usuario nao encontrado");
+  if (!user.associado) throw new Error("Apenas Associados podem escolher a aparência do planeta");
+  if (!user.planet) throw new Error("Planeta nao encontrado");
+  await prisma.planet.update({ where: { id: user.planet.id }, data: { skin } });
+  return { skin };
+}
+
 export async function associadoView(userId: string) {
-  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const user = await prisma.user.findUnique({ where: { id: userId }, include: { planet: true } });
   if (!user) throw new Error("Usuario nao encontrado");
   return {
     associado: user.associado,
@@ -35,5 +49,8 @@ export async function associadoView(userId: string) {
     nameChanges: user.nameChanges,
     nameChangesLeft: user.associado ? Math.max(0, MAX_NAME_CHANGES - user.nameChanges) : 0,
     maxNameChanges: MAX_NAME_CHANGES,
+    // Skins: catálogo pra escolher + a atual do planeta. Só associado pode trocar.
+    skins: PLANET_SKINS,
+    skin: user.planet && isSkinKey(user.planet.skin) ? user.planet.skin : DEFAULT_SKIN,
   };
 }

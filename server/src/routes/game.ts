@@ -5,6 +5,7 @@ import { requireAuth, type AuthedRequest } from "../auth.js";
 import { RESOURCES, ROID_PRODUCTION_PER_TICK, nextRoidCost, nextFleetSlotCost, MARKET_FEE, RESOURCE_CAP, NEWBIE_PROTECTION_TICKS, STARTING } from "../game/constants.js";
 import { buildRoid, totalRoids } from "../game/roids.js";
 import { RACES, isRaceKey, RACE_KEYS } from "../game/races.js";
+import { PLANET_SKINS, SKIN_KEYS, DEFAULT_SKIN, isSkinKey } from "../game/skins.js";
 import { startUpgrade, buildUnit, buildAgent, parseTech, cancelOrder } from "../game/fleet.js";
 import { AGENTS, AGENT_KEYS, AGENT_FULL_NAME, isAgentKey, parseAgents, stringifyAgents, isShielded, ceNeeded, spySuccessChance, ROIDS_POR_CE } from "../game/agents.js";
 import { createFleet, setFleetComposition, transferUnits, renameFleet, dispatchFleet, fuelCost, viewSystem, galaxyTraffic, viewedTraffic, type ShipCounts } from "../game/galaxy.js";
@@ -12,7 +13,7 @@ import { galaxyId, galaxyDecompose, NUM_SETORES, NUM_PARALELOS } from "../game/g
 import { recallFleet, BATTLE_TICKS, simulateCombat } from "../game/combat.js";
 import { unitsOfRace, isUnitUnlocked, CLASS_LABEL, unitByName, shipImage, radarVisibleCount } from "../game/catalog.js";
 import { UNIT_TABLE } from "../game/unitTable.js";
-import { associadoView, becomeAssociado, changeName } from "../game/associados.js";
+import { associadoView, becomeAssociado, changeName, changeSkin } from "../game/associados.js";
 import { autoExile } from "../game/relocation.js";
 import { randomBytes } from "node:crypto";
 import { createPrivateGalaxy, invitePrivate, joinPrivate, declinePrivate, privateView } from "../game/privategalaxy.js";
@@ -180,6 +181,7 @@ async function planetView(userId: string) {
     race: { key: race.key, name: race.name, tagline: race.tagline, lore: race.lore, traits: race.traits, img: `/art/races/${race.key}.png` },
     planet: {
       id: planet.id, name: planet.name, coords: `${planet.galaxy}:${planet.system}:${planet.slot}`,
+      skin: isSkinKey(planet.skin) ? planet.skin : DEFAULT_SKIN,
       resources: { metalium: planet.metalium, carbonum: planet.carbonum, plutonium: planet.plutonium },
       roids,
       productionPerTick: {
@@ -1337,6 +1339,13 @@ gameRouter.post("/associado/join", async (req: AuthedRequest, res) => {
 gameRouter.post("/associado/rename", async (req: AuthedRequest, res) => {
   const name = typeof req.body?.name === "string" ? req.body.name : "";
   try { await changeName(req.userId!, name); }
+  catch (e: any) { return res.status(400).json({ error: e.message ?? "Falha" }); }
+  res.json(await associadoView(req.userId!));
+});
+// Trocar a aparência (skin) do planeta — recurso de Associado.
+gameRouter.post("/associado/skin", async (req: AuthedRequest, res) => {
+  const skin = typeof req.body?.skin === "string" ? req.body.skin : "";
+  try { await changeSkin(req.userId!, skin); }
   catch (e: any) { return res.status(400).json({ error: e.message ?? "Falha" }); }
   res.json(await associadoView(req.userId!));
 });

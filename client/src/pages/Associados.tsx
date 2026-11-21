@@ -28,7 +28,7 @@ export function Associados({ onChanged }: { onChanged: () => void }) {
       <div className="panel">
         <h2>Associados ⭐</h2>
         <div className="cost" style={{ marginBottom: 10 }}>
-          No início do jogo qualquer comandante pode se tornar Associado (grátis). Benefícios: trocar de nome até 3×, criar galáxia privada e escolher quem participa.
+          No início do jogo qualquer comandante pode se tornar Associado (grátis). Benefícios: <b>escolher a aparência do seu planeta</b>, trocar de nome até 3×, criar galáxia privada e escolher quem participa.
         </div>
         <div className="status-row"><span>Status</span><b style={{ color: view.associado ? "var(--carbonum)" : "var(--muted)" }}>{view.associado ? "⭐ Associado" : "comum"}</b></div>
         <div className="status-row"><span>Comandante</span><b>{view.username}</b></div>
@@ -51,6 +51,30 @@ export function Associados({ onChanged }: { onChanged: () => void }) {
               <button disabled={busy || !name.trim()} onClick={() => act(() => api.associadoRename(name.trim()))}>{busy ? "..." : "trocar"}</button>
             </div>
           ) : <div className="roid-count" style={{ marginTop: 8 }}>Você já usou todas as trocas de nome.</div>}
+        </div>
+      )}
+
+      {view.associado && view.skins && (
+        <div className="panel">
+          <h2>🪐 Aparência do planeta</h2>
+          <div className="cost" style={{ marginBottom: 10 }}>
+            Escolha como seu planeta aparece no mapa da galáxia. A aparência é só visual e <b>não revela sua raça</b> — todos veem a mesma, mas ninguém descobre quem você é por ela.
+          </div>
+          <div className="skin-grid">
+            {view.skins.map((s) => (
+              <button
+                type="button"
+                key={s.key}
+                className={`skin-card ${view.skin === s.key ? "selected" : ""}`}
+                disabled={busy}
+                onClick={() => act(() => api.associadoSkin(s.key))}
+                title={s.name}
+              >
+                <img src={`/art/planets/${s.key}.jpg`} alt={s.name} />
+                <span>{s.name}</span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

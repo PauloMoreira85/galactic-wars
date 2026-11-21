@@ -21,3 +21,6 @@ client/public/art/races/*/
 
 client/public/art/animados/
 client/public/art/Forum/
+
+# Artes de referência do Nim (as usadas pelo jogo ficam em client/public/art/)
+docs/nim-art/

@@ -590,9 +590,20 @@ td { font-family: var(--mono); }
 .gmap-legend .line { width: 18px; height: 0; border-top: 2px solid; display: inline-block; }
 .gmap-legend .line.atk { border-color: #ff5a5a; }
 .gmap-legend .line.def { border-color: #38d6a0; }
-.gmap-radar-wrap { background: radial-gradient(circle at 50% 45%, rgba(37,211,255,0.06), transparent 60%), rgba(2,8,18,0.6);
+.gmap-radar-wrap { background: radial-gradient(circle at 50% 50%, rgba(2,8,18,0.35), rgba(2,8,18,0.75)), url("/art/mapa-galaxia.jpg") center/cover no-repeat, rgba(2,8,18,0.6);
   border: 1px solid var(--border); border-radius: 12px; padding: 6px; }
 .gmap-radar { width: 100%; height: auto; display: block; }
+
+/* Seletor de skin de planeta (Associados) */
+.skin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 12px; }
+.skin-card { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px; background: rgba(2,8,18,0.5);
+  border: 2px solid var(--border); border-radius: 10px; cursor: pointer; transition: border-color .15s, transform .1s; }
+.skin-card:hover { border-color: var(--carbonum); transform: translateY(-2px); }
+.skin-card.selected { border-color: var(--carbonum); box-shadow: 0 0 12px rgba(37,211,255,0.35); }
+.skin-card img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; display: block;
+  box-shadow: 0 0 8px rgba(0,0,0,0.6); background: #000; }
+.skin-card span { font-size: 12px; color: #dfeaff; }
+.skin-card:disabled { opacity: 0.6; cursor: default; }
 .radar-ring { fill: none; stroke: rgba(37,211,255,0.14); stroke-width: 1; }
 .radar-cross { stroke: rgba(37,211,255,0.08); stroke-width: 1; }
 .radar-core { fill: var(--accent); filter: drop-shadow(0 0 6px var(--accent)); }

@@ -37,6 +37,9 @@ model Planet {
   id          String @id @default(cuid())
   name        String
   preposition String @default("de") // "de" | "da" | "do" → "Líder {prep} Planeta"
+  // Aparência (skin) do planeta no mapa — ESCOLHA DO JOGADOR, neutra quanto à raça
+  // (não pode revelar a raça no mapa). Default: "terra".
+  skin        String @default("terra")
   userId String @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 

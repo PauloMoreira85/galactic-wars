@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api, REFRESH_MS } from "../api";
 import { CoordLink } from "../components/CoordLink";
 import { ShipName } from "../components/ShipIcon";
+import { CombatChart } from "../components/CombatChart";
 
 function fmt(n: number) {
   return n.toLocaleString("pt-BR");
@@ -186,6 +187,13 @@ export function Combats() {
         </div>
 
         {d.log && d.log.length > 0 && (
+          <>
+          <div className="panel">
+            <h2>Troca de tiros</h2>
+            <div className="cost" style={{ marginBottom: 8 }}>Quem atirou em quem nesta rodada — a cor mostra o efeito e a grossura, quantas naves foram abatidas.</div>
+            <CombatChart log={d.log} />
+          </div>
+
           <div className="panel">
             <h2>Combate Completo</h2>
             <div className="cost" style={{ marginBottom: 8 }}>Última rodada, por ordem de iniciativa:</div>
@@ -208,6 +216,7 @@ export function Combats() {
               </div>
             ))}
           </div>
+          </>
         )}
       </>
     );
