@@ -222,7 +222,7 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
             <div className="gmap-legend" style={{ marginBottom: 8 }}>
               <span><i className="dot" style={{ background: "#4ea8ff" }} />você</span>
               <span><i className="dot" style={{ background: "#38d6a0" }} />tem aliado</span>
-              <span>· distância pra sua galáxia: <b>0t</b> aqui · <b>2t</b> mesma linha ou coluna que você · <b>4t</b> cruzado (+ a TEC da sua frota)</span>
+              <span>· distância (soma no TEC da frota): <b>+0</b> na sua galáxia · <b>+2</b> mesma linha/coluna que você · <b>+4</b> cruzado</span>
             </div>
             {!universe ? <div className="roid-count">Carregando universo…</div> : (
               <div className="universe-grid" style={{ gridTemplateColumns: `repeat(${universe.paralelos}, 1fr)` }}>
@@ -230,11 +230,11 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
                   const k = g.isMine ? "u-mine" : g.hasAlly ? "u-ally" : g.planets > 0 ? "u-occ" : "u-empty";
                   return (
                     <button key={g.coord} className={`ugal ${k}`}
-                      title={`${g.name ?? "Galáxia"} ${g.coord} · ${g.planets} planeta(s) · distância ${g.distanceTicks}t`}
+                      title={`${g.name ?? "Galáxia"} ${g.coord} · ${g.planets} planeta(s) · +${g.distanceTicks} ticks de viagem`}
                       onClick={() => { setGalaxy(g.setor); setSystem(g.paralelo); setGalaxyView("map"); }}>
                       <div className="ugal-coord">{g.coord}</div>
                       {g.name && <div className="ugal-name">{g.name}</div>}
-                      <div className="ugal-meta">{g.planets > 0 ? `${g.planets}🪐` : "—"}{!g.isMine && <span className="ugal-dist"> · {g.distanceTicks}t</span>}</div>
+                      <div className="ugal-meta">{g.planets > 0 ? `${g.planets}🪐` : "—"}{!g.isMine && <span className="ugal-dist"> · +{g.distanceTicks}t</span>}</div>
                     </button>
                   );
                 })}
