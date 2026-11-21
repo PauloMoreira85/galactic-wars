@@ -47,8 +47,9 @@ export function Combats() {
           <div className="panel" style={{ marginTop: 10 }}>
             <h2>🛡️ Relatório de Defesa</h2>
             <div className="cost">
-              No tick <b>#{detail.tick}</b>, a frota de <b>{detail.attackerName}</b> (<CoordLink c={detail.attackerCoords} />) guarneceu o planeta <b>{detail.defenderName}</b> (<CoordLink c={detail.defenderCoords} />) por {d.ticks ?? 1} tick(s).
+              No tick <b>#{detail.tick}</b>, a frota de <b>{detail.attackerName}</b> (<CoordLink c={detail.attackerCoords} />) estava guarnecendo o planeta <b>{detail.defenderName}</b> (<CoordLink c={detail.defenderCoords} />). Sem ataque neste tick.
               {iAmSender ? " Você mandou essa defesa." : " Você foi defendido."}
+              <div style={{ marginTop: 4, opacity: 0.7 }}>A defesa gera um registro por tick (igual ao ataque) — veja os outros ticks na lista de combates.</div>
             </div>
           </div>
           <div className="panel">

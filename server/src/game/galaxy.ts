@@ -279,12 +279,47 @@ async function scheduleReturn(fleetId: string, fleet: { ownerPlanetId: string; a
 
 export async function processFleets(uptoTick: number) {
   const active = await prisma.fleet.findMany({
-    where: { status: { in: ["outbound", "engaged", "returning", "garrison"] }, OR: [{ arriveTick: { lte: uptoTick } }, { status: "engaged" }] },
+    // garrison entra TODO tick (pra registrar a defesa de cada tick, igual ataque);
+    // as outras só quando já chegaram (arriveTick <= uptoTick) ou já engajadas.
+    where: { status: { in: ["outbound", "engaged", "returning", "garrison"] }, OR: [{ arriveTick: { lte: uptoTick } }, { status: "engaged" }, { status: "garrison" }] },
   });
   if (active.length === 0) return;
 
   // Planetas que terão combate resolvido NESTE tick (1 batalha combinada cada).
   const besieged = new Set<string>();
+
+  // Alvos que estão SOB ATAQUE neste tick (frota já engajada, ou atacante chegando
+  // agora). Numa guarnição, se o alvo está sob ataque, o COMBATE gera o relatório —
+  // então não gravamos também o registro de "guarneceu sem combate" (evita duplicar).
+  const underAttackThisTick = new Set<string>();
+  for (const f of active) {
+    const isAtkArriving = f.mission === "attack" && f.status === "outbound" && !f.fake && f.arriveTick <= uptoTick;
+    if (f.status === "engaged" || isAtkArriving) {
+      underAttackThisTick.add(`${f.targetGalaxy}:${f.targetSystem}:${f.targetSlot}`);
+    }
+  }
+
+  // Grava 1 registro de DEFESA (guarnição sem combate) pra uma frota num tick.
+  async function writeGarrisonRecord(fleet: typeof active[number], atTick: number) {
+    const targetPlanet = await prisma.planet.findUnique({
+      where: { galaxy_system_slot: { galaxy: fleet.targetGalaxy, system: fleet.targetSystem, slot: fleet.targetSlot } },
+      select: { id: true, name: true, galaxy: true, system: true, slot: true },
+    });
+    if (!targetPlanet) return;
+    const sender = await prisma.planet.findUnique({ where: { id: fleet.ownerPlanetId }, select: { name: true, galaxy: true, system: true, slot: true } });
+    const defUnits = parseUnits(fleet.units);
+    const defRows = Object.keys(defUnits).filter((n) => defUnits[n] > 0)
+      .map((n) => ({ name: n, before: defUnits[n], lost: 0, pem: 0, assim: 0, survivors: defUnits[n] }));
+    await prisma.battleReport.create({ data: {
+      tick: atTick,
+      attackerPlanetId: fleet.ownerPlanetId, defenderPlanetId: targetPlanet.id,
+      attackerName: sender?.name ?? "?", defenderName: targetPlanet.name,
+      attackerCoords: sender ? `${sender.galaxy}:${sender.system}:${sender.slot}` : "?",
+      defenderCoords: `${targetPlanet.galaxy}:${targetPlanet.system}:${targetPlanet.slot}`,
+      winner: "defense",
+      report: JSON.stringify({ defense: true, attacker: defRows, defender: [], ticks: 1 }),
+    } });
+  }
 
   for (const fleet of active) {
     if (fleet.status === "returning") {
@@ -309,6 +344,11 @@ export async function processFleets(uptoTick: number) {
           await prisma.news.create({ data: { planetId: defended.id, tick: uptoTick, message: `🔙 O reforço de ${sender?.name ?? "um aliado"}${sc} terminou a defesa e está voltando pra base` } });
         }
         await scheduleReturn(fleet.id, fleet, parseUnits(fleet.units));
+      } else {
+        // Ainda guarnecendo: registra a defesa DESTE tick (igual ataque, 1 por tick),
+        // a menos que o alvo esteja sob ataque agora (aí o combate gera o relatório).
+        const coord = `${fleet.targetGalaxy}:${fleet.targetSystem}:${fleet.targetSlot}`;
+        if (!underAttackThisTick.has(coord)) await writeGarrisonRecord(fleet, uptoTick);
       }
       continue;
     }
@@ -342,19 +382,11 @@ export async function processFleets(uptoTick: number) {
         await prisma.news.create({ data: { planetId: targetPlanet.id, tick: uptoTick, message: `🛡️ Reforço chegou: a frota de ${sender?.name ?? "um aliado"}${sc} está defendendo seu planeta (${totalUnits(parseUnits(fleet.units))} nave[s])` } });
       }
       // Registro de DEFESA no menu Combates (mesmo sem combate): comprova que a
-      // frota chegou e guarneceu. role "defense" (atacante = quem defendeu).
-      const defUnits = parseUnits(fleet.units);
-      const defRows = Object.keys(defUnits).filter((n) => defUnits[n] > 0)
-        .map((n) => ({ name: n, before: defUnits[n], lost: 0, pem: 0, assim: 0, survivors: defUnits[n] }));
-      await prisma.battleReport.create({ data: {
-        tick: uptoTick,
-        attackerPlanetId: fleet.ownerPlanetId, defenderPlanetId: targetPlanet.id,
-        attackerName: sender?.name ?? "?", defenderName: targetPlanet.name,
-        attackerCoords: sender ? `${sender.galaxy}:${sender.system}:${sender.slot}` : "?",
-        defenderCoords: `${targetPlanet.galaxy}:${targetPlanet.system}:${targetPlanet.slot}`,
-        winner: "defense",
-        report: JSON.stringify({ defense: true, attacker: defRows, defender: [], ticks: Math.max(1, fleet.engageTicks ?? 1) }),
-      } });
+      // frota chegou e guarneceu NESTE tick. 1 registro por tick (igual ataque) —
+      // os ticks seguintes são gravados no bloco garrison acima. Se o planeta está
+      // sob ataque agora, o combate combinado gera o relatório (não duplica aqui).
+      const coord = `${fleet.targetGalaxy}:${fleet.targetSystem}:${fleet.targetSlot}`;
+      if (!underAttackThisTick.has(coord)) await writeGarrisonRecord(fleet, uptoTick);
       continue;
     }
     await scheduleReturn(fleet.id, fleet, parseUnits(fleet.units));
