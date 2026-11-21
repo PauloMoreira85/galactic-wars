@@ -335,6 +335,7 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
                 <svg viewBox={`0 0 ${W} ${H}`} className="gmap-radar" preserveAspectRatio="xMidYMid meet">
                   <defs>
                     <clipPath id="planet-clip"><circle cx="0" cy="0" r="17" /></clipPath>
+                    <clipPath id="roid-clip"><circle cx="5.5" cy="5.5" r="5.5" /></clipPath>
                   </defs>
                   {/* anéis de radar */}
                   {[R, R * 0.62, R * 0.28].map((rr, k) => <circle key={k} cx={cx} cy={cy} r={rr} className="radar-ring" />)}
@@ -372,12 +373,20 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
                           <image href={`/art/planets/${sl.skin ?? "terra"}.jpg`} x={-17} y={-17} width={34} height={34} clipPath="url(#planet-clip)" preserveAspectRatio="xMidYMid slice" />
                           <circle cx={0} cy={0} r="17" fill="none" stroke={col} strokeWidth="2.5" />
                         </g>
-                        {/* número do SLOT no canto (não cobre a arte) */}
-                        <text x={p.x} y={p.y - 20} className="planet-slot">{sl.slot}</text>
-                        {sl.online === true && <circle cx={p.x + 13} cy={p.y - 13} r="4" className="planet-online" />}
-                        {sl.protected && <g><circle cx={p.x + 14} cy={p.y + 13} r="7" className="planet-prot-bg" /><text x={p.x + 14} y={p.y + 16} className="planet-prot">P</text></g>}
-                        <text x={p.x} y={p.y + 34} className="planet-label"><tspan className="pl-name">{sl.name}</tspan></text>
-                        <text x={p.x} y={p.y + 48} className="planet-label dim">{galaxy}:{system}:{sl.slot} · {sl.commander} · 💎{fmt(sl.roids ?? 0)}</text>
+                        {/* número do SLOT acima do planeta */}
+                        <text x={p.x} y={p.y - 22} className="planet-slot">{sl.slot}</text>
+                        {/* online: ponto verde no canto superior esquerdo do planeta */}
+                        {sl.online === true && <circle cx={p.x - 13} cy={p.y - 13} r="4" className="planet-online" />}
+                        {/* proteção: selo P no canto inferior direito (longe do slot) */}
+                        {sl.protected && <g><circle cx={p.x + 15} cy={p.y + 15} r="8" className="planet-prot-bg" /><text x={p.x + 15} y={p.y + 19} className="planet-prot">P</text></g>}
+                        {/* chip de rótulo: nome + comandante + roids, num fundo escuro pra não se perder na galáxia */}
+                        <g transform={`translate(${p.x} ${p.y + 30})`}>
+                          <rect x={-58} y={2} width={116} height={46} rx={8} className="planet-chip" />
+                          <text x={0} y={18} className="planet-label"><tspan className="pl-name">{sl.name}</tspan></text>
+                          <text x={0} y={32} className="planet-cmdr">{sl.commander}</text>
+                          <image href="/art/roid.jpg" x={-13} y={37} width={11} height={11} clipPath="url(#roid-clip)" preserveAspectRatio="xMidYMid slice" />
+                          <text x={3} y={46} className="planet-roids-c">{fmt(sl.roids ?? 0)}</text>
+                        </g>
                       </g>
                     );
                   })}

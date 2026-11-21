@@ -611,18 +611,24 @@ td { font-family: var(--mono); }
 .planet-sel { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 4 4; }
 .planet-empty { fill: #1a2740; stroke: #2a3c5c; stroke-width: 1; }
 .planet-online { fill: #3ade6a; }
-.planet-prot { fill: #0a1220; font-size: 13px; font-weight: 800; text-anchor: middle; }
+.planet-prot { fill: #eafcff; font-size: 11px; font-weight: 800; text-anchor: middle; }
 .planet-label { text-anchor: middle; fill: #cfe3f5; font-size: 12px; }
 .planet-label.dim { fill: var(--muted); font-size: 11px; }
 .planet-label .pl-name { font-weight: 700; fill: #eafcff; }
+/* chip de rótulo do planeta no mapa (fundo escuro pra não se perder na galáxia) */
+.planet-chip { fill: rgba(6,12,24,0.72); stroke: rgba(130,180,255,0.22); stroke-width: 1; }
+.planet-cmdr { text-anchor: middle; fill: #9fc0e0; font-size: 10.5px; }
+.planet-roids { text-anchor: start; fill: #ffd98a; font-size: 11px; font-weight: 700; }
+.planet-roids-c { text-anchor: middle; fill: #ffd98a; font-size: 11px; font-weight: 700; }
 .traffic { stroke-width: 2; opacity: 0.55; }
 .traffic.atk { stroke: #ff5a5a; } .traffic.def { stroke: #38d6a0; }
 .traffic-dot.atk { fill: #ff7a7a; } .traffic-dot.def { fill: #5ae0a8; }
 .gmap-sel-panel { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
   margin-top: 10px; padding: 10px 12px; border: 1px solid var(--accent); border-radius: 10px; background: rgba(37,211,255,0.06); }
-.planet-slot { text-anchor: middle; fill: #04101e; font-size: 15px; font-weight: 800; pointer-events: none; }
-.planet-slot.dim { fill: #8aa0b8; }
-.planet-prot-bg { fill: #0a1220; stroke: #9fb2c8; stroke-width: 1; }
+.planet-slot { text-anchor: middle; fill: #eafcff; font-size: 13px; font-weight: 800; pointer-events: none;
+  paint-order: stroke; stroke: #04101e; stroke-width: 3px; }
+.planet-slot.dim { fill: #8aa0b8; stroke: none; }
+.planet-prot-bg { fill: rgba(10,18,32,0.9); stroke: #38d6a0; stroke-width: 1.5; }
 
 /* ===== Visão de universo (grade de galáxias) ===== */
 .universe-grid { display: grid; gap: 8px; }
