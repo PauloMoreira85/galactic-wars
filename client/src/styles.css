@@ -594,6 +594,17 @@ td { font-family: var(--mono); }
   border: 1px solid var(--border); border-radius: 12px; padding: 6px; }
 .gmap-radar { width: 100%; height: auto; display: block; }
 
+/* Mapa estelar do universo / vizinhança */
+.universe-map-wrap { background: radial-gradient(circle at 50% 50%, rgba(2,8,18,0.25), rgba(2,8,18,0.72)), url("/art/mapa-galaxia.jpg") center/cover no-repeat;
+  border: 1px solid var(--border); border-radius: 12px; padding: 6px; }
+.universe-map { display: block; }
+.universe-map .um-axis-band { fill: rgba(56,214,160,0.08); stroke: rgba(56,214,160,0.22); stroke-width: 1; }
+.universe-map .um-head { text-anchor: middle; font-size: 12px; fill: #7f93ad; }
+.universe-map .um-head.axis { fill: #38d6a0; font-weight: 700; }
+.universe-map .um-name { text-anchor: middle; font-size: 10px; fill: #cfe3f5; font-weight: 600; }
+.universe-map .um-dist { text-anchor: middle; font-size: 9px; }
+.universe-map g:hover circle:first-of-type { opacity: 0.3; }
+
 /* Seletor de skin de planeta (Associados) */
 .skin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 12px; }
 .skin-card { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px; background: rgba(2,8,18,0.5);

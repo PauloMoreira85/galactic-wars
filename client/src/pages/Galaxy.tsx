@@ -1,7 +1,8 @@
-import { useEffect, useState, Fragment } from "react";
+import { useEffect, useState } from "react";
 import { api, REFRESH_MS, type PlanetView } from "../api";
 import { CoordLink } from "../components/CoordLink";
 import { IntelReport } from "../components/IntelReport";
+import { UniverseMap } from "../components/UniverseMap";
 
 function fmt(n: number) {
   return n.toLocaleString("pt-BR");
@@ -222,38 +223,17 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
         {gview === "vizinhanca" && (
           <div>
             <div className="gmap-legend" style={{ marginBottom: 8 }}>
-              <span>🧭 Galáxias a <b>+2 ticks</b> de você — mesmo <b>setor</b> (linha {galaxy}) ou mesmo <b>paralelo</b> (coluna {system}).</span>
+              <span>🧭 Suas rotas rápidas (<b>+2t</b>): mesmo <b>setor</b> (S{galaxy}) ou mesmo <b>paralelo</b> (P{system}).</span>
               <span><i className="dot" style={{ background: "#4ea8ff" }} />você</span>
               <span><i className="dot" style={{ background: "#38d6a0" }} />tem aliado</span>
+              <span><i className="dot" style={{ background: "#cfe3f5" }} />ocupada</span>
             </div>
-            {!universe ? <div className="roid-count">Carregando…</div> : (() => {
-              const near = universe.galaxies.filter((g) => g.setor === galaxy || g.paralelo === system);
-              const bySetor = near.filter((g) => g.setor === galaxy).sort((a, b) => a.paralelo - b.paralelo);
-              const byParalelo = near.filter((g) => g.paralelo === system && g.setor !== galaxy).sort((a, b) => a.setor - b.setor);
-              const cell = (g: typeof near[0]) => {
-                const k = g.isMine ? "u-mine" : g.hasAlly ? "u-ally" : g.planets > 0 ? "u-occ" : "u-empty";
-                return (
-                  <button key={g.coord} className={`ugal ${k}`} title={`${g.name ?? "Galáxia"} ${g.coord} · ${g.planets} planeta(s) · +${g.distanceTicks}t`}
-                    onClick={() => { setGalaxy(g.setor); setSystem(g.paralelo); setGalaxyView("map"); }}>
-                    <div className="ugal-coord">{g.coord}</div>
-                    {g.name && <div className="ugal-name">{g.name}</div>}
-                    <div className="ugal-meta">{g.planets > 0 ? `${g.planets}🪐` : "—"}{!g.isMine && <span className="ugal-dist"> · +{g.distanceTicks}t</span>}</div>
-                  </button>
-                );
-              };
-              return (
-                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                  <div>
-                    <div className="roid-count" style={{ marginBottom: 6 }}>↔ Seu setor (linha {galaxy}) — paralelos vizinhos:</div>
-                    <div className="universe-grid" style={{ gridTemplateColumns: `repeat(${universe.paralelos}, 1fr)` }}>{bySetor.map(cell)}</div>
-                  </div>
-                  <div>
-                    <div className="roid-count" style={{ marginBottom: 6 }}>↕ Seu paralelo (coluna {system}) — setores vizinhos:</div>
-                    <div className="universe-grid" style={{ gridTemplateColumns: `repeat(${Math.min(byParalelo.length, universe.paralelos) || 1}, 1fr)` }}>{byParalelo.map(cell)}</div>
-                  </div>
-                </div>
-              );
-            })()}
+            {!universe ? <div className="roid-count">Carregando…</div> : (
+              <div className="universe-map-wrap">
+                <UniverseMap data={universe} mySetor={galaxy} mySystem={system} mode="vizinhanca"
+                  onOpen={(s, p) => { setGalaxy(s); setSystem(p); setGalaxyView("map"); }} />
+              </div>
+            )}
           </div>
         )}
 
@@ -262,37 +242,17 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
             <div className="gmap-legend" style={{ marginBottom: 8 }}>
               <span><i className="dot" style={{ background: "#4ea8ff" }} />você</span>
               <span><i className="dot" style={{ background: "#38d6a0" }} />tem aliado</span>
-              <span>· distância (soma no TEC da frota): <b>+0</b> na sua galáxia · <b>+2</b> mesma linha/coluna que você · <b>+4</b> cruzado</span>
+              <span><i className="dot" style={{ background: "#cfe3f5" }} />ocupada</span>
+              <span>· distância no TEC: <b>+0</b> sua galáxia · <b>+2</b> seu setor/paralelo (faixa verde) · <b>+4</b> cruzado</span>
             </div>
             {!universe ? <div className="roid-count">Carregando universo…</div> : (
-              <div className="universe-grid" style={{ gridTemplateColumns: `auto repeat(${universe.paralelos}, 1fr)` }}>
-                {/* cabeçalho: cantinho + cada paralelo (coluna); o seu em destaque */}
-                <div className="ugrid-corner">↓setor ↔paralelo</div>
-                {Array.from({ length: universe.paralelos }, (_, j) => j + 1).map((par) => (
-                  <div key={`h${par}`} className={`ugrid-head ${par === system ? "axis" : ""}`}>P{par}</div>
-                ))}
-                {Array.from({ length: universe.setores }, (_, i) => i + 1).map((setor) => (
-                  <Fragment key={`r${setor}`}>
-                    <div className={`ugrid-head ${setor === galaxy ? "axis" : ""}`}>S{setor}</div>
-                    {universe.galaxies.filter((g) => g.setor === setor).sort((a, b) => a.paralelo - b.paralelo).map((g) => {
-                      // Mesma cor pro setor E paralelo do jogador (os +2t = TEC menor). Resto neutro.
-                      const cls = g.isMine ? "u-mine" : (g.setor === galaxy || g.paralelo === system) ? "u-axis" : "u-far";
-                      return (
-                        <button key={g.coord} className={`ugal ${cls}`}
-                          title={`${g.name ?? "Galáxia"} ${g.coord} · ${g.planets} planeta(s) · +${g.distanceTicks} ticks de viagem`}
-                          onClick={() => { setGalaxy(g.setor); setSystem(g.paralelo); setGalaxyView("map"); }}>
-                          <div className="ugal-coord">{g.coord}{g.isMine && " ★"}</div>
-                          {g.name && <div className="ugal-name">{g.name}</div>}
-                          <div className="ugal-meta">{g.planets > 0 ? `${g.planets}🪐` : "—"}{!g.isMine && <span className="ugal-dist"> +{g.distanceTicks}t</span>}</div>
-                        </button>
-                      );
-                    })}
-                  </Fragment>
-                ))}
+              <div className="universe-map-wrap">
+                <UniverseMap data={universe} mySetor={galaxy} mySystem={system} mode="full"
+                  onOpen={(s, p) => { setGalaxy(s); setSystem(p); setGalaxyView("map"); }} />
               </div>
             )}
             <div className="roid-count" style={{ marginTop: 8, fontSize: 11 }}>
-              ★ = sua galáxia · <b style={{ color: "#38d6a0" }}>destacadas</b> = seu setor e paralelo (chegam em <b>+2t</b>, mais rápido) · o resto do universo é <b>+4t</b>. Clique pra abrir.
+              Clique numa galáxia pra abrir. Tamanho do ponto = nº de planetas. A <b style={{ color: "#38d6a0" }}>cruz verde</b> (seu setor e paralelo) chega em +2t; o resto em +4t.
             </div>
           </div>
         )}
