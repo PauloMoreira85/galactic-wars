@@ -69,6 +69,9 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
     return () => clearInterval(t);
   }, []);
   useEffect(() => { api.markSeen("galaxy"); }, []); // missão tutorial
+  // Visão da galáxia: mapa visual ou lista (tabela). Lembra a escolha no navegador.
+  const [gview, setGview] = useState<"map" | "list">(() => { try { return (localStorage.getItem("gw_galaxy_view") as "map" | "list") || "map"; } catch { return "map"; } });
+  function setGalaxyView(v: "map" | "list") { setGview(v); try { localStorage.setItem("gw_galaxy_view", v); } catch {} }
   // Convites de galáxia privada pendentes (mostra banner no topo pra aceitar/recusar).
   const [gInvites, setGInvites] = useState<{ galaxy: number; name: string }[]>([]);
   async function loadInvites() { try { setGInvites((await api.privateView()).invites ?? []); } catch {} }
@@ -197,8 +200,59 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
             <button className="galnav-vert" title="Setor -1" onClick={() => setGalaxy((v) => Math.max(1, v - 1))}>∨</button>
           </div>
         </div>
-        <div className="roid-count" style={{ margin: "8px 0" }}>seu planeta: {myCoords} · agentes que você tem: {(["P","M","T","D"] as const).filter(a=>agentsIHave[a]).join(" ") || "nenhum"}</div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, margin: "8px 0" }}>
+          <div className="roid-count">seu planeta: {myCoords} · agentes que você tem: {(["P","M","T","D"] as const).filter(a=>agentsIHave[a]).join(" ") || "nenhum"}</div>
+          <div className="auth-tabs" style={{ margin: 0 }}>
+            <button className={gview === "map" ? "active" : ""} onClick={() => setGalaxyView("map")}>🗺️ Mapa</button>
+            <button className={gview === "list" ? "active" : ""} onClick={() => setGalaxyView("list")}>📋 Lista</button>
+          </div>
+        </div>
 
+        {gview === "map" && (
+          <div className="galaxy-map">
+            {data?.slots.map((sl) => {
+              const coord = `${galaxy}:${system}:${sl.slot}`;
+              const isSelf = coord === myCoords;
+              if (!sl.occupied) return (
+                <div key={sl.slot} className="gmap-planet gmap-empty"><div className="gmap-slot">{sl.slot}</div><div className="gmap-void">vazio</div></div>
+              );
+              // Relação (cor): você · aliado de galáxia · aliado de aliança · protegido · alvo (pode/não atacar)
+              const r = attackRange(sl);
+              let kind = "enemy-no"; // inimigo fora de alcance (default)
+              if (isSelf) kind = "self";
+              else if (sameGalaxy) kind = "ally-gal";
+              else if (myAllianceTag && sl.allianceTag === myAllianceTag) kind = "ally-tag";
+              else if (sl.protected) kind = "prot";
+              else if (r?.ok) kind = "enemy-ok";
+              return (
+                <button key={sl.slot} className={`gmap-planet gmap-${kind}`} title={r?.why ?? undefined}
+                  onClick={() => { if (!isSelf) pickTarget(sl.slot, sl.name!); }}>
+                  <div className="gmap-slot">{sl.slot} {sl.online === true && <span title="online">🟢</span>}</div>
+                  <div className="gmap-orb" />
+                  <div className="gmap-name"><b>{sl.name}</b></div>
+                  <div className="gmap-cmd">{sl.commander} {sl.role && <span style={{ color: ROLE_COLOR[sl.role] }}>{ROLE_TAG[sl.role]}</span>}</div>
+                  <div className="gmap-meta">[{sl.raceTag ?? "?"}]{sl.allianceTag ? ` {${sl.allianceTag}}` : ""} · 💎{fmt(sl.roids ?? 0)}</div>
+                  <div className="gmap-badges">
+                    {sl.protected && <span className="gmap-badge prot">P</span>}
+                    {isSelf ? <span className="gmap-badge you">VOCÊ</span>
+                      : <span className="gmap-badge" style={{ color: r?.ok ? "var(--danger)" : "var(--muted)" }}>{r?.ok ? "⚔ alvo" : "🔒"}</span>}
+                  </div>
+                  {!isSelf && (
+                    <div className="gmap-actions" onClick={(e) => e.stopPropagation()}>
+                      <span title="Enviar frota" onClick={() => pickTarget(sl.slot, sl.name!)}>🚀</span>
+                      <span title="Mensagem" onClick={() => onMessage?.(coord)}>✉</span>
+                      {(["P","M","T","D"] as const).map((a) => agentsIHave[a] && (
+                        <span key={a} title={`Espionar (${a})`} onClick={() => doSpy(sl.slot, a)} style={{ fontSize: 11 }}>{a}</span>
+                      ))}
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {gview === "list" && (
         <table>
           <thead>
             <tr><th>Slot</th><th>St</th><th>Ativ</th><th>Líder</th><th>Planeta</th><th>Roids</th><th>Pontuação</th><th>Rank</th><th title="🟢 pode atacar · 🔴 não pode">Alcance</th><th>Agentes</th><th></th></tr>
@@ -247,6 +301,7 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
             })}
           </tbody>
         </table>
+        )}
       </div>
 
       {error && <div className="error" style={{ marginTop: 10 }}>{error}</div>}
