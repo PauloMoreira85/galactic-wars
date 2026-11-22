@@ -1,8 +1,8 @@
 import { useState } from "react";
 
 // Raças que já têm trailer em /art/videos/raca-<key>.mp4.
-// Conforme os vídeos das outras forem ficando prontos, é só adicionar aqui.
-const RACES_WITH_TRAILER = new Set(["insecta"]);
+// (c-Mech usa a chave interna 'mech' → arquivo raca-mech.mp4)
+const RACES_WITH_TRAILER = new Set(["humanos", "daharan", "rakshasa", "mech", "insecta"]);
 
 /**
  * Botão "▶ Trailer" que abre o vídeo de apresentação da raça num modal (com som).
