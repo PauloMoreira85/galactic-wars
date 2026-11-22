@@ -329,6 +329,9 @@ body::after {
 .resbar-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; }
 .resbar-value { font-family: var(--mono); font-weight: 700; font-size: 16px; color: #eaffff; }
 .resbar-prod { color: var(--carbonum); font-size: 11px; font-family: var(--mono); }
+.resbar-tick { padding-right: 12px; border-right: 1px solid var(--border); }
+.resbar-tick .resbar-value { color: #ffd98a; }
+.resbar-tick .resbar-prod { color: var(--muted); }
 
 /* ===== Painéis ===== */
 .panel {
@@ -557,6 +560,11 @@ td { font-family: var(--mono); }
   .resbar-value { font-size: 13px; }
   .resbar-prod { font-size: 9.5px; }
   .dot { width: 10px; height: 10px; flex-shrink: 0; }
+  /* No celular, a produção "/t" e o countdown do tick são escondidos pra caber.
+     O tick mantém o ⏱ (label visível só nele) e o número #N. */
+  .resbar-item .resbar-prod { display: none; }
+  .resbar-tick { flex: 0 0 auto; padding-right: 8px; }
+  .resbar-tick .resbar-label { display: inline; font-size: 13px; }
 
   /* Faixa "Desenvolvido por" ocupa a largura toda no celular */
   .ads-strip .ad-card { max-width: 100%; }

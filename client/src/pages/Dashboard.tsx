@@ -542,8 +542,13 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
           </button>
         </div>
 
-        {/* Barra de recursos sempre visível (como nos prints) */}
+        {/* Barra de recursos sempre visível (como nos prints) — com o TICK junto */}
         <div className="resource-bar">
+          <div className="resbar-item resbar-tick" title={`Tick ${game.tickNumber} de ${game.roundTicks}${countdown ? ` · próximo em ${countdown}` : ""}`}>
+            <span className="resbar-label">⏱ Tick</span>
+            <span className="resbar-value">#{game.tickNumber}</span>
+            {countdown && <span className="resbar-prod">{countdown}</span>}
+          </div>
           {RES_META.map(({ key, label }) => (
             <div className="resbar-item" key={key}>
               <span className={`dot ${key}`} />
