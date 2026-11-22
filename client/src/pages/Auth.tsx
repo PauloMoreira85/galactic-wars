@@ -90,9 +90,15 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
   return (
     <div className="landing">
       <div className="landing-hero">
-        {/* Logo ESTÁTICA (imagem) — o vídeo autoplay de 8MB deixava a landing/cadastro
-            travando (renderizador sem resposta). Fica leve e confiável. */}
-        <img className="landing-hero-media" src="/art/logo/logo.jpg" alt="Galactic War" />
+        {/* Logo ANIMADA (vídeo leve ~860KB) em loop, autoplay silencioso. Poster = logo
+            estática pra aparecer na hora. Fallback pra imagem se o vídeo falhar. */}
+        <video
+          className="landing-hero-media"
+          autoPlay loop muted playsInline preload="auto"
+          poster="/art/logo/logo.jpg"
+          src="/art/logo/logo.mp4"
+          onError={(e) => { const v = e.currentTarget; const img = document.createElement("img"); img.src = "/art/logo/logo.jpg"; img.className = "landing-hero-media"; img.alt = "Galactic War"; v.replaceWith(img); }}
+        />
         <div className="landing-tagline">
           {/* O slogan "THE UNIVERSE AT WAR" já está desenhado na logo — no modo
               principal mostramos só o selo BETA. No RUR a logo não traz o texto
