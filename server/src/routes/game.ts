@@ -801,13 +801,8 @@ gameRouter.post("/alliance/create", (req: AuthedRequest, res) => {
 gameRouter.post("/alliance/request", async (req: AuthedRequest, res) => {
   const p = z.object({ tag: z.string() }).safeParse(req.body);
   if (!p.success) return res.status(400).json({ error: "Pedido invalido" });
-  // Anti multi-conta: não pode pedir pra entrar numa aliança com conta do mesmo IP.
-  const alliance = await prisma.alliance.findFirst({ where: { OR: [{ tag: p.data.tag.trim() }, { name: p.data.tag.trim() }] }, select: { id: true } });
-  if (alliance) {
-    const members = await prisma.allianceMember.findMany({ where: { allianceId: alliance.id }, select: { planetId: true } });
-    const owners = await prisma.planet.findMany({ where: { id: { in: members.map((m) => m.planetId) } }, select: { userId: true } });
-    for (const o of owners) if (await isLinked(req.userId!, o.userId)) return res.status(403).json({ error: MULTI_BLOCK_MSG });
-  }
+  // (Trava anti multi-conta REMOVIDA das alianças — contas do mesmo IP podem se aliar.
+  //  A proteção segue ativa em ataque/defesa, que é onde o abuso importa.)
   return allianceAction(req, res, (id) => requestJoin(id, p.data.tag));
 });
 // Jogador cancela o próprio pedido.
