@@ -201,7 +201,7 @@ body::after {
 .race-show-tag { color: var(--carbonum); font-size: 13px; margin-bottom: 8px; }
 .race-show-lore { color: var(--muted); font-size: 13px; line-height: 1.5; margin: 0 0 12px; }
 .race-show-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.rs-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 4px; }
+.rs-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 4px; line-height: 1.5; overflow: visible; }
 .rs-label.good { color: var(--carbonum); }
 .rs-label.bad { color: var(--danger); }
 .rs-item { font-size: 12.5px; color: var(--text); padding: 1px 0; }
