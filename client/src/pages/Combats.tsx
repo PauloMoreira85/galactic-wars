@@ -79,8 +79,10 @@ export function Combats() {
     const cell = (r?: Row) => r
       ? <><td>{fmt(r.before)}</td><td style={{ color: r.lost > 0 ? "var(--danger)" : undefined }}>{fmt(r.lost)}{r.assim > 0 && <span title="dessas perdas, quantas foram assimiladas pelo inimigo" style={{ color: "var(--accent)" }}> ({fmt(r.assim)})</span>}</td><td style={{ color: r.pem > 0 ? "var(--plutonium)" : undefined }}>{r.pem ? fmt(r.pem) : "—"}</td></>
       : <><td className="fg-zero">·</td><td className="fg-zero">·</td><td className="fg-zero">·</td></>;
-    const youDef = !iAmAtk ? { background: "rgba(37,211,255,0.06)" } : undefined;
-    const youAtk = iAmAtk ? { background: "rgba(37,211,255,0.06)" } : undefined;
+    // No ally-defense você é DEFENSOR (mesmo com iAmAtk=true no registro).
+    const youIsDefender = d.allyDefense ? true : !iAmAtk;
+    const youDef = youIsDefender ? { background: "rgba(37,211,255,0.06)" } : undefined;
+    const youAtk = !youIsDefender ? { background: "rgba(37,211,255,0.06)" } : undefined;
 
     // Vídeo cinematográfico do combate (mostra a raça vencedora em ação).
     // No ally-defense você é DEFENSOR (iAmAtk vem true no registro, mas é falso aqui).
@@ -105,11 +107,11 @@ export function Combats() {
           <h2>{d.allyDefense ? "🛡️ Relatório de Defesa (combate)" : "Relatório de Combate"}</h2>
           {d.allyDefense && (
             <div className="cost" style={{ color: "var(--carbonum)" }}>
-              Você enviou defesa pro aliado <b>{d.defendedName}</b> (<CoordLink c={d.defendedCoords ?? ""} />) e participou do combate. Suas naves estão no lado <b>defensor</b> abaixo.
+              O planeta atacado foi o seu aliado <b>{d.defendedName}</b> (<CoordLink c={d.defendedCoords ?? ""} />). <b>Você</b> (<b>{detail.defenderName}</b> <CoordLink c={detail.defenderCoords} />) enviou defesa e participou do combate — suas naves e as do aliado estão juntas no lado <b>defensor</b> abaixo.
             </div>
           )}
           <div className="cost">
-            Combate ocorrido no tick <b>#{detail.tick}</b> ({d.ticks ?? 3} ticks), em órbita de <b>{d.allyDefense ? d.defendedName : detail.defenderName}</b> (<CoordLink c={d.allyDefense ? (d.defendedCoords ?? "") : detail.defenderCoords} />).
+            Combate ocorrido no tick <b>#{detail.tick}</b> ({d.ticks ?? 3} ticks), em órbita do planeta atacado <b>{d.allyDefense ? d.defendedName : detail.defenderName}</b> (<CoordLink c={d.allyDefense ? (d.defendedCoords ?? "") : detail.defenderCoords} />).
           </div>
           {/* No ally-defense o registro guarda attackerName = planeta DEFENDIDO (não o
               atacante real), e iAmAttacker vem true porque você é o attackerPlanetId.
@@ -118,7 +120,8 @@ export function Combats() {
           {d.allyDefense ? (
             <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginTop: 8 }}>
               <div><div className="roid-count">Atacante</div><b style={{ color: "var(--danger)" }}>{d.attackers?.[0]?.name ?? "inimigo"}</b> <span className="roid-count">· {d.attackerRace}</span></div>
-              <div><div className="roid-count">Defensor (você)</div><b style={{ color: "var(--carbonum)" }}>{d.defendedName}</b> <span className="roid-count">(<CoordLink c={d.defendedCoords ?? ""} />) · {d.defenderRace}</span></div>
+              <div><div className="roid-count">Planeta atacado (aliado)</div><b style={{ color: "var(--carbonum)" }}>{d.defendedName}</b> <span className="roid-count">(<CoordLink c={d.defendedCoords ?? ""} />) · {d.defenderRace}</span></div>
+              <div><div className="roid-count">Você (defensor)</div><b style={{ color: "var(--accent)" }}>{detail.defenderName}</b> <span className="roid-count">(<CoordLink c={detail.defenderCoords} />)</span></div>
             </div>
           ) : (
             <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginTop: 8 }}>
@@ -134,7 +137,12 @@ export function Combats() {
               </div>
               <div>
                 <div className="roid-count">🛡️ Defensores ({d.defenders!.length})</div>
-                {d.defenders!.map((x, i) => <div key={i}><b style={{ color: "var(--carbonum)" }}>{x.name}{x.you ? " (você)" : " · aliado"}</b> <span className="roid-count">{fmt(x.ships)} naves</span></div>)}
+                {d.defenders!.map((x, i) => {
+                  // No ally-defense o backend marca `you` no planeta defendido (errado p/ quem
+                  // mandou reforço). "Você" é sempre o dono do relatório = detail.defenderName.
+                  const isYou = d.allyDefense ? x.name === detail.defenderName : x.you;
+                  return <div key={i}><b style={{ color: isYou ? "var(--accent)" : "var(--carbonum)" }}>{x.name}{isYou ? " (você)" : " · aliado"}</b> <span className="roid-count">{fmt(x.ships)} naves</span></div>;
+                })}
               </div>
             </div>
           )}
@@ -146,7 +154,7 @@ export function Combats() {
               <thead>
                 <tr>
                   <th rowSpan={2}>Nave</th>
-                  <th colSpan={3} style={youDef}>🛡️ Defendendo</th>
+                  <th colSpan={3} style={youDef}>🛡️ Defendendo{d.allyDefense ? " (você + aliados)" : ""}</th>
                   <th colSpan={3} style={youAtk}>⚔️ Atacando</th>
                 </tr>
                 <tr>
