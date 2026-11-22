@@ -83,11 +83,13 @@ export function Combats() {
     const youAtk = iAmAtk ? { background: "rgba(37,211,255,0.06)" } : undefined;
 
     // Vídeo cinematográfico do combate (mostra a raça vencedora em ação).
+    // No ally-defense você é DEFENSOR (iAmAtk vem true no registro, mas é falso aqui).
+    const iAmAtkReal = d.allyDefense ? false : iAmAtk;
     const atkLostTot = d.attacker.reduce((s, r) => s + r.lost + r.pem, 0);
     const defLostTot = d.defender.reduce((s, r) => s + r.lost + r.pem, 0);
-    const myLostTot = iAmAtk ? atkLostTot : defLostTot;
-    const oppLostTot = iAmAtk ? defLostTot : atkLostTot;
-    const videoSrc = pickCombatVideo(iAmAtk, d.attackerRace, d.defenderRace, myLostTot, oppLostTot);
+    const myLostTot = iAmAtkReal ? atkLostTot : defLostTot;
+    const oppLostTot = iAmAtkReal ? defLostTot : atkLostTot;
+    const videoSrc = pickCombatVideo(iAmAtkReal, d.attackerRace, d.defenderRace, myLostTot, oppLostTot);
 
     return (
       <>
@@ -109,10 +111,21 @@ export function Combats() {
           <div className="cost">
             Combate ocorrido no tick <b>#{detail.tick}</b> ({d.ticks ?? 3} ticks), em órbita de <b>{d.allyDefense ? d.defendedName : detail.defenderName}</b> (<CoordLink c={d.allyDefense ? (d.defendedCoords ?? "") : detail.defenderCoords} />).
           </div>
-          <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginTop: 8 }}>
-            <div><div className="roid-count">Atacante {iAmAtk && "(você)"}</div><b style={{ color: "var(--danger)" }}>{detail.attackerName}</b> <span className="roid-count">(<CoordLink c={detail.attackerCoords} />) · {d.attackerRace}</span></div>
-            <div><div className="roid-count">Defensor {!iAmAtk && "(você)"}</div><b style={{ color: "var(--carbonum)" }}>{detail.defenderName}</b> <span className="roid-count">(<CoordLink c={detail.defenderCoords} />) · {d.defenderRace}</span></div>
-          </div>
+          {/* No ally-defense o registro guarda attackerName = planeta DEFENDIDO (não o
+              atacante real), e iAmAttacker vem true porque você é o attackerPlanetId.
+              Então exibimos os papéis certos: você/aliado = defensor; atacante real
+              vem de d.attackers. Fora do ally-defense, usa os campos normais. */}
+          {d.allyDefense ? (
+            <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginTop: 8 }}>
+              <div><div className="roid-count">Atacante</div><b style={{ color: "var(--danger)" }}>{d.attackers?.[0]?.name ?? "inimigo"}</b> <span className="roid-count">· {d.attackerRace}</span></div>
+              <div><div className="roid-count">Defensor (você)</div><b style={{ color: "var(--carbonum)" }}>{d.defendedName}</b> <span className="roid-count">(<CoordLink c={d.defendedCoords ?? ""} />) · {d.defenderRace}</span></div>
+            </div>
+          ) : (
+            <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginTop: 8 }}>
+              <div><div className="roid-count">Atacante {iAmAtk && "(você)"}</div><b style={{ color: "var(--danger)" }}>{detail.attackerName}</b> <span className="roid-count">(<CoordLink c={detail.attackerCoords} />) · {d.attackerRace}</span></div>
+              <div><div className="roid-count">Defensor {!iAmAtk && "(você)"}</div><b style={{ color: "var(--carbonum)" }}>{detail.defenderName}</b> <span className="roid-count">(<CoordLink c={detail.defenderCoords} />) · {d.defenderRace}</span></div>
+            </div>
+          )}
           {((d.attackers?.length ?? 0) > 1 || (d.defenders?.length ?? 0) > 1) && (
             <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginTop: 10, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
               <div>
