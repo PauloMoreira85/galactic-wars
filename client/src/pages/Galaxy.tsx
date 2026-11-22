@@ -348,7 +348,7 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
                           <image href="/art/roid.jpg" x={-56} y={39} width={11} height={11} clipPath="url(#roid-clip)" preserveAspectRatio="xMidYMid slice" />
                           <text x={-41} y={48} className="planet-roids">{fmt(sl.roids ?? 0)}</text>
                           {/* pontuação (direita) */}
-                          <text x={56} y={48} className="planet-score">⭐ {fmt(sl.score ?? 0)}</text>
+                          <text x={56} y={48} className="planet-score">{fmt(sl.score ?? 0)} pts</text>
                         </g>
                       </g>
                     );
