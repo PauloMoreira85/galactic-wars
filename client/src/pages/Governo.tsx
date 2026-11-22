@@ -294,7 +294,7 @@ export function Governo() {
                 <div className="roid-count">Sem frotas montadas.</div>
               ) : p.fleets.map((f, j) => (
                 <div key={j} className="roid-count" style={{ marginTop: 2 }}>
-                  🚀 {f.name} <span style={{ opacity: 0.8 }}>[{f.status === "idle" ? "na base" : `${f.mission} → ${f.target}`}]</span> ({f.total}): <span style={{ color: "var(--text)" }}>{fmtUnits(f.units)}</span>
+                  🚀 {f.name} <span style={{ opacity: 0.8 }}>[{f.status === "idle" ? "na base" : <>{f.mission} → <CoordLink c={f.target} /></>}]</span> ({f.total}): <span style={{ color: "var(--text)" }}>{fmtUnits(f.units)}</span>
                 </div>
               ))}
             </div>

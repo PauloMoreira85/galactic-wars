@@ -497,7 +497,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
           </div>
           <div className="sh-grid">
             <div className="sh-cell"><span>Planeta</span><b>{planet.name}</b></div>
-            <div className="sh-cell"><span>Coordenadas</span><b>{planet.coords}</b></div>
+            <div className="sh-cell"><span>Coordenadas</span><b><CoordLink c={planet.coords} /></b></div>
             <div className="sh-cell"><span>Raça</span><b>{view.race.name}</b></div>
             <div className="sh-cell"><span>Roids</span><b>{fmt(planet.roids.total)}</b></div>
             <div className="sh-cell"><span>Pontuação</span><b>{fmt(planet.score)}</b></div>

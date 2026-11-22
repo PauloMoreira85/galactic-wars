@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, REFRESH_MS, type PlanetView } from "../api";
 import { ShipIcon } from "../components/ShipIcon";
+import { CoordLink } from "../components/CoordLink";
 
 function fmt(n: number) {
   return n.toLocaleString("pt-BR");
@@ -153,7 +154,7 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
                   {fleets.map((f) => (
                     <td key={f.id} style={{ color: f.idle ? "var(--muted)" : f.mission === "attack" ? "var(--danger)" : "var(--carbonum)" }}>
                       {STATUS_LABEL[f.status] ?? f.status}
-                      {!f.idle && <div className="roid-count">{f.target} · {f.ticksRemaining}t</div>}
+                      {!f.idle && <div className="roid-count"><CoordLink c={f.target} /> · {f.ticksRemaining}t</div>}
                     </td>
                   ))}
                 </tr>

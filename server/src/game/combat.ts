@@ -382,9 +382,11 @@ export async function resolveSiege(target: { galaxy: number; system: number; slo
   }
 
   // 1 relatório por planeta atacante (cada um vê o combate COMBINADO).
+  const atkCoordsList: string[] = [];
   for (const ownerId of atkOwners) {
     const atk = await prisma.planet.findUnique({ where: { id: ownerId }, include: { user: { select: { race: true } } } });
     if (!atk) continue;
+    atkCoordsList.push(`${atk.galaxy}:${atk.system}:${atk.slot}`);
     await prisma.battleReport.create({ data: {
       tick, attackerPlanetId: atk.id, defenderPlanetId: def.id,
       attackerName: atk.name, defenderName: def.name,
@@ -418,7 +420,8 @@ export async function resolveSiege(target: { galaxy: number; system: number; slo
   }
   if (ratio > 2) await addMorale(def.id, 3);
 
-  await addNews(def.id, tick, `🛡️ Combate no seu planeta — ${atkContribs.length} frota(s) atacante(s); você perdeu ${totalUnits(st.dLost)} nave(s), inimigo perdeu ${totalUnits(st.aLost)}`);
+  const origem = atkCoordsList.length ? ` (de ${atkCoordsList.join(", ")})` : "";
+  await addNews(def.id, tick, `🛡️ Combate no seu planeta${origem} — ${atkContribs.length} frota(s) atacante(s); você perdeu ${totalUnits(st.dLost)} nave(s), inimigo perdeu ${totalUnits(st.aLost)}`);
 }
 
 // Manda a frota de volta pra casa com o que sobrou (+ espólio já acumulado).

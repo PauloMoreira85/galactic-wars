@@ -1,5 +1,6 @@
 // Renderiza um relatório de espionagem (intel) de forma legível — usado tanto na
 // tela Inteligência (espionagem ao vivo) quanto em Ferramentas (Visualizar Espionagem).
+import { CoordLink, linkifyCoords } from "./CoordLink";
 function fmt(n: number) { return n.toLocaleString("pt-BR"); }
 
 export function IntelReport({ intel }: { intel: any }) {
@@ -31,7 +32,7 @@ export function IntelReport({ intel }: { intel: any }) {
           <div className="cost">Notícias do alvo:</div>
           {intel.news.length === 0
             ? <div className="roid-count">sem notícias</div>
-            : intel.news.map((n: string, i: number) => <div key={i} className="roid-count">{n}</div>)}
+            : intel.news.map((n: string, i: number) => <div key={i} className="roid-count">{linkifyCoords(n)}</div>)}
         </div>
       )}
       {(intel.base || intel.fleets) && (() => {
@@ -51,7 +52,7 @@ export function IntelReport({ intel }: { intel: any }) {
                   <tr key={n}><td className="fg-name"><b>{n}</b></td>{cols.map((c) => <td key={c.key}>{(c.units[n] ?? 0) > 0 ? fmt(c.units[n]) : "·"}</td>)}</tr>
                 ))}
                 <tr><td className="roid-count">Estado</td>{cols.map((c) => <td key={c.key} className="roid-count">{c.info ? c.info.status : "na base"}</td>)}</tr>
-                <tr><td className="roid-count">Destino</td>{cols.map((c) => <td key={c.key} className="roid-count">{c.info && c.info.target && c.info.target !== "—" ? `${c.info.target} (${c.info.ticksRemaining}t)` : "—"}</td>)}</tr>
+                <tr><td className="roid-count">Destino</td>{cols.map((c) => <td key={c.key} className="roid-count">{c.info && c.info.target && c.info.target !== "—" ? <><CoordLink c={c.info.target} /> ({c.info.ticksRemaining}t)</> : "—"}</td>)}</tr>
               </tbody>
             </table>
           </div>

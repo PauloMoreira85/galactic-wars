@@ -251,6 +251,14 @@ body::after {
 }
 .coord-link:hover { color: #eafcff; text-shadow: 0 0 8px var(--glow); }
 
+/* Botão de ação destrutiva (ex: expulsar da aliança) */
+.btn-danger {
+  background: rgba(255, 60, 60, 0.12); border: 1px solid var(--danger);
+  color: var(--danger); border-radius: 6px; padding: 3px 10px; cursor: pointer;
+  font-size: 13px; white-space: nowrap;
+}
+.btn-danger:hover { background: var(--danger); color: #0b0010; }
+
 /* Instalar como app (PWA) — landing */
 .install-app { margin-top: 38px; }
 .install-cols { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }

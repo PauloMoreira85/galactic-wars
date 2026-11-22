@@ -123,7 +123,12 @@ export function Aliancas() {
                       </select>
                     ) : <b>{ROLE_LABEL[m.role] ?? m.role}</b>}
                   </td>
-                  {a.canManage && <td>{canKick && <button onClick={() => act(() => api.allianceKick(m.planetId))}>expulsar</button>}</td>}
+                  {a.canManage && <td>{canKick && <button
+                    className="btn-danger"
+                    title={`Expulsar ${m.commander} da aliança`}
+                    onClick={() => { if (window.confirm(`Expulsar ${m.commander} (${m.name}) da aliança?\n\nEssa ação é imediata e não pode ser desfeita — o jogador precisará ser convidado de novo pra voltar.`)) act(() => api.allianceKick(m.planetId)); }}>
+                    ✕ expulsar
+                  </button>}</td>}
                 </tr>
               );
             })}
