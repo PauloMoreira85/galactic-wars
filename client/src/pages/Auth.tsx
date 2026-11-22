@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, setToken, IS_RUR, MAIN_URL, RUR_URL, DISCORD_URL, type RaceInfo } from "../api";
 import { AdBanner } from "../components/AdBanner";
+import { TrailerButton } from "../components/TrailerButton";
 
 // Vídeo que NÃO toca sozinho — mostra o poster (imagem leve) e só baixa/toca ao
 // passar o mouse. Evita vários vídeos decodificando juntos e travando a landing.
@@ -332,6 +333,7 @@ export function Auth({ onAuthed }: { onAuthed: () => void }) {
               <h3>{r.name}</h3>
               <div className="race-show-tag">{r.tagline}</div>
               <p className="race-show-lore">{r.lore}</p>
+              <TrailerButton raceKey={r.key} label="▶ Assistir trailer" />
               <div className="race-show-cols">
                 <div>
                   <div className="rs-label good">✓ Forças</div>

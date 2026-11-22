@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, clearToken, type PlanetView, type RaceInfo } from "../api";
 import { AdBanner } from "./AdBanner";
+import { TrailerButton } from "./TrailerButton";
 
 // Tela OBRIGATÓRIA de escolha de raça no início de cada round (ciclo diário).
 // Bloqueia o jogo até o player escolher. Pode escolher a mesma raça de novo.
@@ -54,6 +55,7 @@ export function RaceChoiceScreen({ view, onChosen, onLogout }: {
                   {(r.weaknesses ?? []).map((s, k) => <div key={`w${k}`} style={{ color: "var(--plutonium)" }}>− {s}</div>)}
                 </div>
               ) : null}
+              <TrailerButton raceKey={r.key} />
             </button>
           ))}
         </div>
