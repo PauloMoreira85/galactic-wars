@@ -4,6 +4,7 @@ import { CoordLink } from "../components/CoordLink";
 import { ShipName } from "../components/ShipIcon";
 import { CombatChart } from "../components/CombatChart";
 import { CombatStats } from "../components/CombatStats";
+import { pickCombatVideo } from "../components/combatVideo";
 
 function fmt(n: number) {
   return n.toLocaleString("pt-BR");
@@ -81,9 +82,23 @@ export function Combats() {
     const youDef = !iAmAtk ? { background: "rgba(37,211,255,0.06)" } : undefined;
     const youAtk = iAmAtk ? { background: "rgba(37,211,255,0.06)" } : undefined;
 
+    // Vídeo cinematográfico do combate (mostra a raça vencedora em ação).
+    const atkLostTot = d.attacker.reduce((s, r) => s + r.lost + r.pem, 0);
+    const defLostTot = d.defender.reduce((s, r) => s + r.lost + r.pem, 0);
+    const myLostTot = iAmAtk ? atkLostTot : defLostTot;
+    const oppLostTot = iAmAtk ? defLostTot : atkLostTot;
+    const videoSrc = pickCombatVideo(iAmAtk, d.attackerRace, d.defenderRace, myLostTot, oppLostTot);
+
     return (
       <>
         <button className="link" onClick={() => setDetail(null)}>← voltar aos combates</button>
+        {videoSrc && (
+          <div className="panel" style={{ marginTop: 10, padding: 0, overflow: "hidden" }}>
+            <video src={videoSrc} autoPlay loop muted playsInline
+              style={{ width: "100%", display: "block", borderRadius: 12 }}
+              onError={(e) => { (e.currentTarget.closest(".panel") as HTMLElement)?.style.setProperty("display", "none"); }} />
+          </div>
+        )}
         <div className="panel" style={{ marginTop: 10 }}>
           <h2>{d.allyDefense ? "🛡️ Relatório de Defesa (combate)" : "Relatório de Combate"}</h2>
           {d.allyDefense && (
