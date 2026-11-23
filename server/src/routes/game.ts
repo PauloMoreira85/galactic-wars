@@ -336,7 +336,9 @@ gameRouter.get("/fleets", async (req: AuthedRequest, res) => {
       units, totalShips: totalUnits(units),
       ticksRemaining: f.status === "engaged" ? Math.max(0, BATTLE_TICKS - f.battleTicksDone) : Math.max(0, f.arriveTick - tick),
       captured: { metalium: f.capMetalium, carbonum: f.capCarbonum, plutonium: f.capPlutonium },
-      canRecall: f.status === "outbound" || f.status === "engaged",
+      // Pode recuar enquanto está fora: indo, em combate OU guarnecendo/defendendo
+      // (garrison). Só não dá quando já está voltando (returning) ou na base (idle).
+      canRecall: f.status === "outbound" || f.status === "engaged" || f.status === "garrison",
       // Tempo/custo de viagem por distância (Galáxia / Setor-Paralelo / Universo)
       travel: { galaxia: tecBase, setor: tecBase + 2, universo: tecBase + 4, fuel: fuelCost(units) },
     };

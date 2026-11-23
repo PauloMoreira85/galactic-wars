@@ -71,9 +71,9 @@ export function Trafego({ onGoto }: { onGoto?: (coords: string) => void }) {
                     <tr key={i} style={grp.toMe ? { background: "rgba(255,80,80,0.10)" } : undefined}>
                       <td><Coord c={f.origin} /></td>
                       <td>{f.owner}</td>
-                      <td style={{ color }}>{atk ? "🔴 ataque" : "🟢 defesa"}{f.status === "engaged" ? " (em combate)" : ""}</td>
+                      <td style={{ color }}>{atk ? "🔴 ataque" : "🟢 defesa"}{f.status === "engaged" ? " (em combate)" : f.status === "garrison" ? " (defendendo)" : ""}</td>
                       <td>{fmt(f.ships)}</td>
-                      <td>{f.status === "engaged" ? "—" : `${f.ticks} tick(s)`}</td>
+                      <td>{f.status === "engaged" ? "—" : f.status === "garrison" ? "✓ no local" : `${f.ticks} tick(s)`}</td>
                     </tr>
                   );
                 })}

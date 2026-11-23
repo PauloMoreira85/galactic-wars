@@ -486,7 +486,10 @@ export async function galaxyTraffic(planetId: string) {
   if (!me) throw new Error("Planeta nao encontrado");
   const nowTick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
 
-  const fleets = await prisma.fleet.findMany({ where: { targetGalaxy: me.galaxy, targetSystem: me.system, status: { in: ["outbound", "engaged"] } } });
+  // Inclui "garrison": defesa que JÁ CHEGOU e está guarnecendo o planeta (ex.: defesa
+  // de aliado na mesma galáxia, TEC 0). Sem isso a linha de defesa somia de "Frotas
+  // chegando" assim que a frota chegava (ficava só em "Movimentação").
+  const fleets = await prisma.fleet.findMany({ where: { targetGalaxy: me.galaxy, targetSystem: me.system, status: { in: ["outbound", "engaged", "garrison"] } } });
   const ownerIds = [...new Set(fleets.map((f) => f.ownerPlanetId))];
   const owners = await prisma.planet.findMany({ where: { id: { in: ownerIds } }, include: { user: { select: { username: true } } } });
   const ownerMap = new Map(owners.map((o) => [o.id, o]));
@@ -550,9 +553,12 @@ export async function viewedTraffic(planetId: string, galaxy: number, system: nu
   const isMine = !!me && me.galaxy === galaxy && me.system === system;
   // Frotas com destino nessa galáxia. Se não é a minha, só as MINHAS (evita vazar
   // ataques de terceiros contra outros).
+  // Inclui "garrison": frota que JÁ CHEGOU e está defendendo/guarnecendo o planeta
+  // (ex.: defesa de aliado na mesma galáxia, TEC 0). Sem isso a linha de defesa some
+  // do tráfego assim que a frota chega.
   const where = isMine
-    ? { targetGalaxy: galaxy, targetSystem: system, status: { in: ["outbound", "engaged"] } }
-    : { ownerPlanetId: planetId, targetGalaxy: galaxy, targetSystem: system, status: { in: ["outbound", "engaged"] } };
+    ? { targetGalaxy: galaxy, targetSystem: system, status: { in: ["outbound", "engaged", "garrison"] } }
+    : { ownerPlanetId: planetId, targetGalaxy: galaxy, targetSystem: system, status: { in: ["outbound", "engaged", "garrison"] } };
   const fleets = await prisma.fleet.findMany({ where: where as any });
   const fleetsOut = fleets.map((f) => ({
     origin: `${f.originGalaxy}:${f.originSystem}:${f.originSlot}`,
