@@ -142,7 +142,7 @@ export interface PlanetView {
   onlineCount: number;
   newsUnread: number;
   admin: boolean;
-  galaxyFund: { metalium: number; carbonum: number; plutonium: number; taxRate: number; marketFee: number; marketLocked: boolean; iAmME?: boolean };
+  galaxyFund: { metalium: number; carbonum: number; plutonium: number; taxRate: number; marketFee: number; marketLocked: boolean; iAmCG?: boolean; iAmME?: boolean; iAmMG?: boolean; iAmMD?: boolean };
   tech: TechItem[];
   effects: { espionage: number };
   units: UnitItem[];

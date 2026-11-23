@@ -6,7 +6,7 @@ import { Missoes } from "./Missoes";
 import { Trafego } from "./Trafego";
 import { Frotas } from "./Frotas";
 import { Combats } from "./Combats";
-import { Governo } from "./Governo";
+import { Votacao, FundoGalaxia, CargoCG, CargoME, CargoMG, CargoMD } from "./Governo";
 import { Noticias } from "./Noticias";
 import { Aliancas } from "./Aliancas";
 import { Ranking } from "./Ranking";
@@ -103,7 +103,7 @@ function useRoundStatus(view: PlanetView | null) {
   return { label: "Próximo round", time: fmtDur(Math.floor((next - now) / 1000)) };
 }
 
-type Section = "planeta" | "missoes" | "galaxia" | "frotas" | "trafego" | "tecnologia" | "naves" | "recursos" | "combates" | "votacao" | "noticias" | "aliancas" | "ranking" | "associados" | "preferencias" | "forum" | "forumgalaxia" | "chat" | "mensagens" | "sabotagem" | "intel";
+type Section = "planeta" | "missoes" | "galaxia" | "frotas" | "trafego" | "tecnologia" | "naves" | "recursos" | "combates" | "votacao" | "cargoCG" | "cargoME" | "cargoMG" | "cargoMD" | "noticias" | "aliancas" | "ranking" | "associados" | "preferencias" | "forum" | "forumgalaxia" | "chat" | "mensagens" | "sabotagem" | "intel";
 
 interface MenuItem {
   key: string;
@@ -144,7 +144,9 @@ const MENU: MenuItem[][] = [
   ],
   [
     { key: "recursos", label: "Recursos" },
-    { key: "votacao", label: "Votação / Governo da Galáxia" },
+    { key: "votacao", label: "🏛️ Votação / Governo" },
+    // Itens de CARGO (👑 CG, 💰 ME, ⚔️ MG, 🕊️ MD) são injetados dinamicamente
+    // no render, só pra quem ocupa o cargo (marcados com a key cargo*).
   ],
   [
     { key: "aliancas", label: "Alianças" },
@@ -169,6 +171,10 @@ const TITLES: Record<Section, string> = {
   recursos: "Recursos",
   combates: "Combates",
   votacao: "Votação / Governo",
+  cargoCG: "👑 Comandante da Galáxia",
+  cargoME: "💰 Ministro da Economia",
+  cargoMG: "⚔️ Ministro da Guerra",
+  cargoMD: "🕊️ Ministro da Diplomacia",
   noticias: "Notícias",
   aliancas: "Alianças",
   ranking: "Rankings",
@@ -205,9 +211,6 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [fgBusy, setFgBusy] = useState(false);
   // Doação do ME direto da aba Recursos (destino por coordenada).
   const [meGov, setMeGov] = useState<Awaited<ReturnType<typeof api.gov>> | null>(null);
-  const [donTo, setDonTo] = useState("");
-  const [donAmt, setDonAmt] = useState({ metalium: 0, carbonum: 0, plutonium: 0 });
-  const [donErr, setDonErr] = useState("");
   // Contribuir PRA o fundo (qualquer planeta).
   const [contrib, setContrib] = useState({ metalium: 0, carbonum: 0, plutonium: 0 });
   const [contribErr, setContribErr] = useState("");
@@ -265,8 +268,8 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   useEffect(() => {
     if (section === "noticias") { setNewsUnread(0); api.newsSeen(); }
     if (section === "chat") { setChatUnread(0); api.chatSeen?.(); }
-    // ME abrindo Recursos: carrega o governo (pra listar os planetas destino da doação).
-    if (section === "recursos" && view?.galaxyFund.iAmME) { api.gov().then(setMeGov).catch(() => {}); }
+    // Abrindo Recursos: carrega o governo (fundo + livro-caixa, visível a todos).
+    if (section === "recursos") { api.gov().then(setMeGov).catch(() => {}); }
   }, [section]);
 
   async function build(resource: Resource) {
@@ -350,6 +353,20 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   if (view.mustChooseRace) return <RaceChoiceScreen view={view} onChosen={refresh} onLogout={onLogout} />;
 
   const { planet, game } = view;
+
+  // Menu dinâmico: injeta os itens de CARGO (só pra quem ocupa) logo depois de
+  // "Votação". Assim quem é CG vê "👑 Comandante", o ME vê "💰 Economia", etc.
+  const gf = view.galaxyFund;
+  const cargoItems: MenuItem[] = [
+    ...(gf.iAmCG ? [{ key: "cargoCG", label: "👑 Comandante" }] : []),
+    ...(gf.iAmME ? [{ key: "cargoME", label: "💰 Ministro Economia" }] : []),
+    ...(gf.iAmMG ? [{ key: "cargoMG", label: "⚔️ Ministro Guerra" }] : []),
+    ...(gf.iAmMD ? [{ key: "cargoMD", label: "🕊️ Ministro Diplomacia" }] : []),
+  ];
+  const menuGroups: MenuItem[][] = MENU.map((group) =>
+    group.some((it) => it.key === "votacao") ? [...group, ...cargoItems] : group
+  );
+
   // Todo roid é pago em METALIUM (canon original). planet.nextRoidCost[r] = custo
   // em metalium do próximo roid de r (escala com os roids daquele recurso).
   const roidCost = (r: Resource) => planet.nextRoidCost[r];
@@ -435,7 +452,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         </div>
 
         <nav className="menu">
-          {MENU.map((group, gi) => (
+          {menuGroups.map((group, gi) => (
             <div key={gi}>
               {gi > 0 && <div className="menu-sep" />}
               {group.map((it) => (
@@ -715,30 +732,28 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             {contribErr && <div className="error" style={{ marginTop: 10 }}>{contribErr}</div>}
           </div>
 
-          {/* Doação do fundo — só o ME vê (atalho aqui na aba Recursos). */}
-          {view.galaxyFund.iAmME && (
+          {/* Doação do fundo (ME) migrou pro item de menu 💰 Ministro Economia. */}
+
+          {/* Livro caixa do fundo — transparência pra galáxia (quem doou o quê). */}
+          {(meGov?.donations?.length ?? 0) > 0 && (
             <div className="panel">
-              <h2>💰 Doar do fundo (Ministro da Economia)</h2>
-              <div className="cost" style={{ marginBottom: 6 }}>
-                Fundo disponível: <b>{fmt(view.galaxyFund.metalium)}</b> M · <b>{fmt(view.galaxyFund.carbonum)}</b> C · <b>{fmt(view.galaxyFund.plutonium)}</b> P
-                <div style={{ marginTop: 2 }}>Limite por doação: <b style={{ color: "#3aa0ff" }}>{fmt(Math.floor((view.galaxyFund.metalium + view.galaxyFund.carbonum + view.galaxyFund.plutonium) * 0.5))}</b> no total (50% da soma do fundo, distribua como quiser entre M/C/P) · 1 de CADA recurso a cada 72 ticks por planeta</div>
+              <h2>📒 Livro caixa do fundo</h2>
+              <div className="cost" style={{ marginBottom: 6 }}>Últimas doações do fundo da galáxia (quem deu, pra quem).</div>
+              <div style={{ maxHeight: 200, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 6 }}>
+                <table style={{ width: "100%", fontSize: 12 }}>
+                  <thead><tr><th>Tick</th><th>De</th><th>Para</th><th>M / C / P</th></tr></thead>
+                  <tbody>
+                    {meGov!.donations!.map((d, i) => (
+                      <tr key={i}>
+                        <td className="roid-count">#{d.tick}</td>
+                        <td>{d.from}</td>
+                        <td><b>{d.to}</b></td>
+                        <td className="roid-count">{fmt(d.metalium)} / {fmt(d.carbonum)} / {fmt(d.plutonium)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-                <select value={donTo} onChange={(e) => setDonTo(e.target.value)}
-                  style={{ background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
-                  <option value="">planeta destino...</option>
-                  {(meGov?.members ?? []).map((m) => <option key={m.id} value={m.id}>{m.name} ({m.coords})</option>)}
-                </select>
-                <input type="number" min={0} placeholder="M" value={donAmt.metalium || ""} onChange={(e) => setDonAmt({ ...donAmt, metalium: Math.max(0, Math.floor(Number(e.target.value) || 0)) })} style={{ width: 90, margin: 0, padding: "6px 8px" }} />
-                <input type="number" min={0} placeholder="C" value={donAmt.carbonum || ""} onChange={(e) => setDonAmt({ ...donAmt, carbonum: Math.max(0, Math.floor(Number(e.target.value) || 0)) })} style={{ width: 90, margin: 0, padding: "6px 8px" }} />
-                <input type="number" min={0} placeholder="P" value={donAmt.plutonium || ""} onChange={(e) => setDonAmt({ ...donAmt, plutonium: Math.max(0, Math.floor(Number(e.target.value) || 0)) })} style={{ width: 90, margin: 0, padding: "6px 8px" }} />
-                <button disabled={!donTo} onClick={async () => {
-                  setDonErr("");
-                  try { await api.govDonate(donTo, donAmt.metalium, donAmt.carbonum, donAmt.plutonium); setDonAmt({ metalium: 0, carbonum: 0, plutonium: 0 }); setMeGov(await api.gov()); refresh(); }
-                  catch (e: any) { setDonErr(e.message ?? "Falha ao doar"); }
-                }}>doar</button>
-              </div>
-              {donErr && <div className="error" style={{ marginTop: 10 }}>{donErr}</div>}
             </div>
           )}
 
@@ -876,7 +891,11 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
         {section === "combates" && <Combats />}
 
-        {section === "votacao" && <Governo />}
+        {section === "votacao" && <Votacao />}
+        {section === "cargoCG" && <CargoCG />}
+        {section === "cargoME" && <CargoME />}
+        {section === "cargoMG" && <CargoMG />}
+        {section === "cargoMD" && <CargoMD />}
 
         {section === "noticias" && <Noticias />}
 

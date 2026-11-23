@@ -223,7 +223,11 @@ async function planetView(userId: string) {
       metalium: gstate?.fundMetalium ?? 0, carbonum: gstate?.fundCarbonum ?? 0, plutonium: gstate?.fundPlutonium ?? 0,
       taxRate: gstate?.taxRate ?? 0, marketFee: gstate?.marketFee ?? MARKET_FEE * 100,
       marketLocked: gstate?.marketLocked ?? false,
-      iAmME: gstate?.mePlanetId === planet.id, // sou o Ministro da Economia desta galáxia?
+      // Cargos desta galáxia (pro menu lateral mostrar o item de cada cargo).
+      iAmCG: gstate?.cgPlanetId === planet.id, // Comandante da Galáxia
+      iAmME: gstate?.mePlanetId === planet.id, // Ministro da Economia
+      iAmMG: gstate?.mgPlanetId === planet.id, // Ministro da Guerra
+      iAmMD: gstate?.mdPlanetId === planet.id, // Ministro da Diplomacia
     },
     tech: techCatalog,
     units,
