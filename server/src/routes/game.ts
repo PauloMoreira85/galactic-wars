@@ -508,7 +508,6 @@ gameRouter.post("/agents/build", async (req: AuthedRequest, res) => {
 const spySchema = z.object({
   galaxy: z.number().int().min(1), system: z.number().int().min(1), slot: z.number().int().min(1).max(15),
   agent: z.enum(["P", "M", "T", "D"]),
-  count: z.number().int().min(1).max(100).optional(), // quantos agentes enviar (cada um = 1 tentativa)
 });
 gameRouter.post("/spy", async (req: AuthedRequest, res) => {
   const parsed = spySchema.safeParse(req.body);
@@ -525,20 +524,21 @@ gameRouter.post("/spy", async (req: AuthedRequest, res) => {
   const myAgents = parseAgents(me.agents);
   const have = myAgents[agent] ?? 0;
   if (have < 1) return res.status(400).json({ error: `Você não tem agentes ${agent} treinados (treine na Inteligência)` });
-  const sent = Math.min(parsed.data.count ?? 1, have); // não manda mais do que tem
 
   const target = await prisma.planet.findUnique({ where: { galaxy_system_slot: { galaxy, system, slot } }, include: { user: { select: { username: true, race: true, lastSeen: true } } } });
   if (!target) return res.status(404).json({ error: "Nenhum planeta nessas coordenadas" });
   if (target.id === me.id) return res.status(400).json({ error: "Você não espiona o próprio planeta" });
   const raceKey = isRaceKey(target.user.race) ? target.user.race : "humanos";
 
-  // Consome os `sent` agentes do tipo, sempre.
-  myAgents[agent] = have - sent;
+  // Consome 1 agente do tipo, sempre.
+  myAgents[agent] = have - 1;
   await prisma.planet.update({ where: { id: me.id }, data: { agents: stringifyAgents(myAgents) } });
 
   // Sucesso = disputa AE (do espião) × AC (do alvo), pesada pelos roids do alvo.
-  // Cada agente enviado é uma TENTATIVA independente: basta UM furar a CE pra o
-  // relatório sair. Mais agentes = mais chance de passar a contra-espionagem.
+  // UMA rolagem, conforme a fórmula do bgnweb: a chance depende da diferença entre
+  // o AE (força ofensiva) e o AC do alvo — mandar mais agentes do TIPO não muda a
+  // chance (quem aumenta a chance é treinar mais AE). (Ajuste pedido pelo Felipe:
+  // a quantidade de agentes já está embutida na fórmula via AE, sem tentativas extras.)
   const tkNow = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
   const tgtAgents = parseAgents(target.agents);
   const tgtCE = tgtAgents["CE"] ?? 0;
@@ -546,12 +546,9 @@ gameRouter.post("/spy", async (req: AuthedRequest, res) => {
   const myAE = myAgents["AE"] ?? 0;
   const myCoords = `${me.galaxy}:${me.system}:${me.slot}`;
   const succ = spySuccessChance(myAE, tgtCE, tgtRoids, target.user.race);
-  let passed = false;
-  for (let i = 0; i < sent; i++) { if (Math.random() <= succ) { passed = true; break; } }
-  if (!passed) {
-    const plural = sent > 1 ? `${sent} ${AGENT_FULL_NAME[agent]}s` : `um ${AGENT_FULL_NAME[agent]}`;
-    await addNews(target.id, tkNow, `🛡️ Sua contra-espionagem barrou ${plural} de ${myCoords}`);
-    return res.json({ failed: true, error: `Espionagem barrada — ${sent} agente(s) ${agent} tentaram e todos foram pegos (chance por agente ${Math.round(succ * 100)}%: AE ${myAE} vs AC ${tgtCE} do alvo). Mande mais agentes ou treine mais AE.` });
+  if (Math.random() > succ) {
+    await addNews(target.id, tkNow, `🛡️ Sua contra-espionagem barrou um ${AGENT_FULL_NAME[agent]} de ${myCoords}`);
+    return res.json({ failed: true, error: `Espionagem barrada (chance de sucesso ${Math.round(succ * 100)}% — seu AE ${myAE} vs AC ${tgtCE} do alvo). Perdeu 1 agente ${agent} — treine mais AE pra aumentar a chance.` });
   }
   // Naves do alvo = base (hangar) + TODAS as frotas dele (idle/atacando/defendendo).
   // (Sem isso, a pontuação/força espionada saía MUITO menor que a real quando o
