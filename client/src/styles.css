@@ -624,16 +624,35 @@ td { font-family: var(--mono); }
 .stat-line { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; padding: 2px 0; color: #cfe3f5; }
 .stat-line span { color: var(--muted); }
 
-/* Mapa estelar do universo / vizinhança */
-.universe-map-wrap { background: radial-gradient(circle at 50% 50%, rgba(2,8,18,0.25), rgba(2,8,18,0.72)), url("/art/mapa-galaxia.jpg") center/cover no-repeat;
-  border: 1px solid var(--border); border-radius: 12px; padding: 6px; }
+/* Mapa estelar imersivo do universo / vizinhança */
+.universe-map-wrap { border: 0; padding: 0; }
+.umap { position: relative; }
+.umap-filters { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.umap-filters button { background: rgba(18,30,48,0.7); border: 1px solid var(--border); color: #9fb6d4;
+  border-radius: 999px; padding: 4px 12px; font-size: 12px; cursor: pointer; }
+.umap-filters button.on { background: var(--accent); color: #06121f; border-color: var(--accent); font-weight: 700; }
+.umap-legend { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 11px; color: #8398b5; }
+.umap-legend .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin: 0 3px 0 8px; vertical-align: middle; }
+.umap-legend .dot.me { background: #5cc8ff; box-shadow: 0 0 6px #5cc8ff; }
+.umap-legend .dot.ally { background: #38d6a0; }
+.umap-legend .dot.pop { background: #dce9fb; }
+.umap-legend .dot.empty { background: #46597a; }
+.umap-stage { position: relative; border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+  background: linear-gradient(160deg, rgba(4,10,22,0.55), rgba(4,8,20,0.8)), url("/art/mapa-galaxia.jpg") center/cover no-repeat; }
 .universe-map { display: block; }
-.universe-map .um-axis-band { fill: rgba(56,214,160,0.08); stroke: rgba(56,214,160,0.22); stroke-width: 1; }
-.universe-map .um-head { text-anchor: middle; font-size: 12px; fill: #7f93ad; }
-.universe-map .um-head.axis { fill: #38d6a0; font-weight: 700; }
-.universe-map .um-name { text-anchor: middle; font-size: 10px; fill: #cfe3f5; font-weight: 600; }
-.universe-map .um-dist { text-anchor: middle; font-size: 9px; }
-.universe-map g:hover circle:first-of-type { opacity: 0.3; }
+.universe-map .um-head { text-anchor: middle; font-size: 12px; fill: #6f86a6; font-family: var(--mono); }
+.universe-map .um-head.axis { fill: #5cc8ff; font-weight: 700; }
+.universe-map .um-name { text-anchor: middle; font-size: 10px; fill: #e3eefc; font-weight: 600; paint-order: stroke; stroke: rgba(0,0,0,0.6); stroke-width: 2px; }
+.universe-map .um-route { stroke: rgba(92,200,255,0.28); stroke-width: 1; stroke-dasharray: 3 4; }
+.universe-map .um-pulse { animation: umpulse 2s ease-out infinite; transform-origin: center; transform-box: fill-box; }
+@keyframes umpulse { 0% { opacity: 0.9; transform: scale(1); } 70% { opacity: 0; transform: scale(2.2); } 100% { opacity: 0; } }
+.universe-map g:hover circle:nth-of-type(2) { opacity: 1; }
+.umap-tip { position: absolute; top: 10px; left: 10px; background: rgba(6,14,26,0.92); border: 1px solid var(--accent);
+  border-radius: 10px; padding: 8px 12px; pointer-events: none; max-width: 70%; box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
+.umap-tip-t { font-weight: 700; color: #eaf4ff; font-size: 14px; }
+.umap-tip-t span { color: var(--accent); font-family: var(--mono); margin-left: 6px; font-size: 12px; }
+.umap-tip-r { color: #9fb6d4; font-size: 12px; margin-top: 2px; }
+.umap-tip-go { color: var(--accent); font-size: 11px; margin-top: 4px; }
 
 /* Seletor de skin de planeta (Associados) */
 .skin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 12px; }
