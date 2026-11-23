@@ -727,3 +727,13 @@ td { font-family: var(--mono); }
 .race-dist-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .race-dist-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
 .race-dist-legend b { color: var(--text, #e8eefc); font-variant-numeric: tabular-nums; }
+
+/* Tecnologia: categorias colapsáveis (cabeçalho clicável) */
+.tech-cat { padding-top: 0; }
+.tech-cat-head { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: none; cursor: pointer; padding: 12px 2px; margin: 0; text-align: left; color: var(--text, #e8eefc); }
+.tech-cat-head:hover .tech-cat-title { color: var(--accent); }
+.tech-cat-caret { font-size: 12px; opacity: 0.8; width: 14px; display: inline-block; }
+.tech-cat-title { font-family: Orbitron, sans-serif; font-size: 15px; font-weight: 700; letter-spacing: 0.5px; }
+.tech-cat-sum { margin-left: auto; display: inline-flex; align-items: center; gap: 10px; font-size: 12px; }
+.tech-cat-run { color: #ff9628; font-weight: 700; }
+.tech-cat-act { color: var(--carbonum, #45e6a5); font-weight: 700; }

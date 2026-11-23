@@ -197,6 +197,24 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [shipBusy, setShipBusy] = useState<string | null>(null);
   const [section, setSection] = useState<Section>("planeta");
   const [menuOpen, setMenuOpen] = useState(false); // menu retrátil no celular
+  // Categorias de Tecnologia recolhidas (por nome). Guarda a escolha do jogador
+  // no navegador pra não reabrir tudo a cada visita. Default: tudo recolhido.
+  const [techCollapsed, setTechCollapsed] = useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem("gw_techCollapsed") || "{}"); } catch { return {}; }
+  });
+  const toggleTechCat = (cat: string) => setTechCollapsed((prev) => {
+    const next = { ...prev, [cat]: !prev[cat] };
+    try { localStorage.setItem("gw_techCollapsed", JSON.stringify(next)); } catch {}
+    return next;
+  });
+  // Recolhe (true) ou expande (false) TODAS as categorias de tecnologia de uma vez.
+  const setTechCat = (collapsed: boolean) => {
+    const cats = view?.tech ? Array.from(new Set(view.tech.map((t) => t.category))) : [];
+    const next: Record<string, boolean> = {};
+    for (const c of cats) next[c] = collapsed;
+    setTechCollapsed(next);
+    try { localStorage.setItem("gw_techCollapsed", JSON.stringify(next)); } catch {}
+  };
   const [showIntro, setShowIntro] = useState(() => localStorage.getItem("gw_intro_hidden") !== "1");
   const [mktFrom, setMktFrom] = useState<Resource>("metalium");
   const [mktTo, setMktTo] = useState<Resource>("carbonum");
@@ -377,10 +395,31 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   // pesquisa (reqsMet) — exceto a 1ª construção das trilhas que começam construindo.
   function renderTechTree() {
     const cats = CAT_ORDER.filter((c) => view!.tech.some((t) => t.category === c));
-    return cats.map((cat) => (
-      <div className="panel" key={cat}>
-        <h2>{CAT_LABELS[cat]}</h2>
-        {view!.tech.filter((t) => t.category === cat).map((t: TechItem) => {
+    return cats.map((cat) => {
+      const items = view!.tech.filter((t) => t.category === cat);
+      // Resumo da categoria (pro cabeçalho): quantos itens já no máximo, quantos
+      // disponíveis pra agir agora, e se tem algo em andamento.
+      const total = items.length;
+      const done = items.filter((t) => t.maxed).length;
+      const running = items.some((t) => view!.queue.some((q) => q.kind === "tech" && q.key === t.key));
+      const canAct = items.some((t) => t.canStart && !t.maxed);
+      // Default de abertura: aberta se tem algo rolando OU disponível; recolhida se
+      // está tudo concluído. A escolha do jogador (se houver) sempre vence.
+      const userChoice = techCollapsed[cat];
+      const collapsed = userChoice !== undefined ? userChoice : !(running || canAct);
+      return (
+      <div className="panel tech-cat" key={cat}>
+        <button className="tech-cat-head" onClick={() => toggleTechCat(cat)}
+          aria-expanded={!collapsed}>
+          <span className="tech-cat-caret">{collapsed ? "▸" : "▾"}</span>
+          <span className="tech-cat-title">{CAT_LABELS[cat]}</span>
+          <span className="tech-cat-sum">
+            {running && <span className="tech-cat-run">● em andamento</span>}
+            {canAct && !running && <span className="tech-cat-act">● disponível</span>}
+            <span className="roid-count">{done}/{total} no máx</span>
+          </span>
+        </button>
+        {!collapsed && items.map((t: TechItem) => {
           const isR = t.kind === "research";
           const inQueue = view!.queue.some((q) => q.kind === "tech" && q.key === t.key);
           const kindPending = view!.queue.some((q) => q.techKind === t.kind); // 1 pesquisa + 1 construção por vez
@@ -428,7 +467,8 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
           );
         })}
       </div>
-    ));
+      );
+    });
   }
 
   return (
@@ -804,6 +844,10 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             <div className="cost" style={{ marginBottom: 12 }}>
               Cada item libera o <b>próximo</b> (alternando 🔬 Pesquisa ↔ 🛠️ Construção). A 1ª de <b>Mineração</b> e <b>Naves</b> já vem livre (começam construindo); as outras começam pesquisando. Você não pula etapas.
               <br />Minas: <span>+{fmt(view.planet.miningBonus.metalium)} M</span> · <span>+{fmt(view.planet.miningBonus.carbonum)} C</span> · <span>+{fmt(view.planet.miningBonus.plutonium)} P</span> por tick · viagem: <span>−{view.planet.travelReduction} tick(s)</span>.
+            </div>
+            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+              <button className="link" onClick={() => setTechCat(true)}>▸ recolher tudo</button>
+              <button className="link" onClick={() => setTechCat(false)}>▾ expandir tudo</button>
             </div>
             {renderTechTree()}
             {error && <div className="error">{error}</div>}
