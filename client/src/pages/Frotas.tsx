@@ -93,6 +93,40 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
     finally { setBusy(false); }
   }
 
+  // Renomeia (batiza) uma frota. Nome livre, 1-24 chars (validado no server também).
+  async function renameFleetPrompt(fleetId: string, atual: string) {
+    const nome = window.prompt("Novo nome da frota:", atual);
+    if (nome == null) return;
+    const n = nome.trim();
+    if (!n || n === atual) return;
+    setBusy(true); setError("");
+    try {
+      await api.renameFleet(fleetId, n.slice(0, 24));
+      setFleets((await api.fleets()).fleets);
+    } catch (e: any) { setError(e.message ?? "Falha ao renomear"); }
+    finally { setBusy(false); }
+  }
+
+  // Move TODAS as naves de uma vez entre Base e uma frota (atalho do cabeçalho).
+  // dir "base" = frota inteira → Base; "frota" = tudo da Base → frota.
+  async function quickMoveAll(fleetId: string, dir: "base" | "frota") {
+    const f = fleets.find((x) => x.id === fleetId);
+    if (!f) return;
+    const units = dir === "base"
+      ? { ...f.units } // tudo que está na frota → base
+      : Object.fromEntries(view.units.filter((u) => u.count > 0).map((u) => [u.name, u.count])); // tudo da base → frota
+    const payload = Object.fromEntries(Object.entries(units).filter(([, n]) => (n as number) > 0));
+    if (Object.keys(payload).length === 0) return;
+    setBusy(true); setError("");
+    try {
+      if (dir === "base") await api.transferFleet(fleetId, "base", payload);
+      else await api.transferFleet("base", fleetId, payload);
+      setFleets((await api.fleets()).fleets);
+      onChanged();
+    } catch (e: any) { setError(e.message ?? "Falha ao mover"); }
+    finally { setBusy(false); }
+  }
+
   // Naves a listar: as que existem na Base ou em qualquer frota.
   const shipNames = Array.from(new Set([
     ...view.units.filter((u) => u.count > 0).map((u) => u.name),
@@ -112,7 +146,7 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
       <div className="panel">
         <h2>Frotas sob o seu comando</h2>
         <div className="cost" style={{ marginBottom: 10 }}>
-          {view.planet.fleetSlots}/5 frotas criadas. As setas movem <b>na hora</b>: <b>»</b> = tudo da Base → frota · <b>«</b> = tudo da frota → Base. Pra mover <b>de uma frota pra outra</b>, use o painel <b>🔀 Transferir naves direto</b> abaixo. Depois envie pela <b>Enviar frota</b> ou pela aba <b>Galáxia</b>.
+          {view.planet.fleetSlots}/5 frotas criadas. No <b>cabeçalho</b> de cada frota: <b>✏</b> renomeia · <b>« tudo</b> / <b>tudo »</b> movem <b>todas as naves de uma vez</b>. Nas linhas, as setas <b>«</b> <b>»</b> movem <b>um tipo</b> por vez (na hora). Pra mover <b>de uma frota pra outra</b>, use o painel <b>🔀 Transferir naves direto</b>. Depois envie pela <b>Enviar frota</b> ou pela aba <b>Galáxia</b>.
         </div>
 
         {fleets.length === 0 ? (
@@ -124,7 +158,25 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
                 <tr>
                   <th>Naves</th>
                   <th>Base</th>
-                  {fleets.map((f) => <th key={f.id}>{f.name}</th>)}
+                  {fleets.map((f) => (
+                    <th key={f.id}>
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                        {f.name}
+                        <button title="renomear esta frota" disabled={busy} onClick={() => renameFleetPrompt(f.id, f.name)}
+                          style={{ padding: "0 4px", margin: 0, fontSize: 11, lineHeight: 1.4, opacity: 0.7 }}>✏</button>
+                      </div>
+                      {f.idle && (
+                        <div style={{ display: "flex", gap: 4, justifyContent: "center", marginTop: 3 }}>
+                          <button title="mover TODAS as naves desta frota → Base" disabled={busy || Object.values(f.units).every((n) => (n ?? 0) <= 0)}
+                            onClick={() => quickMoveAll(f.id, "base")}
+                            style={{ padding: "1px 6px", margin: 0, fontSize: 10, lineHeight: 1.4 }}>« tudo</button>
+                          <button title="mover TODAS as naves da Base → esta frota" disabled={busy || view.units.every((u) => u.count <= 0)}
+                            onClick={() => quickMoveAll(f.id, "frota")}
+                            style={{ padding: "1px 6px", margin: 0, fontSize: 10, lineHeight: 1.4 }}>tudo »</button>
+                        </div>
+                      )}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
