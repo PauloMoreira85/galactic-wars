@@ -374,10 +374,16 @@ model GalaxyVote {
 model DonationCooldown {
   planetId    String @id
   lastTick    Int    @default(0) // legado (compat): última doação (qualquer recurso)
-  // Cooldown POR RECURSO: o planeta pode receber 1 de cada recurso por janela.
-  lastTickM   Int    @default(0) // última doação de Metalium
-  lastTickC   Int    @default(0) // última doação de Carbonum
-  lastTickP   Int    @default(0) // última doação de Plutonium
+  // Legado (não mais usado pra bloquear): ticks das últimas doações por recurso.
+  lastTickM   Int    @default(0)
+  lastTickC   Int    @default(0)
+  lastTickP   Int    @default(0)
+  // Teto ACUMULADO por janela: o planeta pode RECEBER até 50% do fundo (medido no
+  // início da janela) dentro de WINDOW ticks, em quantas doações quiser. Guardamos
+  // o tick de início da janela e quanto já recebeu (soma M+C+P) e o teto da janela.
+  windowStart Int    @default(0) // tick em que a janela atual começou
+  recvInWindow Int   @default(0) // total (M+C+P) já recebido nesta janela
+  capInWindow  Int   @default(0) // teto da janela = 50% do fundo no início dela
 }
 
 // Inscrição de notificações push (Web Push) de um usuário/dispositivo.

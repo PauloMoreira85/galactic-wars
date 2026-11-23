@@ -13,9 +13,8 @@ function coordLabel(id: number): string {
 
 export const MAX_TAX = 25;            // teto do imposto (%)
 export const MAX_MARKET_FEE = 25;     // teto da taxa de troca do mercado (%)
-export const DONATION_MAX_PCT = 50;   // máximo do fundo por doação a 1 planeta (único limite)
-// DONATION_WINDOW removido: não há mais cooldown de tempo entre doações. O ME pode
-// doar quantas vezes quiser, desde que cada doação respeite o cap de DONATION_MAX_PCT%.
+export const DONATION_MAX_PCT = 50;   // teto ACUMULADO por janela: um planeta recebe até 50% do fundo
+export const DONATION_WINDOW = 72;    // ticks da janela; recebido zera quando a janela passa
 
 async function ensureGalaxy(galaxy: number) {
   return prisma.galaxyState.upsert({ where: { galaxy }, update: {}, create: { galaxy } });
@@ -223,18 +222,29 @@ export async function donate(mePlanetId: string, toPlanetId: string, amounts: { 
   if (m > st.fundMetalium || c > st.fundCarbonum || p > st.fundPlutonium) {
     throw new Error(`Fundo insuficiente. Disponível no fundo: ${st.fundMetalium} M · ${st.fundCarbonum} C · ${st.fundPlutonium} P.`);
   }
-  // Cap de 50% sobre a SOMA de todos os recursos do fundo (não por recurso).
-  // Assim o ME distribui livremente entre M/C/P — pode doar metade do fundo todo
-  // só em plutônio, p.ex. — só não esvazia numa doação. (Comportamento clássico.)
-  const fundTotal = st.fundMetalium + st.fundCarbonum + st.fundPlutonium;
-  const maxTotal = Math.floor(fundTotal * DONATION_MAX_PCT / 100);
-  if (m + c + p > maxTotal) {
-    throw new Error(`Máximo ${DONATION_MAX_PCT}% do total do fundo por doação. Limite agora: ${maxTotal} (soma de M+C+P). Você pediu ${m + c + p}.`);
-  }
-  // Sem cooldown de tempo: o único limite é o cap de DONATION_MAX_PCT% do fundo POR
-  // doação. O ME pode doar quantas vezes quiser (inclusive o mesmo recurso ao mesmo
-  // planeta), desde que cada doação respeite o cap e haja fundo. (Pedido da galera.)
   const tick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
+  const doacao = m + c + p;
+
+  // Teto ACUMULADO por JANELA: um planeta pode RECEBER até DONATION_MAX_PCT% do fundo
+  // dentro de DONATION_WINDOW ticks — em QUANTAS doações quiser. O teto é fixado em
+  // 50% do fundo no INÍCIO da janela (previsível); quando a janela passa, zera e o
+  // planeta pode receber outros 50%. (Pedido da galera: o 50% é sobre a janela, não
+  // por doação individual.)
+  const fundTotal = st.fundMetalium + st.fundCarbonum + st.fundPlutonium;
+  const cd = await prisma.donationCooldown.findUnique({ where: { planetId: toPlanetId } });
+  const janelaAtiva = cd && (tick - cd.windowStart) < DONATION_WINDOW && cd.capInWindow > 0;
+  // Teto e acumulado da janela corrente (ou uma janela nova começando agora).
+  const cap = janelaAtiva ? cd!.capInWindow : Math.floor(fundTotal * DONATION_MAX_PCT / 100);
+  const jaRecebido = janelaAtiva ? cd!.recvInWindow : 0;
+  const windowStart = janelaAtiva ? cd!.windowStart : tick;
+  if (jaRecebido + doacao > cap) {
+    const resta = Math.max(0, cap - jaRecebido);
+    const faltam = janelaAtiva ? DONATION_WINDOW - (tick - cd!.windowStart) : 0;
+    throw new Error(
+      `Esse planeta já recebeu ${jaRecebido} nesta janela (teto ${cap} = ${DONATION_MAX_PCT}% do fundo). ` +
+      `Pode receber mais ${resta} agora${janelaAtiva ? ` (janela zera em ${faltam}t)` : ""}. Você pediu ${doacao}.`
+    );
+  }
 
   // Nomes dos planetas (ME e destino) pro livro caixa.
   const [meP, toP] = await Promise.all([
@@ -244,6 +254,12 @@ export async function donate(mePlanetId: string, toPlanetId: string, amounts: { 
   await prisma.$transaction([
     prisma.galaxyState.update({ where: { galaxy: g }, data: { fundMetalium: { decrement: m }, fundCarbonum: { decrement: c }, fundPlutonium: { decrement: p } } }),
     prisma.planet.update({ where: { id: toPlanetId }, data: { metalium: { increment: m }, carbonum: { increment: c }, plutonium: { increment: p } } }),
+    // Registra o acumulado da janela (cria/atualiza).
+    prisma.donationCooldown.upsert({
+      where: { planetId: toPlanetId },
+      update: { lastTick: tick, windowStart, recvInWindow: jaRecebido + doacao, capInWindow: cap },
+      create: { planetId: toPlanetId, lastTick: tick, windowStart, recvInWindow: doacao, capInWindow: cap },
+    }),
     // Livro caixa: registra a doação (transparência pra galáxia).
     prisma.donationLog.create({ data: { galaxy: g, fromName: meP?.name ?? "ME", toName: toP?.name ?? "?", metalium: m, carbonum: c, plutonium: p, tick } }),
   ]);

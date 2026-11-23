@@ -228,7 +228,7 @@ export function Governo() {
             <button onClick={() => act(() => api.govMarketLock(!gov.marketLocked))}>{gov.marketLocked ? "destrancar" : "trancar"}</button>
           </div>
           <div style={{ marginTop: 10 }} className="cost">
-            Doar do fundo (máx 50% do TOTAL do fundo por doação, livre entre M/C/P · pode doar quantas vezes quiser):
+            Doar do fundo (cada planeta recebe até 50% do fundo por janela, somando as doações · livre entre M/C/P · quando a janela passa, pode receber mais 50%):
             <div style={{ marginTop: 4, fontSize: 12 }}>
               Fundo: <b>{fmt(gov.fund.metalium)}</b> M · <b>{fmt(gov.fund.carbonum)}</b> C · <b>{fmt(gov.fund.plutonium)}</b> P
               {" — "}limite por doação: <b style={{ color: "#3aa0ff" }}>{fmt(Math.floor(gov.fund.metalium * 0.5))}</b> M · <b style={{ color: "#3aa0ff" }}>{fmt(Math.floor(gov.fund.carbonum * 0.5))}</b> C · <b style={{ color: "#3aa0ff" }}>{fmt(Math.floor(gov.fund.plutonium * 0.5))}</b> P
