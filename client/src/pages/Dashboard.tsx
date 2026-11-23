@@ -249,6 +249,19 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [zoom]);
 
+  // Clicar numa coordenada na aba das Ferramentas volta pra cá com ?goto=<coord>.
+  // Abrimos a Galáxia naquela coord e limpamos o parâmetro da URL.
+  useEffect(() => {
+    try {
+      const goto = new URLSearchParams(window.location.search).get("goto");
+      if (goto && /^\d+:\d+(:\d+)?$/.test(goto)) {
+        setGalaxyGoto(goto + "#" + Date.now());
+        setSection("galaxia");
+        window.history.replaceState(null, "", window.location.pathname);
+      }
+    } catch {}
+  }, []);
+
   async function refresh() {
     try {
       const [v, r] = await Promise.all([api.me(), api.ranking()]);

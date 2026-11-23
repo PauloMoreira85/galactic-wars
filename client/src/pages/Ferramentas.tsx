@@ -1,6 +1,6 @@
 import { useEffect, useState, Fragment } from "react";
 import { api } from "../api";
-import { CoordLink } from "../components/CoordLink";
+import { CoordLink, CoordNavContext } from "../components/CoordLink";
 import { IntelReport } from "../components/IntelReport";
 import { GLOSSARIO } from "../components/Termo";
 
@@ -40,7 +40,14 @@ export function Ferramentas({ onClose }: { onClose: () => void }) {
     { key: "glossario", label: "Glossário (siglas)" },
   ];
 
+  // A Ferramentas abre numa aba separada, SEM o contexto de navegação do Dashboard —
+  // por isso as coordenadas não ficavam clicáveis aqui. Fornecemos um contexto que
+  // volta pra tela principal já na galáxia da coord (via ?goto=), tornando TODA
+  // coordenada da Ferramentas clicável (procura de planetas, espionagem, etc.).
+  const navToCoord = (c: string) => { window.location.href = `/?goto=${encodeURIComponent(c)}`; };
+
   return (
+    <CoordNavContext.Provider value={navToCoord}>
     <div className="tools-layout">
       <aside className="tools-side">
         <div className="tools-brand">🛠️ KIT DE<br />FERRAMENTAS</div>
@@ -67,6 +74,7 @@ export function Ferramentas({ onClose }: { onClose: () => void }) {
         {tool === "glossario" && <Glossario />}
       </main>
     </div>
+    </CoordNavContext.Provider>
   );
 }
 
