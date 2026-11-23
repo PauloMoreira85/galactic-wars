@@ -55,8 +55,14 @@ humanitário) na operação dos Roiders; **Erian** (professor Daharan, narrador-
 
 ## RAKSHASA — os escravos que se libertaram e viraram predadores
 
-**1. Origem/história.** Nasceram **servos/força de trabalho dos Ashkarianos** em Ashkar (L1). Inspirados pelo
-contato Daharan, se rebelaram; a **revolução Rakshasa** durou ~**150 anos** e cercou os seis mundos ao redor
+**1. Origem/história.** Nasceram **servos/força de trabalho dos Ashkarianos** em Ashkar (L1). Os Ashkarianos
+os controlavam por uma **rede de controle** (dispositivos de regulação implantados nos corpos Rakshasa).
+**PONTO CANÔNICO CORRIGIDO (L1, clímax ~p.339 e sinopse final):** a revolução NÃO começou por "ideia de
+liberdade dada". Começou por um **acidente**: um engenheiro **Daharan disparou um PULSO (PEM) para salvar
+vidas** num acidente industrial, e esse pulso **atingiu a interface de controle Ashkariana** e a interrompeu.
+*"Por alguns segundos, os trabalhadores Rakshasa conseguem desobedecer."* **"A primeira desobediência durou
+apenas alguns segundos"** — e foi o estopim. Ou seja: **foi um pulso Daharan que, sem querer, quebrou o
+controle e desencadeou a revolução Rakshasa** (a "culpa" é dos Daharan). A **revolução Rakshasa** durou ~**150 anos** e cercou os seis mundos ao redor
 de Ashkar (a "última grande revolução" — seis esferas vermelhas cercando Ashkar azul no mapa de aula). Ponto
 canônico importante: **o próprio livro corrige a narrativa** — "mundos **conquistados**" (registros Ashkarianos)
 vs "mundos **libertados**" (tradição Rakshasa). O Livro II ("A Era dos Predadores") mostra o lado sombrio:
