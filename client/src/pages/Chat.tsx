@@ -37,8 +37,8 @@ function renderBody(body: string, myName: string, onMention: (name: string) => v
   });
 }
 
-export function Chat({ myName = "" }: { myName?: string }) {
-  const [room, setRoom] = useState("universo");
+export function Chat({ myName = "", initialRoom = "universo" }: { myName?: string; initialRoom?: string }) {
+  const [room, setRoom] = useState(initialRoom);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [label, setLabel] = useState("");
   const [text, setText] = useState("");
@@ -64,6 +64,8 @@ export function Chat({ myName = "" }: { myName?: string }) {
     }
     catch (e: any) { setMsgs([]); setError(e.message ?? "Falha"); }
   }
+  // Trocar de sala pelo menu lateral (muda initialRoom) reflete na aba ativa.
+  useEffect(() => { setRoom(initialRoom); }, [initialRoom]);
   useEffect(() => { atBottom.current = true; noMoreOld.current = false; load(); const t = setInterval(load, 3000); return () => clearInterval(t); }, [room]);
   useEffect(() => { const el = boxRef.current; if (el && atBottom.current) el.scrollTop = el.scrollHeight; }, [msgs]);
 

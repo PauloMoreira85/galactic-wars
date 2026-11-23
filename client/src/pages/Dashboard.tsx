@@ -103,7 +103,7 @@ function useRoundStatus(view: PlanetView | null) {
   return { label: "Próximo round", time: fmtDur(Math.floor((next - now) / 1000)) };
 }
 
-type Section = "planeta" | "missoes" | "galaxia" | "frotas" | "trafego" | "tecnologia" | "naves" | "recursos" | "combates" | "votacao" | "cargoCG" | "cargoME" | "cargoMG" | "cargoMD" | "noticias" | "aliancas" | "ranking" | "associados" | "preferencias" | "forum" | "forumgalaxia" | "chat" | "mensagens" | "sabotagem" | "intel";
+type Section = "planeta" | "missoes" | "galaxia" | "frotas" | "trafego" | "tecnologia" | "naves" | "recursos" | "combates" | "votacao" | "cargoCG" | "cargoME" | "cargoMG" | "cargoMD" | "noticias" | "aliancas" | "ranking" | "associados" | "preferencias" | "forum" | "forumgalaxia" | "chat" | "chatGalaxia" | "chatAlianca" | "chatAtaque" | "mensagens" | "sabotagem" | "intel";
 
 interface MenuItem {
   key: string;
@@ -133,7 +133,10 @@ const MENU: MenuItem[][] = [
     { key: "forumgalaxia", label: "Fórum da Galáxia" },
     { key: "mensagens", label: "Mensagem Privada" },
     { key: "forum", label: "Fórum do Universo" },
-    { key: "chat", label: "Chat do Universo" },
+    { key: "chat", label: "💬 Chat do Universo" },
+    { key: "chatGalaxia", label: "🌌 Chat da Galáxia" },
+    // 🤝 Chat da Aliança e ⚔️ Sala de Ataque são injetados aqui no render,
+    // só pra quem está numa aliança (marcados com as keys chatAlianca/chatAtaque).
   ],
   [
     { key: "noticias", label: "Notícias" },
@@ -183,6 +186,9 @@ const TITLES: Record<Section, string> = {
   forum: "Fórum do Universo",
   forumgalaxia: "Fórum da Galáxia",
   chat: "Chat do Universo",
+  chatGalaxia: "Chat da Galáxia",
+  chatAlianca: "Chat da Aliança",
+  chatAtaque: "Sala de Ataque",
   mensagens: "Mensagem Privada",
   sabotagem: "Sabotagem",
   intel: "Inteligência",
@@ -237,6 +243,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [unreadMsgs, setUnreadMsgs] = useState(0);
   const [newsUnread, setNewsUnread] = useState(0);
   const [chatUnread, setChatUnread] = useState(0);
+  const [chatByRoom, setChatByRoom] = useState<Record<string, number>>({});
   const countdown = useCountdown(view);
   const roundStatus = useRoundStatus(view);
   const [pmTo, setPmTo] = useState(""); // coordenada pré-preenchida ao mandar msg pela Galáxia
@@ -277,7 +284,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         });
       } catch {}
       try { setUnreadMsgs((await api.pmUnread()).unread); } catch {}
-      try { setChatUnread((await api.chatUnread()).unread); } catch {}
+      try { const cu = await api.chatUnread(); setChatUnread(cu.unread); setChatByRoom(cu.byRoom ?? {}); } catch {}
     } catch (e: any) {
       // Token inválido/expirado OU conta apagada (ex: depois de um reset de round):
       // o token continua "válido" mas o /me responde "Planeta/Usuário não encontrado".
@@ -298,7 +305,10 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   // Ao abrir as Notícias, marca como lidas e apaga o aviso amarelo.
   useEffect(() => {
     if (section === "noticias") { setNewsUnread(0); api.newsSeen(); }
-    if (section === "chat") { setChatUnread(0); api.chatSeen?.(); }
+    // Abrir qualquer sala de chat marca tudo como lido (zera os alertas amarelos).
+    if (section === "chat" || section === "chatGalaxia" || section === "chatAlianca" || section === "chatAtaque") {
+      setChatUnread(0); setChatByRoom({}); api.chatSeen?.();
+    }
     // Abrindo Recursos: carrega o governo (fundo + livro-caixa, visível a todos).
     if (section === "recursos") { api.gov().then(setMeGov).catch(() => {}); }
   }, [section]);
@@ -394,9 +404,18 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     ...(gf.iAmMG ? [{ key: "cargoMG", label: "⚔️ Ministro Guerra" }] : []),
     ...(gf.iAmMD ? [{ key: "cargoMD", label: "🕊️ Ministro Diplomacia" }] : []),
   ];
-  const menuGroups: MenuItem[][] = MENU.map((group) =>
-    group.some((it) => it.key === "votacao") ? [...group, ...cargoItems] : group
-  );
+  // Chats de aliança só pra quem está numa aliança. O endpoint /chat/unread só inclui
+  // as salas "alianca"/"ataque" no byRoom quando o jogador é membro — usamos isso como sinal.
+  const inAlliance = "alianca" in chatByRoom;
+  const chatAllyItems: MenuItem[] = inAlliance
+    ? [{ key: "chatAlianca", label: "🤝 Chat da Aliança" }, { key: "chatAtaque", label: "⚔️ Sala de Ataque" }]
+    : [];
+  const menuGroups: MenuItem[][] = MENU.map((group) => {
+    let g = group;
+    if (g.some((it) => it.key === "votacao")) g = [...g, ...cargoItems];
+    if (g.some((it) => it.key === "chatGalaxia")) g = [...g, ...chatAllyItems];
+    return g;
+  });
 
   // Todo roid é pago em METALIUM (canon original). planet.nextRoidCost[r] = custo
   // em metalium do próximo roid de r (escala com os roids daquele recurso).
@@ -508,17 +527,22 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
           {menuGroups.map((group, gi) => (
             <div key={gi}>
               {gi > 0 && <div className="menu-sep" />}
-              {group.map((it) => (
+              {group.map((it) => {
+                // Não-lidas por sala de chat (cada item tem seu próprio alerta amarelo).
+                const CHAT_ROOM: Record<string, string> = { chat: "universo", chatGalaxia: "galaxia", chatAlianca: "alianca", chatAtaque: "ataque" };
+                const chatN = CHAT_ROOM[it.key] ? (chatByRoom[CHAT_ROOM[it.key]] ?? 0) : 0;
+                return (
                 <button
                   key={it.key}
-                  className={`menu-link ${section === it.key ? "active" : ""} ${it.soon ? "soon" : ""} ${it.key === "mensagens" && unreadMsgs > 0 ? "alert-msg" : ""} ${it.key === "noticias" && newsUnread > 0 ? "alert-news" : ""} ${it.key === "chat" && chatUnread > 0 ? "alert-msg" : ""}`}
+                  className={`menu-link ${section === it.key ? "active" : ""} ${it.soon ? "soon" : ""} ${it.key === "mensagens" && unreadMsgs > 0 ? "alert-msg" : ""} ${it.key === "noticias" && newsUnread > 0 ? "alert-news" : ""} ${chatN > 0 ? "alert-msg" : ""}`}
                   disabled={it.soon}
                   title={it.soon ? "Em breve" : ""}
                   onClick={() => go(it)}
                 >
-                  {it.label}{it.key === "mensagens" && unreadMsgs > 0 ? ` ✉️ (${unreadMsgs})` : ""}{it.key === "noticias" && newsUnread > 0 ? ` 🔔 (${newsUnread})` : ""}{it.key === "chat" && chatUnread > 0 ? ` 💬 (${chatUnread})` : ""}
+                  {it.label}{it.key === "mensagens" && unreadMsgs > 0 ? ` ✉️ (${unreadMsgs})` : ""}{it.key === "noticias" && newsUnread > 0 ? ` 🔔 (${newsUnread})` : ""}{chatN > 0 ? ` 💬 (${chatN})` : ""}
                 </button>
-              ))}
+                );
+              })}
             </div>
           ))}
           <div className="menu-sep" />
@@ -966,7 +990,10 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
         {section === "forumgalaxia" && <Forum board={{ key: `gal-${planet.coords.split(":")[0]}`, name: `Fórum da Galáxia ${planet.coords.split(":")[0]}` }} />}
 
-        {section === "chat" && <Chat myName={view.commander} />}
+        {section === "chat" && <Chat myName={view.commander} initialRoom="universo" />}
+        {section === "chatGalaxia" && <Chat myName={view.commander} initialRoom="galaxia" />}
+        {section === "chatAlianca" && <Chat myName={view.commander} initialRoom="alianca" />}
+        {section === "chatAtaque" && <Chat myName={view.commander} initialRoom="ataque" />}
 
         {section === "mensagens" && <Mensagens initialTo={pmTo} />}
 

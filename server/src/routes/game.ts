@@ -998,16 +998,24 @@ gameRouter.post("/forum/topics/:key", async (req: AuthedRequest, res) => {
 // o chat (acende o alerta laranja no menu). Universal = sala que todos veem.
 gameRouter.get("/chat/unread", async (req: AuthedRequest, res) => {
   const planet = await prisma.planet.findUnique({ where: { userId: req.userId! } });
-  if (!planet) return res.json({ unread: 0 });
+  if (!planet) return res.json({ unread: 0, byRoom: {} });
   const since = planet.chatSeenAt ?? new Date(0);
-  // Conta TODAS as salas que o jogador participa, não só a Universal: galáxia,
-  // aliança e a sala de Ataque (coordenação). Antes só "universo" contava, então
-  // mensagem de aliança e do Quadro de Ataque nunca acendiam o alerta.
-  const rooms = ["universo", `gal-${galaxyId(planet.galaxy, planet.system)}`];
+  // Não-lidas POR SALA (cada sala tem seu próprio alerta no menu): universo, galáxia,
+  // aliança e ataque. "unread" = total (compat). As salas de aliança só contam se o
+  // jogador estiver numa aliança.
   const mem = await prisma.allianceMember.findUnique({ where: { planetId: planet.id } });
-  if (mem) { rooms.push(`ali-${mem.allianceId}`, `aliatk-${mem.allianceId}`); }
-  const unread = await prisma.chatMessage.count({ where: { room: { in: rooms }, createdAt: { gt: since } } });
-  res.json({ unread });
+  const roomKeys: Record<string, string> = {
+    universo: "universo",
+    galaxia: `gal-${galaxyId(planet.galaxy, planet.system)}`,
+  };
+  if (mem) { roomKeys.alianca = `ali-${mem.allianceId}`; roomKeys.ataque = `aliatk-${mem.allianceId}`; }
+  const byRoom: Record<string, number> = {};
+  let unread = 0;
+  for (const [logical, key] of Object.entries(roomKeys)) {
+    const n = await prisma.chatMessage.count({ where: { room: key, createdAt: { gt: since } } });
+    byRoom[logical] = n; unread += n;
+  }
+  res.json({ unread, byRoom });
 });
 // Marca o chat como lido (zera o alerta).
 // ===== Notificações push (Web Push) =====
