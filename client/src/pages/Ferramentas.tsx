@@ -349,10 +349,35 @@ function Calculadora() {
       {result && (
         <div style={{ marginTop: 16 }}>
           <div className="combat-ini" style={{ fontSize: 16 }}>{VERDICT[result.winner]}</div>
+
+          {/* Resumo de PONTUAÇÃO: pontos de cada lado e quanto cada um perde no combate */}
+          <div style={{ display: "flex", gap: 16, flexWrap: "wrap", margin: "10px 0" }}>
+            {([
+              ["⚔️ Ataque", result.aScoreStart, result.aScoreEnd, result.aScoreLostTotal, result.aUnused, result.aUnusedTotal],
+              ["🛡️ Defesa", result.dScoreStart, result.dScoreEnd, result.dScoreLostTotal, result.dUnused, result.dUnusedTotal],
+            ] as const).map(([label, start, end, lost, unused, unusedTot]) => (
+              <div key={label} style={{ flex: 1, minWidth: 260, border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px" }}>
+                <div className="combat-ini" style={{ marginBottom: 6 }}>{label}</div>
+                <div className="roid-count">Pontuação: <b style={{ color: "var(--text)" }}>{fmt(Math.round(start))}</b> → <b style={{ color: "var(--text)" }}>{fmt(Math.round(end))}</b></div>
+                <div style={{ color: "var(--danger)", fontSize: 13 }}>Pontos perdidos: <b>−{fmt(Math.round(lost))}</b></div>
+                {unusedTot > 0 && (
+                  <div style={{ marginTop: 6 }}>
+                    <div className="roid-count" title="Naves vivas que, no fim, não acharam alvo pra atirar (ex.: excedente Daharan depois de paralisar tudo)">
+                      🚫 Sobraram sem atirar: <b style={{ color: "var(--carbonum)" }}>{fmt(unusedTot)}</b>
+                    </div>
+                    <div className="roid-count" style={{ fontSize: 11, opacity: 0.85 }}>
+                      {unused.map((u) => `${u.name} ×${fmt(u.count)}`).join(" · ")}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
           {result.ticks.map((tk) => (
             <div key={tk.tick} style={{ marginTop: 12, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
               <div className="cost" style={{ marginBottom: 6 }}>
-                <b>Tick {tk.tick}</b> — Ataque {fmt(tk.aBefore)}→<b>{fmt(tk.aAfter)}</b> · Defesa {fmt(tk.dBefore)}→<b>{fmt(tk.dAfter)}</b>
+                <b>Tick {tk.tick}</b> — Ataque {fmt(tk.aBefore)}→<b>{fmt(tk.aAfter)}</b> <span style={{ color: "var(--danger)" }}>(−{fmt(Math.round(tk.aScoreLost))} pts)</span> · Defesa {fmt(tk.dBefore)}→<b>{fmt(tk.dAfter)}</b> <span style={{ color: "var(--danger)" }}>(−{fmt(Math.round(tk.dScoreLost))} pts)</span>
                 {tk.raidCapacity > 0 && <span className="roid-count"> · roids saqueáveis: {fmt(tk.raidCapacity)}</span>}
               </div>
               <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>

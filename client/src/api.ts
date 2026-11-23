@@ -539,11 +539,17 @@ export const api = {
   combatSim: (attacker: Record<string, number>, defender: Record<string, number>, ticks = 3) =>
     request<{
       ticks: { tick: number; aBefore: number; dBefore: number; aAfter: number; dAfter: number; raidCapacity: number;
+        aScoreBefore: number; dScoreBefore: number; aScoreAfter: number; dScoreAfter: number;
+        aScoreLost: number; dScoreLost: number; aPemShips: number; dPemShips: number;
         attacker: { name: string; before: number; lost: number; pem: number; assim: number; survivors: number }[];
         defender: { name: string; before: number; lost: number; pem: number; assim: number; survivors: number }[];
       }[];
       winner: "atacante" | "defesa" | "ambos_destruidos" | "indefinido";
       finalAttacker: Record<string, number>; finalDefender: Record<string, number>;
+      aScoreStart: number; dScoreStart: number; aScoreEnd: number; dScoreEnd: number;
+      aScoreLostTotal: number; dScoreLostTotal: number;
+      aUnused: { name: string; count: number }[]; dUnused: { name: string; count: number }[];
+      aUnusedTotal: number; dUnusedTotal: number;
     }>("/game/tools/combat-sim", { method: "POST", body: JSON.stringify({ attacker, defender, ticks }) }),
   toolSabotages: () =>
     request<{ sabotages: { key: string; name: string; plut: number; ticks: number }[] }>("/game/tools/sabotage"),

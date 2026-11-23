@@ -92,9 +92,11 @@ function distributeUnits(survivors: UnitMap, contributors: { id: string; units: 
 }
 
 // Uma unidade dispara contra o lado inimigo (alvos por classe; aplica já as baixas).
-function fireAt(typeName: string, count: number, enemyActive: UnitMap, enemyLost: UnitMap, enemyPem: UnitMap, log?: LogEvent[], side?: "a" | "d", assimOut?: UnitMap, selfActive?: UnitMap, selfLost?: UnitMap) {
+// Retorna true se EFETIVAMENTE disparou (tinha arma e achou algum alvo válido);
+// false se "não foi usada" neste tick (sem arma ou sem alvo disponível).
+function fireAt(typeName: string, count: number, enemyActive: UnitMap, enemyLost: UnitMap, enemyPem: UnitMap, log?: LogEvent[], side?: "a" | "d", assimOut?: UnitMap, selfActive?: UnitMap, selfLost?: UnitMap): boolean {
   const A = unitByName(typeName);
-  if (!A || A.qarm <= 0 || count <= 0) return;
+  if (!A || A.qarm <= 0 || count <= 0) return false;
   // Naves PARALISADAS (enemyPem) são alvos VÁLIDOS pra destruição/assimilação —
   // estão indefesas. (PEM não pode paralisar quem já está paralisado, então o
   // disparador PEM continua mirando só as ativas.) Alvejável = ativas + paralisadas.
@@ -104,7 +106,7 @@ function fireAt(typeName: string, count: number, enemyActive: UnitMap, enemyLost
     if (pool(t) <= 0) return false;
     const T = unitByName(t); return T ? A.alvos.includes(T.classe) : false;
   });
-  if (targets.length === 0) return;
+  if (targets.length === 0) return false; // não foi usada: não há alvo pra esta nave
   const sum = targets.reduce((s, t) => s + pool(t), 0);
   const shots = count * A.qarm;
   // Orçamento de assimilação = VALOR total da esquadra assimiladora (custo × qtd).
@@ -153,11 +155,12 @@ function fireAt(typeName: string, count: number, enemyActive: UnitMap, enemyLost
       if (log && side && killed > 0) log.push({ side, ini: A.ini, ship: typeName, count, target: t, shots: Math.round(shotsT), action: A.tipo === "Assimiladora" ? "assim" : "destroy", amount: killed, chance: Math.round(cma * 100), assimCost });
     }
   }
+  return true; // achou alvo e disparou
 }
 
 // Uma rodada (1 tick): todos atiram em ordem de INICIATIVA (menor primeiro).
 // Empate de iniciativa: a DEFESA atira primeiro (vantagem sempre da defesa).
-function oneRound(st: BattleState): { aAssim: UnitMap; dAssim: UnitMap } {
+function oneRound(st: BattleState, firedA?: UnitMap, firedD?: UnitMap): { aAssim: UnitMap; dAssim: UnitMap } {
   st.log = []; // registra só a última rodada
   const firers: { side: "a" | "d"; type: string; ini: number }[] = [];
   for (const t of Object.keys(st.aActive)) if (st.aActive[t] > 0) firers.push({ side: "a", type: t, ini: unitByName(t)?.ini ?? 999 });
@@ -167,8 +170,12 @@ function oneRound(st: BattleState): { aAssim: UnitMap; dAssim: UnitMap } {
   for (const f of firers) {
     const me = f.side === "a" ? st.aActive : st.dActive;
     if ((me[f.type] || 0) <= 0) continue; // pode ter sido destruída/paralisada antes de atirar
-    if (f.side === "a") fireAt(f.type, me[f.type], st.dActive, st.dLost, st.dPem, st.log, "a", aAssim, st.aActive, st.aLost);
-    else fireAt(f.type, me[f.type], st.aActive, st.aLost, st.aPem, st.log, "d", dAssim, st.dActive, st.dLost);
+    const n = me[f.type];
+    const fired = f.side === "a"
+      ? fireAt(f.type, n, st.dActive, st.dLost, st.dPem, st.log, "a", aAssim, st.aActive, st.aLost)
+      : fireAt(f.type, n, st.aActive, st.aLost, st.aPem, st.log, "d", dAssim, st.dActive, st.dLost);
+    // Marca quantas naves deste tipo CHEGARAM a disparar (acharam alvo) neste tick.
+    if (fired) { const acc = f.side === "a" ? firedA : firedD; if (acc) acc[f.type] = Math.max(acc[f.type] || 0, n); }
   }
   // Assimiladas entram nos ativos do assimilador AO FIM da rodada -> combatem
   // só a partir do próximo tick (se assimilar mais no tick seguinte, somam de novo).
@@ -195,24 +202,41 @@ export interface SimTick {
   tick: number;
   attacker: SimRow[]; defender: SimRow[];
   aBefore: number; dBefore: number; aAfter: number; dAfter: number;
+  // Pontuação (pontos) de cada lado ANTES e DEPOIS deste tick, e quanto perdeu.
+  aScoreBefore: number; dScoreBefore: number; aScoreAfter: number; dScoreAfter: number;
+  aScoreLost: number; dScoreLost: number;
+  // Naves PARALISADAS pelo PEM neste tick (sobraram, não foram destruídas).
+  aPemShips: number; dPemShips: number;
   raidCapacity: number; // roids que os roiders atacantes vivos carregariam neste tick
 }
 export interface SimResult {
   ticks: SimTick[];
   winner: "atacante" | "defesa" | "ambos_destruidos" | "indefinido";
   finalAttacker: UnitMap; finalDefender: UnitMap;
+  // Resumo do combate inteiro (início → fim): pontos de cada lado e total perdido.
+  aScoreStart: number; dScoreStart: number; aScoreEnd: number; dScoreEnd: number;
+  aScoreLostTotal: number; dScoreLostTotal: number;
+  // Naves que SOBRARAM SEM ATIRAR (sobreviventes que, no fim, não acharam alvo —
+  // ex.: excedente Daharan depois de paralisar tudo). Por tipo + total.
+  aUnused: { name: string; count: number }[]; dUnused: { name: string; count: number }[];
+  aUnusedTotal: number; dUnusedTotal: number;
 }
 export function simulateCombat(attacker0: UnitMap, defender0: UnitMap, ticks = BATTLE_TICKS): SimResult {
   let aCur: UnitMap = { ...attacker0 };
   let dCur: UnitMap = { ...defender0 };
   const N = Math.max(1, Math.min(BATTLE_TICKS, Math.floor(ticks)));
   const out: SimTick[] = [];
+  // Naves que CHEGARAM a disparar no ÚLTIMO tick processado (pra calcular "sobraram
+  // sem atirar" = sobreviventes que não acharam alvo no fim do combate).
+  let lastFiredA: UnitMap = {}, lastFiredD: UnitMap = {};
   for (let t = 1; t <= N; t++) {
     if (totalUnits(aCur) <= 0 || totalUnits(dCur) <= 0) break;
     const ratio = fleetScore(aCur) / Math.max(1, fleetScore(dCur));
     const rate = Math.max(CAP_MIN, Math.min(CAP_MAX, CAP_MAX - (CAP_MAX - CAP_MIN) * (ratio - 1) / (CAP_RATIO_FULL - 1)));
     const st: BattleState = { atkInit: { ...aCur }, defInit: { ...dCur }, aActive: { ...aCur }, dActive: { ...dCur }, aLost: {}, dLost: {}, aPem: {}, dPem: {}, rate };
-    const { aAssim, dAssim } = oneRound(st); // aAssim = atacantes assimilados pela DEFESA; dAssim = defensores assimilados pelo ATACANTE
+    const firedA: UnitMap = {}, firedD: UnitMap = {};
+    const { aAssim, dAssim } = oneRound(st, firedA, firedD); // aAssim = atacantes assimilados pela DEFESA; dAssim = defensores assimilados pelo ATACANTE
+    lastFiredA = firedA; lastFiredD = firedD;
     const aSurv = survivors(st.aActive, st.aPem);
     const dSurv = survivors(st.dActive, st.dPem);
     const keys = (init: UnitMap, assim: UnitMap, surv: UnitMap) =>
@@ -220,12 +244,19 @@ export function simulateCombat(attacker0: UnitMap, defender0: UnitMap, ticks = B
     const rowsOf = (init: UnitMap, lost: UnitMap, pem: UnitMap, assim: UnitMap, surv: UnitMap): SimRow[] =>
       keys(init, assim, surv).map((n) => ({ name: n, before: init[n] || 0, lost: lost[n] || 0, pem: pem[n] || 0, assim: assim[n] || 0, survivors: surv[n] || 0 }))
         .filter((r) => r.before > 0 || r.lost > 0 || r.pem > 0 || r.assim > 0 || r.survivors > 0);
+    const aScoreBefore = fleetScore(st.atkInit), dScoreBefore = fleetScore(st.defInit);
+    const aScoreAfter = fleetScore(aSurv), dScoreAfter = fleetScore(dSurv);
     out.push({
       tick: t,
       attacker: rowsOf(st.atkInit, st.aLost, st.aPem, dAssim, aSurv),
       defender: rowsOf(st.defInit, st.dLost, st.dPem, aAssim, dSurv),
       aBefore: totalUnits(st.atkInit), dBefore: totalUnits(st.defInit),
       aAfter: totalUnits(aSurv), dAfter: totalUnits(dSurv),
+      aScoreBefore, dScoreBefore, aScoreAfter, dScoreAfter,
+      // Pontos perdidos = o que foi destruído (paralisadas voltam como survivors, não contam).
+      aScoreLost: Math.max(0, aScoreBefore - aScoreAfter),
+      dScoreLost: Math.max(0, dScoreBefore - dScoreAfter),
+      aPemShips: totalUnits(st.aPem), dPemShips: totalUnits(st.dPem),
       raidCapacity: raidCapacity(st.aActive),
     });
     aCur = aSurv; dCur = dSurv;
@@ -235,7 +266,24 @@ export function simulateCombat(attacker0: UnitMap, defender0: UnitMap, ticks = B
     aLeft <= 0 && dLeft <= 0 ? "ambos_destruidos" :
     dLeft <= 0 ? "atacante" :
     aLeft <= 0 ? "defesa" : "indefinido";
-  return { ticks: out, winner, finalAttacker: aCur, finalDefender: dCur };
+  const aScoreStart = fleetScore(attacker0), dScoreStart = fleetScore(defender0);
+  const aScoreEnd = fleetScore(aCur), dScoreEnd = fleetScore(dCur);
+  // "Sobraram sem atirar" = naves vivas no fim que não chegaram a disparar no último
+  // tick (não havia alvo pra elas). Ex.: excedente Daharan após paralisar tudo, ou
+  // naves de uma classe sem alvo correspondente no inimigo.
+  const unusedOf = (surv: UnitMap, fired: UnitMap) =>
+    Object.keys(surv).map((n) => ({ name: n, count: Math.max(0, (surv[n] || 0) - (fired[n] || 0)) }))
+      .filter((r) => r.count > 0).sort((a, b) => b.count - a.count);
+  const aUnused = unusedOf(aCur, lastFiredA), dUnused = unusedOf(dCur, lastFiredD);
+  return {
+    ticks: out, winner, finalAttacker: aCur, finalDefender: dCur,
+    aScoreStart, dScoreStart, aScoreEnd, dScoreEnd,
+    aScoreLostTotal: Math.max(0, aScoreStart - aScoreEnd),
+    dScoreLostTotal: Math.max(0, dScoreStart - dScoreEnd),
+    aUnused, dUnused,
+    aUnusedTotal: aUnused.reduce((s, r) => s + r.count, 0),
+    dUnusedTotal: dUnused.reduce((s, r) => s + r.count, 0),
+  };
 }
 
 // Marca uma frota como ENGAJADA no alvo. A batalha em si é resolvida POR PLANETA
