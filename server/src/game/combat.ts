@@ -92,11 +92,13 @@ function distributeUnits(survivors: UnitMap, contributors: { id: string; units: 
 }
 
 // Uma unidade dispara contra o lado inimigo (alvos por classe; aplica já as baixas).
-// Retorna true se EFETIVAMENTE disparou (tinha arma e achou algum alvo válido);
-// false se "não foi usada" neste tick (sem arma ou sem alvo disponível).
-function fireAt(typeName: string, count: number, enemyActive: UnitMap, enemyLost: UnitMap, enemyPem: UnitMap, log?: LogEvent[], side?: "a" | "d", assimOut?: UnitMap, selfActive?: UnitMap, selfLost?: UnitMap): boolean {
+// Retorna QUANTAS naves deste tipo foram EFETIVAMENTE necessárias (seus tiros de fato
+// surtiram efeito). O excedente (count − usadas) são naves que "sobraram sem atirar":
+// ex.: 100 Osíris precisam só de poucas pra paralisar 2 Perseu — o resto sobra.
+// Retorna 0 se não havia arma ou alvo (nenhuma foi usada).
+function fireAt(typeName: string, count: number, enemyActive: UnitMap, enemyLost: UnitMap, enemyPem: UnitMap, log?: LogEvent[], side?: "a" | "d", assimOut?: UnitMap, selfActive?: UnitMap, selfLost?: UnitMap): number {
   const A = unitByName(typeName);
-  if (!A || A.qarm <= 0 || count <= 0) return false;
+  if (!A || A.qarm <= 0 || count <= 0) return 0;
   // Naves PARALISADAS (enemyPem) são alvos VÁLIDOS pra destruição/assimilação —
   // estão indefesas. (PEM não pode paralisar quem já está paralisado, então o
   // disparador PEM continua mirando só as ativas.) Alvejável = ativas + paralisadas.
@@ -106,7 +108,8 @@ function fireAt(typeName: string, count: number, enemyActive: UnitMap, enemyLost
     if (pool(t) <= 0) return false;
     const T = unitByName(t); return T ? A.alvos.includes(T.classe) : false;
   });
-  if (targets.length === 0) return false; // não foi usada: não há alvo pra esta nave
+  if (targets.length === 0) return 0; // não foi usada: não há alvo pra esta nave
+  let shotsUsed = 0; // tiros que de fato surtiram efeito (paralisaram/abateram)
   const sum = targets.reduce((s, t) => s + pool(t), 0);
   const shots = count * A.qarm;
   // Orçamento de assimilação = VALOR total da esquadra assimiladora (custo × qtd).
@@ -121,12 +124,16 @@ function fireAt(typeName: string, count: number, enemyActive: UnitMap, enemyLost
       const hit = Math.max(0, (100 - T.rp) / 100); // RP = chance de resistir
       const par = Math.min(enemyActive[t], Math.floor(shotsT * hit));
       enemyActive[t] -= par; enemyPem[t] = (enemyPem[t] || 0) + par;
+      // Tiros que de fato paralisaram (cada paralisação custou ~1/hit tiros).
+      if (hit > 0) shotsUsed += par / hit;
       if (log && side && par > 0) log.push({ side, ini: A.ini, ship: typeName, count, target: t, shots: Math.round(shotsT), action: "pem", amount: par, chance: Math.round(hit * 100) });
     } else {
       // Chance Média de Acerto (oficial): CMA% = 25 + (Varm atacante - Agi defensor)
       const cma = Math.max(0, Math.min(100, 25 + A.varm - T.agi)) / 100;
       const dmg = shotsT * cma * A.pfog;
       const killed = Math.min(pool(t), Math.floor(dmg / T.fusel));
+      // Tiros que de fato abateram alguém (cada abate custou T.fusel de dano efetivo).
+      if (cma > 0 && A.pfog > 0) shotsUsed += (killed * T.fusel) / (cma * A.pfog);
       // Abate primeiro as PARALISADAS (indefesas), depois as ativas.
       const killPem = Math.min(enemyPem[t] || 0, killed);
       if (killPem > 0) enemyPem[t] -= killPem;
@@ -155,7 +162,10 @@ function fireAt(typeName: string, count: number, enemyActive: UnitMap, enemyLost
       if (log && side && killed > 0) log.push({ side, ini: A.ini, ship: typeName, count, target: t, shots: Math.round(shotsT), action: A.tipo === "Assimiladora" ? "assim" : "destroy", amount: killed, chance: Math.round(cma * 100), assimCost });
     }
   }
-  return true; // achou alvo e disparou
+  // Naves efetivamente necessárias = tiros usados ÷ armas por nave (arredonda p/ cima,
+  // mínimo 1 se surtiu algum efeito). O excedente são as que "sobraram sem atirar".
+  const usadas = shotsUsed > 0 ? Math.min(count, Math.max(1, Math.ceil(shotsUsed / A.qarm))) : 0;
+  return usadas;
 }
 
 // Uma rodada (1 tick): todos atiram em ordem de INICIATIVA (menor primeiro).
@@ -170,12 +180,12 @@ function oneRound(st: BattleState, firedA?: UnitMap, firedD?: UnitMap): { aAssim
   for (const f of firers) {
     const me = f.side === "a" ? st.aActive : st.dActive;
     if ((me[f.type] || 0) <= 0) continue; // pode ter sido destruída/paralisada antes de atirar
-    const n = me[f.type];
-    const fired = f.side === "a"
-      ? fireAt(f.type, n, st.dActive, st.dLost, st.dPem, st.log, "a", aAssim, st.aActive, st.aLost)
-      : fireAt(f.type, n, st.aActive, st.aLost, st.aPem, st.log, "d", dAssim, st.dActive, st.dLost);
-    // Marca quantas naves deste tipo CHEGARAM a disparar (acharam alvo) neste tick.
-    if (fired) { const acc = f.side === "a" ? firedA : firedD; if (acc) acc[f.type] = Math.max(acc[f.type] || 0, n); }
+    const usadas = f.side === "a"
+      ? fireAt(f.type, me[f.type], st.dActive, st.dLost, st.dPem, st.log, "a", aAssim, st.aActive, st.aLost)
+      : fireAt(f.type, me[f.type], st.aActive, st.aLost, st.aPem, st.log, "d", dAssim, st.dActive, st.dLost);
+    // Acumula quantas naves deste tipo FORAM USADAS (tiros surtiram efeito) neste tick.
+    // O excedente (vivas − usadas) = "sobraram sem atirar".
+    if (usadas > 0) { const acc = f.side === "a" ? firedA : firedD; if (acc) acc[f.type] = (acc[f.type] || 0) + usadas; }
   }
   // Assimiladas entram nos ativos do assimilador AO FIM da rodada -> combatem
   // só a partir do próximo tick (se assimilar mais no tick seguinte, somam de novo).
