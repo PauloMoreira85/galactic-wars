@@ -22,7 +22,7 @@ import { vote, appoint, setTax, setMarketFee, setMarketLocked, donate, contribut
 import { planetScore } from "../game/score.js";
 import { clampMorale, moraleMult } from "../game/morale.js";
 import { addNews, recentNews } from "../game/news.js";
-import { createAlliance, requestJoin, cancelJoinRequest, acceptRequest, rejectRequest, leaveAlliance, kickMember, setMemberRole, allianceView, allianceFleetsView, setOrders, attackBoardView, toggleAttackLock, addAttackTarget, removeAttackTarget, claimTarget, unclaimTarget, setTargetShared, shareIntel, allianceIntelView, unshareIntel, runAttackCommand } from "../game/alliance.js";
+import { createAlliance, requestJoin, cancelJoinRequest, acceptRequest, rejectRequest, leaveAlliance, kickMember, setMemberRole, allianceView, allianceFleetsView, setOrders, attackBoardView, toggleAttackLock, addAttackTarget, removeAttackTarget, claimTarget, unclaimTarget, setTargetShared, shareIntel, allianceIntelView, unshareIntel, runAttackCommand, pushAlliance } from "../game/alliance.js";
 import { forumIndex, listTopics, createTopic, getTopic, reply as forumReply, isForum } from "../game/forum.js";
 import { sendChat, recentChat, olderChat, resolveRoom } from "../game/chat.js";
 import { pushPublicKey, saveSubscription, removeSubscription, PUSH_ENABLED } from "../game/push.js";
@@ -1000,7 +1000,13 @@ gameRouter.get("/chat/unread", async (req: AuthedRequest, res) => {
   const planet = await prisma.planet.findUnique({ where: { userId: req.userId! } });
   if (!planet) return res.json({ unread: 0 });
   const since = planet.chatSeenAt ?? new Date(0);
-  const unread = await prisma.chatMessage.count({ where: { room: "universo", createdAt: { gt: since } } });
+  // Conta TODAS as salas que o jogador participa, não só a Universal: galáxia,
+  // aliança e a sala de Ataque (coordenação). Antes só "universo" contava, então
+  // mensagem de aliança e do Quadro de Ataque nunca acendiam o alerta.
+  const rooms = ["universo", `gal-${galaxyId(planet.galaxy, planet.system)}`];
+  const mem = await prisma.allianceMember.findUnique({ where: { planetId: planet.id } });
+  if (mem) { rooms.push(`ali-${mem.allianceId}`, `aliatk-${mem.allianceId}`); }
+  const unread = await prisma.chatMessage.count({ where: { room: { in: rooms }, createdAt: { gt: since } } });
   res.json({ unread });
 });
 // Marca o chat como lido (zera o alerta).
@@ -1044,7 +1050,18 @@ gameRouter.post("/chat/:room", async (req: AuthedRequest, res) => {
       const handled = planet ? await runAttackCommand(planet.id, p.data.body) : false;
       if (handled) return res.json({ label: room.label, messages: await recentChat(room.key) });
     }
-    await sendChat(room.key, await myName(req.userId!), p.data.body);
+    const author = await myName(req.userId!);
+    await sendChat(room.key, author, p.data.body);
+    // Push aos outros membros quando a mensagem é na sala de Aliança ou Ataque
+    // (avisa no celular mesmo com o app fechado). Universo/galáxia não pusham.
+    if (req.params.room === "alianca" || req.params.room === "ataque") {
+      const planet = await myPlanet(req.userId!);
+      const mem = planet ? await prisma.allianceMember.findUnique({ where: { planetId: planet.id } }) : null;
+      if (mem) {
+        const label = req.params.room === "ataque" ? "⚔️ Sala de Ataque" : "🤝 Chat da aliança";
+        await pushAlliance(mem.allianceId, planet!.id, label, `${author}: ${p.data.body.slice(0, 120)}`);
+      }
+    }
     res.json({ label: room.label, messages: await recentChat(room.key) });
   }
   catch (e: any) { res.status(400).json({ error: e.message ?? "Falha" }); }

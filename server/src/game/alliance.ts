@@ -1,6 +1,19 @@
 import { prisma } from "../db.js";
 import { parseUnits, totalUnits } from "./unitmap.js";
 import { botAttackMessage } from "./chat.js";
+import { pushToUser } from "./push.js";
+
+// Push a TODOS os membros de uma aliança (menos o autor opcional). Best-effort —
+// usado pra avisar mensagem de aliança e eventos do Quadro de Ataque no celular.
+export async function pushAlliance(allianceId: string, exceptPlanetId: string | null, title: string, body: string) {
+  const members = await prisma.allianceMember.findMany({ where: { allianceId }, select: { planetId: true } });
+  const ids = members.map((m) => m.planetId).filter((id) => id !== exceptPlanetId);
+  if (!ids.length) return;
+  const planets = await prisma.planet.findMany({ where: { id: { in: ids } }, select: { userId: true } });
+  for (const p of planets) {
+    pushToUser(p.userId, { title, body, tag: "alianca", url: "/" }).catch(() => {});
+  }
+}
 
 // 18 = até 3 galáxias (6 planetas cada). Equilibra o tamanho das tags.
 export const MAX_MEMBERS = 18;
@@ -237,6 +250,8 @@ export async function toggleAttackLock(planetId: string, locked: boolean) {
   await botAttackMessage(mem.allianceId, locked
     ? "🔒 Quadro TRAVADO. Aguardem a liberação."
     : "🔓 QUADRO LIBERADO! Peguem os alvos — digite !pego <coord> (ou clique em pegar).");
+  // Liberar o quadro é o evento mais importante — avisa todo mundo no celular.
+  if (!locked) await pushAlliance(mem.allianceId, null, "⚔️ Quadro de Ataque liberado", "Peguem os alvos no Quadro de Ataque da aliança!");
 }
 
 // Adiciona um alvo ao quadro.
@@ -251,6 +266,8 @@ export async function addAttackTarget(planetId: string, coord: string, note: str
   } });
   const coordStr = `${+m[1]}:${+m[2]}:${+m[3]}`;
   await botAttackMessage(mem.allianceId, `🎯 Novo alvo: ${coordStr}${note.trim() ? ` — ${note.trim()}` : ""}`);
+  // Avisa os membros no celular que entrou alvo novo pra coordenar.
+  await pushAlliance(mem.allianceId, planetId, "🎯 Novo alvo no Quadro de Ataque", `${coordStr}${note.trim() ? ` — ${note.trim()}` : ""}`);
 }
 
 export async function removeAttackTarget(planetId: string, targetId: string) {
