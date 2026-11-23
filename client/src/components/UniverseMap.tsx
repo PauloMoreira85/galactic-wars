@@ -96,12 +96,8 @@ export function UniverseMap({
       <div className="umap-stage">
         <svg viewBox={`0 0 ${W} ${H}`} width="100%" className="universe-map">
           <defs>
-            <radialGradient id="um-star" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#fff" stopOpacity="0.95" />
-              <stop offset="100%" stopColor="#fff" stopOpacity="0" />
-            </radialGradient>
-            <filter id="um-blur" x="-60%" y="-60%" width="220%" height="220%">
-              <feGaussianBlur stdDeviation="5" />
+            <filter id="um-blur" x="-80%" y="-80%" width="260%" height="260%">
+              <feGaussianBlur stdDeviation="4" />
             </filter>
           </defs>
 
@@ -122,30 +118,38 @@ export function UniverseMap({
             <text key={`hs${s}`} x={20} y={cy(s) + 4} className={`um-head ${s === mySetor ? "axis" : ""}`}>S{s}</text>
           ))}
 
-          {/* nós das galáxias */}
+          {/* nós = galáxias espirais */}
           {gals.map((g) => {
             if (!visible(g)) return null;
             const x = cx(g.paralelo);
             const y = cy(g.setor);
             const col = statusColor(g);
             const pop = g.planets > 0 || g.isMine;
-            const r = g.isMine ? 9 : pop ? 5 + Math.min(g.planets, 6) * 0.9 : 2.6;
-            const glowR = r + (g.isMine ? 16 : pop ? 10 : 4);
-            const dim = !pop && !g.isMine ? 0.5 : 1;
+            // raio do disco (imagem) cresce com planetas
+            const disc = g.isMine ? 34 : pop ? 22 + Math.min(g.planets, 8) * 2.4 : 0;
+            // inclinação da espiral (determinística pela coord, p/ variar)
+            const rot = ((g.setor * 37 + g.paralelo * 53) % 180) - 90;
+            const dim = !pop && !g.isMine ? 0.55 : 1;
             return (
               <g key={g.coord} style={{ cursor: "pointer" }} opacity={dim}
                  onClick={() => onOpen(g.setor, g.paralelo)}
                  onMouseEnter={() => setHover(g)} onMouseLeave={() => setHover((h) => (h === g ? null : h))}>
-                {/* halo */}
-                {(pop || g.isMine) && <circle cx={x} cy={y} r={glowR} fill={col} opacity={0.16} filter="url(#um-blur)" />}
-                {/* núcleo brilhante */}
-                <circle cx={x} cy={y} r={r + 3} fill="url(#um-star)" opacity={pop || g.isMine ? 0.8 : 0.3} />
-                <circle cx={x} cy={y} r={r} fill={col} stroke="rgba(0,0,0,0.35)" strokeWidth={0.8} />
+                {pop ? (
+                  <g transform={`rotate(${rot} ${x} ${y})`}>
+                    {/* imagem de galáxia espiral (fundo preto some via mix-blend screen) */}
+                    <image href={`/art/galaxies/${g.isMine ? "azul" : g.hasAlly ? "verde" : "branca"}.jpg`}
+                      x={x - disc} y={y - disc} width={disc * 2} height={disc * 2}
+                      preserveAspectRatio="xMidYMid slice" className="um-gx" />
+                  </g>
+                ) : (
+                  // galáxia vazia = estrelinha distante
+                  <circle cx={x} cy={y} r={2.4} fill="#8fa6c8" />
+                )}
                 {/* anel pulsante na minha galáxia */}
-                {g.isMine && <circle cx={x} cy={y} r={r + 6} fill="none" stroke="#5cc8ff" strokeWidth={1.5} className="um-pulse" />}
-                {/* rótulo discreto só p/ povoadas/nomeadas no modo vizinhança, ou no hover */}
+                {g.isMine && <circle cx={x} cy={y} r={16} fill="none" stroke="#5cc8ff" strokeWidth={1.5} className="um-pulse" />}
+                {/* rótulo discreto p/ povoadas no modo vizinhança */}
                 {(mode === "vizinhanca" && pop) && (
-                  <text x={x} y={y + glowR + 12} className="um-name">{g.isMine ? "você" : (g.name || g.coord)}</text>
+                  <text x={x} y={y + disc * 0.42 + 14} className="um-name">{g.isMine ? "você" : (g.name || g.coord)}</text>
                 )}
               </g>
             );

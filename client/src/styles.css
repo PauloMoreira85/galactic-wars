@@ -643,6 +643,8 @@ td { font-family: var(--mono); }
 .universe-map .um-head { text-anchor: middle; font-size: 12px; fill: #6f86a6; font-family: var(--mono); }
 .universe-map .um-head.axis { fill: #5cc8ff; font-weight: 700; }
 .universe-map .um-name { text-anchor: middle; font-size: 10px; fill: #e3eefc; font-weight: 600; paint-order: stroke; stroke: rgba(0,0,0,0.6); stroke-width: 2px; }
+.universe-map .um-gx { mix-blend-mode: screen; }
+.universe-map g:hover .um-gx { filter: brightness(1.25); }
 .universe-map .um-route { stroke: rgba(92,200,255,0.28); stroke-width: 1; stroke-dasharray: 3 4; }
 .universe-map .um-pulse { animation: umpulse 2s ease-out infinite; transform-origin: center; transform-box: fill-box; }
 @keyframes umpulse { 0% { opacity: 0.9; transform: scale(1); } 70% { opacity: 0; transform: scale(2.2); } 100% { opacity: 0; } }
