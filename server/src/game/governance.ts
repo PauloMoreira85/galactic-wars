@@ -303,6 +303,20 @@ export async function govView(planetId: string) {
   const nameOf = (id: string | null) => id ? planets.find((p) => p.id === id)?.name ?? null : null;
   const myVote = votes.find((v) => v.voterPlanetId === planetId)?.candidatePlanetId ?? null;
 
+  // Teto de doação por membro (acumulado na janela): já recebido e quanto ainda pode.
+  const tick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
+  const fundTotalNow = st.fundMetalium + st.fundCarbonum + st.fundPlutonium;
+  const cds = await prisma.donationCooldown.findMany({ where: { planetId: { in: planets.map((p) => p.id) } } });
+  const cdBy = new Map(cds.map((c) => [c.planetId, c]));
+  const donInfo = (pid: string) => {
+    const cd = cdBy.get(pid);
+    const ativa = cd && (tick - cd.windowStart) < DONATION_WINDOW && cd.capInWindow > 0;
+    const cap = ativa ? cd!.capInWindow : Math.floor(fundTotalNow * DONATION_MAX_PCT / 100);
+    const recv = ativa ? cd!.recvInWindow : 0;
+    const resetIn = ativa ? Math.max(0, DONATION_WINDOW - (tick - cd!.windowStart)) : 0;
+    return { recv, cap, canReceive: Math.max(0, cap - recv), resetIn };
+  };
+
   return {
     galaxy: g, galaxyCoord: coordLabel(g),
     galaxyName: st.name, flag: st.flag,
@@ -317,7 +331,7 @@ export async function govView(planetId: string) {
     treaties: await listTreaties(g),
     iAmCG: st.cgPlanetId === planetId, iAmME: st.mePlanetId === planetId, iAmMG: st.mgPlanetId === planetId, iAmMD: st.mdPlanetId === planetId,
     myVote,
-    members: planets.map((p) => ({ id: p.id, name: p.name, commander: p.user.username, coords: `${p.galaxy}:${p.system}:${p.slot}`, votes: tally[p.id] || 0 })),
+    members: planets.map((p) => ({ id: p.id, name: p.name, commander: p.user.username, coords: `${p.galaxy}:${p.system}:${p.slot}`, votes: tally[p.id] || 0, donation: donInfo(p.id) })),
     // Livro caixa: últimas 30 doações do fundo desta galáxia (mais recentes primeiro).
     donations: (await prisma.donationLog.findMany({ where: { galaxy: g }, orderBy: { createdAt: "desc" }, take: 30 }))
       .map((d) => ({ from: d.fromName, to: d.toName, metalium: d.metalium, carbonum: d.carbonum, plutonium: d.plutonium, tick: d.tick })),

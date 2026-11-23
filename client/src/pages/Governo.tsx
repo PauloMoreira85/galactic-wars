@@ -228,11 +228,22 @@ export function Governo() {
             <button onClick={() => act(() => api.govMarketLock(!gov.marketLocked))}>{gov.marketLocked ? "destrancar" : "trancar"}</button>
           </div>
           <div style={{ marginTop: 10 }} className="cost">
-            Doar do fundo (cada planeta recebe até 50% do fundo por janela, somando as doações · livre entre M/C/P · quando a janela passa, pode receber mais 50%):
+            Doar do fundo. Cada planeta pode <b>receber até 50% do fundo por janela</b> (somando as doações, livre entre M/C/P). Quando a janela passa, pode receber mais 50%.
             <div style={{ marginTop: 4, fontSize: 12 }}>
               Fundo: <b>{fmt(gov.fund.metalium)}</b> M · <b>{fmt(gov.fund.carbonum)}</b> C · <b>{fmt(gov.fund.plutonium)}</b> P
-              {" — "}limite por doação: <b style={{ color: "#3aa0ff" }}>{fmt(Math.floor(gov.fund.metalium * 0.5))}</b> M · <b style={{ color: "#3aa0ff" }}>{fmt(Math.floor(gov.fund.carbonum * 0.5))}</b> C · <b style={{ color: "#3aa0ff" }}>{fmt(Math.floor(gov.fund.plutonium * 0.5))}</b> P
             </div>
+            {(() => {
+              const sel = gov.members.find((m) => m.id === donTo);
+              if (!sel?.donation) return null;
+              const d = sel.donation;
+              return (
+                <div style={{ marginTop: 6, fontSize: 12 }}>
+                  <b>{sel.name}</b> nesta janela: recebeu <b style={{ color: "var(--carbonum)" }}>{fmt(d.recv)}</b> de <b>{fmt(d.cap)}</b> ·
+                  {" "}pode receber mais <b style={{ color: "#3aa0ff" }}>{fmt(d.canReceive)}</b>
+                  {d.resetIn > 0 && <span className="roid-count"> (janela zera em {d.resetIn}t)</span>}
+                </div>
+              );
+            })()}
           </div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginTop: 6 }}>
             <select value={donTo} onChange={(e) => setDonTo(e.target.value)} style={{ background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px" }}>

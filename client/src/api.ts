@@ -158,7 +158,8 @@ export interface PlanetView {
   };
 }
 
-export interface GovMember { id: string; name: string; commander: string; coords: string; votes: number }
+export interface GovMember { id: string; name: string; commander: string; coords: string; votes: number;
+  donation?: { recv: number; cap: number; canReceive: number; resetIn: number } }
 export interface GovView {
   galaxy: number;
   galaxyCoord?: string;
