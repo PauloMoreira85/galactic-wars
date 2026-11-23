@@ -13,8 +13,9 @@ function coordLabel(id: number): string {
 
 export const MAX_TAX = 25;            // teto do imposto (%)
 export const MAX_MARKET_FEE = 25;     // teto da taxa de troca do mercado (%)
-export const DONATION_MAX_PCT = 50;   // máximo do fundo por doação a 1 planeta
-export const DONATION_WINDOW = 72;    // ticks de cooldown entre doações ao mesmo planeta
+export const DONATION_MAX_PCT = 50;   // máximo do fundo por doação a 1 planeta (único limite)
+// DONATION_WINDOW removido: não há mais cooldown de tempo entre doações. O ME pode
+// doar quantas vezes quiser, desde que cada doação respeite o cap de DONATION_MAX_PCT%.
 
 async function ensureGalaxy(galaxy: number) {
   return prisma.galaxyState.upsert({ where: { galaxy }, update: {}, create: { galaxy } });
@@ -230,33 +231,19 @@ export async function donate(mePlanetId: string, toPlanetId: string, amounts: { 
   if (m + c + p > maxTotal) {
     throw new Error(`Máximo ${DONATION_MAX_PCT}% do total do fundo por doação. Limite agora: ${maxTotal} (soma de M+C+P). Você pediu ${m + c + p}.`);
   }
-  // Cooldown POR RECURSO: o planeta pode receber 1 de cada recurso por janela.
-  // (Antes era 1 doação de qualquer coisa, então o fundo entupia de plutônio.)
+  // Sem cooldown de tempo: o único limite é o cap de DONATION_MAX_PCT% do fundo POR
+  // doação. O ME pode doar quantas vezes quiser (inclusive o mesmo recurso ao mesmo
+  // planeta), desde que cada doação respeite o cap e haja fundo. (Pedido da galera.)
   const tick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
-  const cd = await prisma.donationCooldown.findUnique({ where: { planetId: toPlanetId } });
-  if (cd) {
-    const faltam = (last: number) => DONATION_WINDOW - (tick - last);
-    const blocked: string[] = [];
-    if (m > 0 && tick - cd.lastTickM < DONATION_WINDOW) blocked.push(`Metalium (${faltam(cd.lastTickM)}t)`);
-    if (c > 0 && tick - cd.lastTickC < DONATION_WINDOW) blocked.push(`Carbonum (${faltam(cd.lastTickC)}t)`);
-    if (p > 0 && tick - cd.lastTickP < DONATION_WINDOW) blocked.push(`Plutonium (${faltam(cd.lastTickP)}t)`);
-    if (blocked.length) throw new Error(`Esse planeta já recebeu recentemente: ${blocked.join(" · ")}. Aguarde o cooldown de cada recurso.`);
-  }
 
   // Nomes dos planetas (ME e destino) pro livro caixa.
   const [meP, toP] = await Promise.all([
     prisma.planet.findUnique({ where: { id: mePlanetId }, select: { name: true } }),
     prisma.planet.findUnique({ where: { id: toPlanetId }, select: { name: true } }),
   ]);
-  // Atualiza o lastTick SÓ dos recursos efetivamente doados agora.
-  const cdUpdate: any = { lastTick: tick };
-  if (m > 0) cdUpdate.lastTickM = tick;
-  if (c > 0) cdUpdate.lastTickC = tick;
-  if (p > 0) cdUpdate.lastTickP = tick;
   await prisma.$transaction([
     prisma.galaxyState.update({ where: { galaxy: g }, data: { fundMetalium: { decrement: m }, fundCarbonum: { decrement: c }, fundPlutonium: { decrement: p } } }),
     prisma.planet.update({ where: { id: toPlanetId }, data: { metalium: { increment: m }, carbonum: { increment: c }, plutonium: { increment: p } } }),
-    prisma.donationCooldown.upsert({ where: { planetId: toPlanetId }, update: cdUpdate, create: { planetId: toPlanetId, lastTick: tick, lastTickM: m > 0 ? tick : 0, lastTickC: c > 0 ? tick : 0, lastTickP: p > 0 ? tick : 0 } }),
     // Livro caixa: registra a doação (transparência pra galáxia).
     prisma.donationLog.create({ data: { galaxy: g, fromName: meP?.name ?? "ME", toName: toP?.name ?? "?", metalium: m, carbonum: c, plutonium: p, tick } }),
   ]);
