@@ -8,6 +8,25 @@ import { processTax } from "./governance.js";
 import { processEffects, resolveSabotages } from "./sabotage.js";
 import { moraleMult, decayAndClampMorale, MORALE_DECAY_EVERY } from "./morale.js";
 import { softResetRound } from "./round.js";
+import { NEWBIE_PROTECTION_TICKS } from "./constants.js";
+import { pushToUser } from "./push.js";
+
+// Push "sua proteção de novato acabou" — 1x, no tick em que ela expira.
+// Roda no MOTOR (não por request), então nunca duplica. Best-effort.
+async function notifyProtectionEnd(fromTick: number, toTick: number) {
+  // Expira em createdTick + 72. Queremos quem cruzou essa linha neste intervalo.
+  const planets = await prisma.planet.findMany({ select: { userId: true, createdTick: true } });
+  for (const p of planets) {
+    const end = p.createdTick + NEWBIE_PROTECTION_TICKS;
+    if (end > fromTick && end <= toTick) {
+      pushToUser(p.userId, {
+        title: "🛡️ Proteção encerrada",
+        body: "Sua proteção de novato acabou — agora dá pra atacar e você pode ser atacado. Reforce a defesa!",
+        tag: "protection", url: "/",
+      }).catch(() => {});
+    }
+  }
+}
 
 let timer: NodeJS.Timeout | null = null;
 let running = false;
@@ -110,6 +129,7 @@ async function applyTicks(fromTick: number, toTick: number) {
     await resolveSabotages(t);
     if (t % MORALE_DECAY_EVERY === 0) await decayAndClampMorale(); // moral decai -1 a cada 5 ticks
   }
+  await notifyProtectionEnd(fromTick, toTick); // push "proteção acabou" (1x, best-effort)
   const t5 = Date.now();
   if (t5 - t0 >= 1000) {
     console.log(`[tick-perf] total=${t5 - t0}ms prod=${t1 - t0} tax=${t2 - t1} effects=${t3 - t2} build=${t4 - t3} fleets=${t5 - t4} (due=${due})`);

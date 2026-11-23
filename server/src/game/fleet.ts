@@ -8,6 +8,7 @@ import {
   levelOf, upgradeCost, upgradeTicks, reqsMet, espionageLevel,
 } from "./tech.js";
 import { AGENTS, isAgentKey, parseAgents, stringifyAgents } from "./agents.js";
+import { pushToUser } from "./push.js";
 
 async function currentTick(): Promise<number> {
   const s = await prisma.gameState.findUnique({ where: { id: 1 } });
@@ -149,6 +150,9 @@ export async function processBuildOrders(uptoTick: number) {
   const due = await prisma.buildOrder.findMany({ where: { completeTick: { lte: uptoTick } } });
   if (due.length === 0) return;
 
+  // Guarda o último evento concluído por usuário (pra 1 push só, sem spam).
+  const pushBy: Record<string, { userId: string; title: string; body: string }> = {};
+
   for (const order of due) {
     if (order.kind === "ship" && order.shipClass) {
       const planet = await prisma.planet.findUnique({ where: { id: order.planetId } });
@@ -156,6 +160,7 @@ export async function processBuildOrders(uptoTick: number) {
         const hangar = addUnits(parseUnits(planet.units), { [order.shipClass]: order.quantity });
         await prisma.planet.update({ where: { id: order.planetId }, data: { units: stringifyUnits(hangar) } });
         // Naves prontas NÃO geram notícia (a frota fica em segredo até atacar/defender).
+        pushBy[planet.id] = { userId: planet.userId, title: "🛠️ Naves prontas", body: `${order.quantity}x nave(s) concluída(s) — já estão no hangar.` };
       }
     } else if (order.kind === "agent" && order.shipClass && isAgentKey(order.shipClass)) {
       const planet = await prisma.planet.findUnique({ where: { id: order.planetId } });
@@ -163,6 +168,7 @@ export async function processBuildOrders(uptoTick: number) {
         const agents = addUnits(parseAgents(planet.agents), { [order.shipClass]: order.quantity });
         await prisma.planet.update({ where: { id: order.planetId }, data: { agents: stringifyAgents(agents) } });
         await addNews(order.planetId, uptoTick, `🕵️ Treino concluído: ${order.quantity}x ${AGENTS[order.shipClass].name}`);
+        pushBy[planet.id] = { userId: planet.userId, title: "🕵️ Treino concluído", body: `${order.quantity}x ${AGENTS[order.shipClass].name} pronto(s).` };
       }
     } else if (order.kind === "tech" && order.techKey && order.targetLevel != null) {
       const planet = await prisma.planet.findUnique({ where: { id: order.planetId } });
@@ -177,9 +183,14 @@ export async function processBuildOrders(uptoTick: number) {
           const def = TECH_BY_KEY[order.techKey];
           const isResearch = def?.kind === "research";
           await addNews(order.planetId, uptoTick, `${isResearch ? "🔬 Pesquisa" : "🛠️ Construção"} concluída: ${def?.name ?? order.techKey}`);
+          pushBy[planet.id] = { userId: planet.userId, title: isResearch ? "🔬 Pesquisa concluída" : "🛠️ Construção concluída", body: `${def?.name ?? order.techKey} — volte e escolha o próximo passo.` };
         }
       }
     }
+  }
+  // 1 push por usuário (best-effort; não bloqueia o tick).
+  for (const p of Object.values(pushBy)) {
+    pushToUser(p.userId, { title: p.title, body: p.body, tag: "build", url: "/" }).catch(() => {});
   }
   await prisma.buildOrder.deleteMany({ where: { id: { in: due.map((o) => o.id) } } });
   console.log(`[tick] ${due.length} ordem(ns) concluida(s)`);
