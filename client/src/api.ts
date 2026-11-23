@@ -289,8 +289,8 @@ export const api = {
   travel: (galaxy: number, system: number, slot: number) =>
     request<{ penalty: number }>(`/game/travel/${galaxy}/${system}/${slot}`),
 
-  spy: (galaxy: number, system: number, slot: number, agent: "P" | "M" | "T" | "D") =>
-    request<{ intel?: any; failed?: boolean; error?: string; hash?: string }>("/game/spy", { method: "POST", body: JSON.stringify({ galaxy, system, slot, agent }) }),
+  spy: (galaxy: number, system: number, slot: number, agent: "P" | "M" | "T" | "D", count?: number) =>
+    request<{ intel?: any; failed?: boolean; error?: string; hash?: string }>("/game/spy", { method: "POST", body: JSON.stringify({ galaxy, system, slot, agent, count }) }),
 
   agents: () =>
     request<{

@@ -17,6 +17,7 @@ export function Inteligencia() {
   const [error, setError] = useState("");
   const [data, setData] = useState<AgentsData | null>(null);
   const [qty, setQty] = useState<Record<string, number>>({});
+  const [spyCount, setSpyCount] = useState("1"); // quantos agentes mandar por missão
   const [msg, setMsg] = useState("");
 
   async function loadAgents() {
@@ -41,7 +42,8 @@ export function Inteligencia() {
     const gg = parseInt(g, 10), ss = parseInt(s, 10), sl = parseInt(slot, 10);
     if (!(gg >= 1) || !(ss >= 1) || !(sl >= 1)) { setError("Digite a coordenada completa (setor:paralelo:slot)."); return; }
     try {
-      const r = await api.spy(gg, ss, sl, agent);
+      const n = Math.max(1, Math.min(100, parseInt(spyCount, 10) || 1));
+      const r = await api.spy(gg, ss, sl, agent, n);
       if (r.failed || !r.intel) setError(r.error ?? "Espionagem falhou");
       else setSpy(r.intel);
       await loadAgents(); // atualiza a contagem (gastou 1 agente)
@@ -116,7 +118,7 @@ export function Inteligencia() {
       <div className="panel">
         <h2>Espionar planeta</h2>
         <div className="cost">
-          Cada missão <b>gasta 1 agente</b> do tipo (dê certo ou não). Falha se o alvo tiver contra-espionagem suficiente.
+          Cada agente enviado é <b>uma tentativa</b> contra a contra-espionagem do alvo: mandar <b>mais agentes</b> aumenta a chance de furar — basta <b>um</b> passar pra o relatório sair. Gasta <b>todos os enviados</b> (deem certo ou não).
           <br /><b>P</b>=Padrão · <b>M</b>=Militar (naves) · <b>T</b>=Transmissão (notícias) · <b>D</b>=Duplo (frotas).
         </div>
         <div style={{ display: "flex", gap: 6, alignItems: "center", margin: "8px 0", flexWrap: "wrap" }}>
@@ -126,8 +128,12 @@ export function Inteligencia() {
           <input type="text" inputMode="numeric" maxLength={3} placeholder="par" title="Paralelo" value={s} onChange={(e) => setS(e.target.value.replace(/\D/g, ""))} style={{ width: 60, margin: 0, padding: "6px 8px" }} />
           <span className="roid-count">:</span>
           <input type="text" inputMode="numeric" maxLength={2} placeholder="slot" value={slot} onChange={(e) => setSlot(e.target.value.replace(/\D/g, ""))} style={{ width: 60, margin: 0, padding: "6px 8px" }} />
+          <span className="roid-count" style={{ marginLeft: 6 }}>enviar</span>
+          <input type="text" inputMode="numeric" maxLength={3} title="Quantos agentes enviar (cada um = 1 tentativa)" value={spyCount}
+            onChange={(e) => setSpyCount(e.target.value.replace(/\D/g, ""))} style={{ width: 54, margin: 0, padding: "6px 8px", textAlign: "center" }} />
+          <span className="roid-count">agente(s):</span>
           {(["P", "M", "T", "D"] as const).map((a) => (
-            <button key={a} disabled={count(a) < 1} onClick={() => doSpy(a)} title={count(a) < 1 ? "Sem agentes desse tipo" : ""}>
+            <button key={a} disabled={count(a) < 1} onClick={() => doSpy(a)} title={count(a) < 1 ? "Sem agentes desse tipo" : `Enviar ${Math.max(1, Math.min(count(a), parseInt(spyCount, 10) || 1))}x ${a}`}>
               {a} ({fmt(count(a))})
             </button>
           ))}
