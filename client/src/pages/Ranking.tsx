@@ -5,11 +5,42 @@ import { CoordLink } from "../components/CoordLink";
 function fmt(n: number) { return n.toLocaleString("pt-BR"); }
 type Tab = "planetas" | "galaxias" | "aliancas";
 
+const RACE_COLOR: Record<string, string> = {
+  humanos: "#5cc8ff", daharan: "#b98bff", rakshasa: "#ff6b6b",
+  mech: "#ffb648", insecta: "#4bd47a",
+};
+
+function RaceDistribution() {
+  const [data, setData] = useState<Awaited<ReturnType<typeof api.raceDistribution>> | null>(null);
+  useEffect(() => { api.raceDistribution().then(setData).catch(() => {}); }, []);
+  if (!data || data.total === 0) return null;
+  return (
+    <div className="race-dist">
+      <div className="race-dist-head">🧬 Distribuição de raças <span className="roid-count">· {data.total} comandantes</span></div>
+      <div className="race-dist-bar">
+        {data.dist.map((r) => r.count > 0 && (
+          <div key={r.key} style={{ width: `${r.pct}%`, background: RACE_COLOR[r.key] || "#888" }}
+               title={`${r.name}: ${r.pct}% (${r.count})`} />
+        ))}
+      </div>
+      <div className="race-dist-legend">
+        {data.dist.map((r) => (
+          <span key={r.key}>
+            <i style={{ background: RACE_COLOR[r.key] || "#888" }} />
+            {r.name} <b>{r.pct}%</b>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function Ranking() {
   const [tab, setTab] = useState<Tab>("planetas");
   return (
     <div className="panel">
       <h2>🏆 Rankings</h2>
+      <RaceDistribution />
       <div className="auth-tabs" style={{ maxWidth: 520, marginBottom: 14 }}>
         <button className={tab === "planetas" ? "active" : ""} onClick={() => setTab("planetas")}>🪐 Planetas</button>
         <button className={tab === "galaxias" ? "active" : ""} onClick={() => setTab("galaxias")}>🌌 Galáxias</button>

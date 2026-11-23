@@ -716,3 +716,14 @@ td { font-family: var(--mono); }
 .ugrid-head { display: flex; align-items: center; justify-content: center; font-family: var(--mono, monospace); font-size: 12px; font-weight: 700; color: var(--muted); }
 .ugrid-head.axis { color: #5ae0a8; text-shadow: 0 0 6px rgba(56,214,160,0.5); }
 @media (max-width: 560px) { .ugal { padding: 7px 3px; min-height: 54px; } .ugal-coord { font-size: 12px; } .ugal-name { display: none; } }
+
+/* Distribuição de raças no ranking (agregada, não revela raça de ninguém) */
+.race-dist { margin: 4px 0 18px; padding: 12px 14px; border: 1px solid var(--border, #2a3550); border-radius: 10px; background: rgba(255,255,255,0.02); }
+.race-dist-head { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+.race-dist-bar { display: flex; height: 16px; border-radius: 8px; overflow: hidden; background: rgba(255,255,255,0.05); }
+.race-dist-bar > div { transition: width .4s ease; }
+.race-dist-bar > div:not(:last-child) { box-shadow: 1px 0 0 rgba(0,0,0,0.25); }
+.race-dist-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; font-size: 12px; color: var(--muted); }
+.race-dist-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.race-dist-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.race-dist-legend b { color: var(--text, #e8eefc); font-variant-numeric: tabular-nums; }

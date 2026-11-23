@@ -1119,6 +1119,20 @@ gameRouter.get("/ranking", async (_req, res) => {
   res.json({ ranking: ranked });
 });
 
+// Distribuição de raças no universo (só contagem agregada — NUNCA liga raça a planeta/jogador).
+gameRouter.get("/ranking/races", async (_req, res) => {
+  const users = await prisma.user.findMany({ select: { race: true } });
+  const counts: Record<string, number> = {};
+  for (const k of RACE_KEYS) counts[k] = 0;
+  for (const u of users) { const k = isRaceKey(u.race) ? u.race : "humanos"; counts[k] = (counts[k] || 0) + 1; }
+  const total = users.length || 1;
+  const dist = RACE_KEYS.map((k) => ({
+    key: k, name: RACES[k].name, count: counts[k],
+    pct: Math.round((counts[k] / total) * 1000) / 10,
+  })).sort((a, b) => b.count - a.count);
+  res.json({ total: users.length, dist });
+});
+
 // Ranking/lista de ALIANÇAS: pontuação somada dos membros + nº de membros.
 gameRouter.get("/ranking/alliances", async (_req, res) => {
   const [alliances, members, planets, allF] = await Promise.all([
