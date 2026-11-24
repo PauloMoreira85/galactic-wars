@@ -513,7 +513,7 @@ export const api = {
 
   ranking: () =>
     request<{
-      ranking: { username: string; planet: string; coords: string; roids: number; score: number }[];
+      ranking: { username: string; planet: string; coords: string; roids: number; score: number; you?: boolean }[];
     }>("/game/ranking"),
   allianceRanking: () =>
     request<{ ranking: { id: string; name: string; tag: string; score: number; members: number; avg: number }[] }>("/game/ranking/alliances"),

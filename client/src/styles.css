@@ -737,3 +737,8 @@ td { font-family: var(--mono); }
 .tech-cat-sum { margin-left: auto; display: inline-flex; align-items: center; gap: 10px; font-size: 12px; }
 .tech-cat-run { color: #ff9628; font-weight: 700; }
 .tech-cat-act { color: var(--carbonum, #45e6a5); font-weight: 700; }
+
+/* Destaque da própria linha no ranking (pra se achar fácil na lista) */
+.rank-me td { background: rgba(37,211,255,0.12); }
+.rank-me td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+.rank-me td { font-weight: 600; }

@@ -1135,8 +1135,10 @@ gameRouter.get("/combats/:id", async (req: AuthedRequest, res) => {
   });
 });
 
-gameRouter.get("/ranking", async (_req, res) => {
+gameRouter.get("/ranking", async (req: AuthedRequest, res) => {
   const planets = await prisma.planet.findMany({ include: { user: { select: { username: true } } } });
+  // Qual planeta é o DO JOGADOR (pra destacar a própria linha no ranking).
+  const myPlanetId = (await prisma.planet.findUnique({ where: { userId: req.userId! }, select: { id: true } }))?.id ?? null;
   // Soma as naves de TODAS as frotas de cada planeta (hangar + atacando + defendendo
   // + voando + voltando), pra pontuação bater com /me e com a espionagem.
   const allF = await prisma.fleet.findMany({ select: { ownerPlanetId: true, units: true } });
@@ -1150,6 +1152,7 @@ gameRouter.get("/ranking", async (_req, res) => {
         username: p.user.username,
         planet: p.name, coords: `${p.galaxy}:${p.system}:${p.slot}`,
         score: planetScore(p, u), roids: totalRoids(p),
+        you: p.id === myPlanetId, // marca a própria linha
       };
     })
     .sort((a, b) => b.score - a.score); // todos os planetas, por PONTUAÇÃO

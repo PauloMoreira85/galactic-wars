@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
 import { CoordLink } from "../components/CoordLink";
 
@@ -55,25 +55,36 @@ export function Ranking() {
 
 function RankPlanetas() {
   const [rows, setRows] = useState<Awaited<ReturnType<typeof api.ranking>>["ranking"]>([]);
+  const myRowRef = useRef<HTMLTableRowElement>(null);
   useEffect(() => { api.ranking().then((d) => setRows(d.ranking)).catch(() => {}); }, []);
+  const myPos = rows.findIndex((r) => r.you); // índice da minha linha (−1 se não achou)
+  const scrollToMe = () => myRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   return (
-    <div style={{ overflowX: "auto" }}>
-      <table>
-        <thead><tr><th className="rank-num">#</th><th>Comandante</th><th>Planeta</th><th className="hide-sm">Coord.</th><th>Pontuação</th><th className="hide-sm">Roids</th></tr></thead>
-        <tbody>
-          {rows.map((r, i) => (
-            <tr key={i}>
-              <td className="rank-num">{i + 1}º</td>
-              <td><b>{r.username}</b></td>
-              <td>{r.planet}</td>
-              <td className="hide-sm"><CoordLink c={r.coords} /></td>
-              <td>{fmt(r.score)}</td>
-              <td className="hide-sm roid-count">{fmt(r.roids)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <>
+      {myPos >= 0 && (
+        <div className="cost" style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <span>⭐ Você está em <b style={{ color: "var(--accent)" }}>{myPos + 1}º</b> lugar.</span>
+          <button className="link" onClick={scrollToMe}>ir pra minha posição →</button>
+        </div>
+      )}
+      <div style={{ overflowX: "auto" }}>
+        <table>
+          <thead><tr><th className="rank-num">#</th><th>Comandante</th><th>Planeta</th><th className="hide-sm">Coord.</th><th>Pontuação</th><th className="hide-sm">Roids</th></tr></thead>
+          <tbody>
+            {rows.map((r, i) => (
+              <tr key={i} ref={r.you ? myRowRef : undefined} className={r.you ? "rank-me" : undefined}>
+                <td className="rank-num">{r.you && "⭐ "}{i + 1}º</td>
+                <td><b>{r.username}</b>{r.you && <span className="roid-count" style={{ color: "var(--accent)" }}> (você)</span>}</td>
+                <td>{r.planet}</td>
+                <td className="hide-sm"><CoordLink c={r.coords} /></td>
+                <td>{fmt(r.score)}</td>
+                <td className="hide-sm roid-count">{fmt(r.roids)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 
