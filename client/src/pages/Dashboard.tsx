@@ -244,6 +244,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [newsUnread, setNewsUnread] = useState(0);
   const [chatUnread, setChatUnread] = useState(0);
   const [chatByRoom, setChatByRoom] = useState<Record<string, number>>({});
+  const [roidQty, setRoidQty] = useState<Record<string, number>>({}); // qtd de roids a iniciar por recurso
   const countdown = useCountdown(view);
   const roundStatus = useRoundStatus(view);
   const [pmTo, setPmTo] = useState(""); // coordenada pré-preenchida ao mandar msg pela Galáxia
@@ -313,16 +314,24 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     if (section === "recursos") { api.gov().then(setMeGov).catch(() => {}); }
   }, [section]);
 
-  async function build(resource: Resource) {
+  async function build(resource: Resource, count = 1) {
     setError("");
     setBusy(resource);
     try {
-      setView(await api.buildRoid(resource));
+      setView(await api.buildRoid(resource, count));
+      setRoidQty((q) => ({ ...q, [resource]: 0 })); // limpa o campo após iniciar
     } catch (e: any) {
       setError(e.message ?? "Falha");
     } finally {
       setBusy(null);
     }
+  }
+  // Custo total de iniciar `n` roids de `resource` (progressivo: cada um +1000).
+  // O 1º custa roidCost(resource) e cada seguinte +1000 sobre o anterior.
+  function roidTotalCost(resource: Resource, n: number) {
+    let base = roidCost(resource), total = 0;
+    for (let i = 0; i < n; i++) { total += base; base += 1000; }
+    return total;
   }
 
   async function doTradeMN() {
@@ -734,7 +743,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
           <div className="panel">
             <h2>Asteroides (roids) — {planet.roids.total} no total</h2>
             <div className="cost">
-              Inicie a mineração de um roid (pago em <b>Metalium</b>). O custo sobe <b>+1.000</b> a cada roid daquele recurso. Cada roid produz <b>250</b>/tick. Teto: <b>{fmt(30000000)}</b> por recurso (o que passar é perdido).
+              Inicie a mineração de roids (pago em <b>Metalium</b>) — digite a <b>quantidade</b> pra iniciar vários de uma vez (o jogo soma o custo progressivo). O custo sobe <b>+1.000</b> a cada roid daquele recurso. Cada roid produz <b>250</b>/tick. Teto: <b>{fmt(30000000)}</b> por recurso (o que passar é perdido).
             </div>
             {RES_META.map(({ key, label }) => (
               <div className="roid-row" key={key}>
@@ -746,10 +755,15 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                   </div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div className="roid-count">custo: {fmt(roidCost(key))} Metalium</div>
-                  <button disabled={!canAffordRoid(key) || busy !== null} onClick={() => build(key)}>
-                    {busy === key ? "..." : `⛏️ minerar ${label}`}
-                  </button>
+                  <div className="roid-count">próximo: {fmt(roidCost(key))} Metalium{(roidQty[key] || 0) > 1 ? ` · ${roidQty[key]}x = ${fmt(roidTotalCost(key, roidQty[key]))}` : ""}</div>
+                  <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", alignItems: "center" }}>
+                    <input type="number" min={1} placeholder="1" value={roidQty[key] || ""}
+                      onChange={(e) => setRoidQty((q) => ({ ...q, [key]: e.target.value === "" ? 0 : Math.max(1, Math.floor(Number(e.target.value))) }))}
+                      style={{ width: 64, margin: 0, padding: "4px 6px", textAlign: "center" }} />
+                    <button disabled={!canAffordRoid(key) || busy !== null} onClick={() => build(key, Math.max(1, roidQty[key] || 1))}>
+                      {busy === key ? "..." : `⛏️ minerar ${(roidQty[key] || 0) > 1 ? roidQty[key] + "x" : label}`}
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -922,15 +936,29 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                       <td title={u.total !== u.count ? `${fmt(u.count)} na base · ${fmt(u.total - u.count)} em frotas` : "tudo na base"}>{fmt(u.total)}</td>
                       <td>
                         {u.unlocked ? (
-                          <div style={{ display: "flex", gap: 6 }}>
-                            <input
-                              type="number" min={1} placeholder="1" value={qty[u.name] || ""}
-                              onChange={(e) => setQty({ ...qty, [u.name]: e.target.value === "" ? 0 : Math.max(1, Math.floor(Number(e.target.value))) })}
-                              style={{ width: 80, margin: 0, padding: "4px 6px" }}
-                            />
-                            <button disabled={shipBusy !== null} onClick={() => doBuildUnit(u.name)}>
-                              {shipBusy === u.name ? "..." : "+"}
-                            </button>
+                          <div>
+                            <div style={{ display: "flex", gap: 6 }}>
+                              <input
+                                type="number" min={1} placeholder="1" value={qty[u.name] || ""}
+                                onChange={(e) => setQty({ ...qty, [u.name]: e.target.value === "" ? 0 : Math.max(1, Math.floor(Number(e.target.value))) })}
+                                style={{ width: 80, margin: 0, padding: "4px 6px" }}
+                              />
+                              <button disabled={shipBusy !== null} onClick={() => doBuildUnit(u.name)}>
+                                {shipBusy === u.name ? "..." : "+"}
+                              </button>
+                            </div>
+                            {(() => {
+                              const n = qty[u.name] || 0;
+                              if (n < 1) return null;
+                              const tm = u.cost.metalium * n, tc = u.cost.carbonum * n, tp = u.cost.plutonium * n;
+                              // Dá pra pagar? (compara com os recursos em estoque)
+                              const ok = view.planet.resources.metalium >= tm && view.planet.resources.carbonum >= tc && view.planet.resources.plutonium >= tp;
+                              return (
+                                <div className="roid-count" style={{ marginTop: 3, fontSize: 11, color: ok ? undefined : "var(--danger)" }}>
+                                  total: {fmt(tm)}/{fmt(tc)}/{fmt(tp)}{!ok && " ⚠️ falta recurso"}
+                                </div>
+                              );
+                            })()}
                           </div>
                         ) : u.captured ? (
                           <span className="roid-count" title="nave de outra raça, assimilada — não dá pra construir, mas pode carregar em frota">🛸 capturada</span>

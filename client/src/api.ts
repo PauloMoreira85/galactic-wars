@@ -241,10 +241,10 @@ export const api = {
 
   me: () => request<PlanetView>("/game/me"),
 
-  buildRoid: (resource: Resource) =>
+  buildRoid: (resource: Resource, count = 1) =>
     request<PlanetView>("/game/roids/build", {
       method: "POST",
-      body: JSON.stringify({ resource }),
+      body: JSON.stringify({ resource, count }),
     }),
 
   upgrade: (key: string) =>

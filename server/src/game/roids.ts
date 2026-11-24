@@ -15,31 +15,38 @@ const ROID_FIELD: Record<ResourceKey, "roidMetalium" | "roidCarbonum" | "roidPlu
   plutonium: "roidPlutonium",
 };
 
-// Produz 1 roid focado em `resource`, pagando o custo escalonado.
-// Lanca Error com mensagem amigavel se nao houver recursos.
-export async function buildRoid(planetId: string, resource: ResourceKey) {
+// Produz `count` roids focados em `resource`, pagando o custo ESCALONADO (cada roid
+// fica mais caro). Inicia quantos der com o recurso disponível, até `count`. Lança
+// Error só se não der pra iniciar NENHUM. Retorna o planeta atualizado.
+export async function buildRoid(planetId: string, resource: ResourceKey, count = 1) {
+  const want = Math.max(1, Math.min(1000, Math.floor(count))); // teto de segurança
   return withWrite(() => prisma.$transaction(async (tx) => {
     const planet = await tx.planet.findUnique({ where: { id: planetId } });
     if (!planet) throw new Error("Planeta nao encontrado");
 
     const field = ROID_FIELD[resource];
-    const cost = nextRoidCost(resource, planet[field]);
-    if (
-      planet.metalium < cost.metalium ||
-      planet.carbonum < cost.carbonum ||
-      planet.plutonium < cost.plutonium
-    ) {
-      throw new Error("Recursos insuficientes para iniciar a mineração do roid");
+    let have = { metalium: planet.metalium, carbonum: planet.carbonum, plutonium: planet.plutonium };
+    let roidsNow = planet[field];
+    let built = 0;
+    let spent = { metalium: 0, carbonum: 0, plutonium: 0 };
+    // Soma o custo progressivo de cada roid até acabar o recurso ou atingir `want`.
+    for (let i = 0; i < want; i++) {
+      const cost = nextRoidCost(resource, roidsNow);
+      if (have.metalium < cost.metalium || have.carbonum < cost.carbonum || have.plutonium < cost.plutonium) break;
+      have.metalium -= cost.metalium; have.carbonum -= cost.carbonum; have.plutonium -= cost.plutonium;
+      spent.metalium += cost.metalium; spent.carbonum += cost.carbonum; spent.plutonium += cost.plutonium;
+      roidsNow++; built++;
     }
+    if (built === 0) throw new Error("Recursos insuficientes para iniciar a mineração do roid");
 
     return tx.planet.update({
       where: { id: planetId },
       data: {
-        metalium: { decrement: cost.metalium },
-        carbonum: { decrement: cost.carbonum },
-        plutonium: { decrement: cost.plutonium },
-        [field]: { increment: 1 },
-        morale: { increment: 1 }, // +1 moral por roid iniciado
+        metalium: { decrement: spent.metalium },
+        carbonum: { decrement: spent.carbonum },
+        plutonium: { decrement: spent.plutonium },
+        [field]: { increment: built },
+        morale: { increment: built }, // +1 moral por roid iniciado
       },
     });
   }, TX_OPTS));

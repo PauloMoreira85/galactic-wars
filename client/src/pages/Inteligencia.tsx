@@ -36,6 +36,13 @@ export function Inteligencia() {
     } catch (e: any) { setError(e.message ?? "Falha no treino"); }
   }
 
+  // Cancela um treino em andamento (reembolso proporcional ao tempo restante).
+  async function cancelTraining(id: string) {
+    setError(""); setMsg("");
+    try { await api.cancelOrder(id); setMsg("Treino cancelado (reembolso proporcional)."); await loadAgents(); }
+    catch (e: any) { setError(e.message ?? "Falha ao cancelar"); }
+  }
+
   async function doSpy(agent: "P" | "M" | "T" | "D") {
     setError(""); setSpy(null); setMsg("");
     const gg = parseInt(g, 10), ss = parseInt(s, 10), sl = parseInt(slot, 10);
@@ -106,7 +113,12 @@ export function Inteligencia() {
         {data && data.training.length > 0 && (
           <div style={{ marginTop: 8 }}>
             <div className="roid-count">Em treino:</div>
-            {data.training.map((t) => <div key={t.id} className="roid-count">• {t.quantity}x {t.key} — faltam {t.ticksRemaining}t</div>)}
+            {data.training.map((t) => (
+              <div key={t.id} className="roid-count" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span>• {t.quantity}x {t.key} — faltam {t.ticksRemaining}t</span>
+                <button onClick={() => cancelTraining(t.id)} title="Cancelar — reembolso proporcional ao tempo que falta" style={{ padding: "1px 7px", fontSize: 11 }}>cancelar</button>
+              </div>
+            ))}
           </div>
         )}
         {msg && <div className="cost" style={{ marginTop: 8, color: "var(--carbonum)" }}>{msg}</div>}

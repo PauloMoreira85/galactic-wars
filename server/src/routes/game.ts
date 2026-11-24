@@ -260,13 +260,13 @@ gameRouter.get("/missions", async (req: AuthedRequest, res) => {
   res.json({ missions: await missionsView(planet.id) });
 });
 
-const buildSchema = z.object({ resource: z.enum(["metalium", "carbonum", "plutonium"]) });
+const buildSchema = z.object({ resource: z.enum(["metalium", "carbonum", "plutonium"]), count: z.number().int().min(1).max(1000).optional() });
 gameRouter.post("/roids/build", async (req: AuthedRequest, res) => {
   const parsed = buildSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Recurso invalido" });
   const planet = await prisma.planet.findUnique({ where: { userId: req.userId! } });
   if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
-  try { await buildRoid(planet.id, parsed.data.resource); }
+  try { await buildRoid(planet.id, parsed.data.resource, parsed.data.count ?? 1); }
   catch (e: any) { return res.status(400).json({ error: e.message ?? "Falha ao produzir roid" }); }
   res.json(await planetView(req.userId!));
 });
