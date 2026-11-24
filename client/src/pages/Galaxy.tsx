@@ -185,15 +185,22 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
         </div>
       ))}
       <div className="panel">
-        {/* Cabeçalho da galáxia */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 10 }}>
-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <div>
-            <h2 style={{ marginBottom: 2 }}>{data?.name ? data.name : `Galáxia ${galaxy}:${system}`}</h2>
+        {/* Cabeçalho da galáxia: nome CENTRALIZADO (com bandeira) + navegação ao lado */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
+          <div style={{ flex: 1, minWidth: 220, textAlign: "center" }}>
+            {data?.flag && (
+              <img src={data.flag} alt="Bandeira da Galáxia" style={{ maxWidth: 220, maxHeight: 64, borderRadius: 6, border: "1px solid var(--border)", marginBottom: 6, display: "inline-block" }} />
+            )}
+            <h2 style={{ marginBottom: 2 }}>
+              ⭐ {data?.name ? data.name : `Galáxia ${galaxy}:${system}`}
+              {galaxy > 5 && <span className="roid-count" style={{ fontSize: 13, color: "var(--accent)", marginLeft: 8 }}>🔒 privada</span>}
+            </h2>
             <div className="roid-count">
-              Pontuação: <b style={{ color: "var(--text)" }}>{fmt(data?.score ?? 0)}</b> · Rank: <b style={{ color: "var(--text)" }}>{data?.rank ?? "—"}º</b>
+              {galaxy > 5
+                ? <span style={{ color: "var(--accent)" }}>Galáxia privada (setor {galaxy}) — só entra por convite.</span>
+                : <>Galáxia pública (setor {galaxy})</>}
+              {" · "}Pontuação: <b style={{ color: "var(--text)" }}>{fmt(data?.score ?? 0)}</b> · Rank: <b style={{ color: "var(--text)" }}>{data?.rank ?? "—"}º</b>
               {data?.morale != null && <> · Moral: <b style={{ color: "var(--text)" }}>{data.morale}</b></>}
-            </div>
             </div>
           </div>
           <div className="galnav">
@@ -438,13 +445,6 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
       </div>
 
       {error && <div className="error" style={{ marginTop: 10 }}>{error}</div>}
-
-      {data?.flag && (
-        <div className="panel" style={{ textAlign: "center" }}>
-          <h2>Bandeira da Galáxia</h2>
-          <img src={data.flag} alt="Bandeira da Galáxia" style={{ maxWidth: "100%", maxHeight: 260, borderRadius: 8, border: "1px solid var(--border)", marginTop: 8 }} />
-        </div>
-      )}
 
       {spy && (
         <div className="panel">
