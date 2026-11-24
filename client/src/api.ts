@@ -491,6 +491,8 @@ export const api = {
         defender: { name: string; before: number; lost: number; pem: number; assim: number; survivors: number }[];
         attackers?: { name: string; coords?: string; ships: number }[];
         defenders?: { name: string; coords?: string; ships: number; you?: boolean }[];
+        aUnused?: { name: string; count: number }[];
+        dUnused?: { name: string; count: number }[];
         log?: { side: "a" | "d"; ini: number; ship: string; count: number; target: string; shots: number; action: "pem" | "destroy" | "assim"; amount: number; chance: number; assimCost?: number }[];
       };
     }>(`/game/combats/${id}`),

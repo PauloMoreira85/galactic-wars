@@ -372,7 +372,17 @@ export async function resolveSiege(target: { galaxy: number; system: number; slo
   const rate = Math.max(CAP_MIN, Math.min(CAP_MAX, CAP_MAX - (CAP_MAX - CAP_MIN) * (ratio - 1) / (CAP_RATIO_FULL - 1)));
   const st: BattleState = { atkInit: { ...aActive }, defInit: { ...dActive }, aActive: { ...aActive }, dActive: { ...dActive }, aLost: {}, dLost: {}, aPem: {}, dPem: {}, rate };
   // dAssim = atacantes assimilados pela defesa; aAssim = defensores assimilados pelo atacante.
-  const { aAssim, dAssim } = oneRound(st);
+  const firedA: UnitMap = {}, firedD: UnitMap = {};
+  const { aAssim, dAssim } = oneRound(st, firedA, firedD);
+  // "Sem uso" = naves vivas que não acharam alvo pra disparar neste tick (ex.: excedente
+  // de roiders, ou naves sem alvo correspondente). Por lado.
+  const unusedSide = (active: UnitMap, pem: UnitMap, fired: UnitMap) => {
+    const surv = survivors(active, pem);
+    return Object.keys(surv).map((n) => ({ name: n, count: Math.max(0, (surv[n] || 0) - (fired[n] || 0)) }))
+      .filter((r) => r.count > 0).sort((a, b) => b.count - a.count);
+  };
+  const aUnused = unusedSide(st.aActive, st.aPem, firedA);
+  const dUnused = unusedSide(st.dActive, st.dPem, firedD);
 
   // Roids: roiders atacantes ativos × cap% × roids do alvo (por tick).
   const roids = { metalium: def.roidMetalium, carbonum: def.roidCarbonum, plutonium: def.roidPlutonium };
@@ -433,6 +443,7 @@ export async function resolveSiege(target: { galaxy: number; system: number; slo
     defender: rows(st.defInit, st.dLost, st.dPem, aAssim),
     captured: roundCap, raid: { capacity, ratePct: Math.round(st.rate * 100), targetRoids: targetRoidsTotal, rows: raidRows, captured: roundCap.metalium + roundCap.carbonum + roundCap.plutonium },
     attackers, defenders,
+    aUnused, dUnused, // naves que sobraram sem atirar, por lado
     round: 1, ticks: 1, log: st.log ?? [],
   };
 

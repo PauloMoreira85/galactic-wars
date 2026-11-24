@@ -146,6 +146,23 @@ export function Combats() {
               </div>
             </div>
           )}
+          {/* Naves que sobraram SEM ATIRAR (não acharam alvo) — por lado. */}
+          {((d.aUnused?.length ?? 0) > 0 || (d.dUnused?.length ?? 0) > 0) && (
+            <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginTop: 10, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+              {(d.aUnused?.length ?? 0) > 0 && (
+                <div>
+                  <div className="roid-count" title="naves vivas que não acharam alvo pra atirar (ex.: excedente de roiders)">🚫 Atacante — sobraram sem atirar</div>
+                  <div className="roid-count" style={{ color: "var(--text)" }}>{d.aUnused!.map((u) => `${u.name} ×${fmt(u.count)}`).join(" · ")}</div>
+                </div>
+              )}
+              {(d.dUnused?.length ?? 0) > 0 && (
+                <div>
+                  <div className="roid-count">🚫 Defesa — sobraram sem atirar</div>
+                  <div className="roid-count" style={{ color: "var(--text)" }}>{d.dUnused!.map((u) => `${u.name} ×${fmt(u.count)}`).join(" · ")}</div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="panel">
