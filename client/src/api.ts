@@ -545,7 +545,7 @@ export const api = {
     request<{ techs: { key: string; name: string; category: string; kind: string; desc: string; max: number; cost: number; ticks: number; requires: { name: string; level: number }[] }[] }>("/game/tools/techtree"),
   combatSim: (attacker: Record<string, number>, defender: Record<string, number>, ticks = 3) =>
     request<{
-      ticks: { tick: number; aBefore: number; dBefore: number; aAfter: number; dAfter: number; raidCapacity: number;
+      ticks: { tick: number; aBefore: number; dBefore: number; aAfter: number; dAfter: number; raidCapacity: number; ratePct: number;
         aScoreBefore: number; dScoreBefore: number; aScoreAfter: number; dScoreAfter: number;
         aScoreLost: number; dScoreLost: number; aPemShips: number; dPemShips: number;
         attacker: { name: string; before: number; lost: number; pem: number; assim: number; survivors: number }[];

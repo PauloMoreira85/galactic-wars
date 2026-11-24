@@ -161,6 +161,7 @@ function Calculadora() {
   const [race, setRace] = useState<string>("Humana");
   const [atk, setAtk] = useState<Record<string, number>>({});
   const [def, setDef] = useState<Record<string, number>>({});
+  const [targetRoids, setTargetRoids] = useState(""); // roids do alvo (pra ver o saque estimado)
   const [result, setResult] = useState<SimResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -348,9 +349,14 @@ function Calculadora() {
         <Fleet side="d" map={def} />
       </div>
 
-      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
         <button disabled={busy || (totA === 0 && totD === 0)} onClick={run}>{busy ? "simulando…" : "🎯 Simular combate (3 ticks)"}</button>
-        <button className="link" onClick={() => { setAtk({}); setDef({}); setResult(null); }}>limpar</button>
+        <span className="roid-count">roids do alvo (opcional):</span>
+        <input type="text" inputMode="numeric" placeholder="ex: 1500" value={targetRoids}
+          onChange={(e) => setTargetRoids(e.target.value.replace(/\D/g, ""))}
+          title="Informe os roids do alvo pra ver quanto você saquearia por tick (roidcap)"
+          style={{ width: 90, margin: 0, padding: "6px 8px", textAlign: "center" }} />
+        <button className="link" onClick={() => { setAtk({}); setDef({}); setTargetRoids(""); setResult(null); }}>limpar</button>
       </div>
       {err && <div className="error" style={{ marginTop: 8 }}>{err}</div>}
 
@@ -386,7 +392,14 @@ function Calculadora() {
             <div key={tk.tick} style={{ marginTop: 12, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
               <div className="cost" style={{ marginBottom: 6 }}>
                 <b>Tick {tk.tick}</b> — Ataque {fmt(tk.aBefore)}→<b>{fmt(tk.aAfter)}</b> <span style={{ color: "var(--danger)" }}>(−{fmt(Math.round(tk.aScoreLost))} pts)</span> · Defesa {fmt(tk.dBefore)}→<b>{fmt(tk.dAfter)}</b> <span style={{ color: "var(--danger)" }}>(−{fmt(Math.round(tk.dScoreLost))} pts)</span>
-                {tk.raidCapacity > 0 && <span className="roid-count"> · roids saqueáveis: {fmt(tk.raidCapacity)}</span>}
+                {tk.raidCapacity > 0 && <span className="roid-count"> · capacidade dos roiders: {fmt(tk.raidCapacity)}</span>}
+                <span className="roid-count"> · <b style={{ color: "var(--carbonum)" }}>roidcap {tk.ratePct}%</b></span>
+                {(() => {
+                  const roids = parseInt(targetRoids, 10) || 0;
+                  if (roids <= 0 || tk.raidCapacity <= 0) return null;
+                  const saque = Math.min(tk.raidCapacity, Math.floor(roids * tk.ratePct / 100));
+                  return <span className="roid-count"> · <b style={{ color: "var(--carbonum)" }}>saque ~{fmt(saque)} roids</b> <span style={{ opacity: 0.7 }}>({tk.ratePct}% de {fmt(roids)})</span></span>;
+                })()}
               </div>
               <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
                 {([["⚔️ Ataque", tk.attacker], ["🛡️ Defesa", tk.defender]] as const).map(([label, rows]) => (

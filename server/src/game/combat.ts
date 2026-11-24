@@ -235,6 +235,7 @@ export interface SimTick {
   // Naves PARALISADAS pelo PEM neste tick (sobraram, não foram destruídas).
   aPemShips: number; dPemShips: number;
   raidCapacity: number; // roids que os roiders atacantes vivos carregariam neste tick
+  ratePct: number;      // cap de roids deste tick (5–15%), pela razão de combate
 }
 export interface SimResult {
   ticks: SimTick[];
@@ -286,6 +287,7 @@ export function simulateCombat(attacker0: UnitMap, defender0: UnitMap, ticks = B
       dScoreLost: Math.max(0, dScoreBefore - dScoreAfter),
       aPemShips: totalUnits(st.aPem), dPemShips: totalUnits(st.dPem),
       raidCapacity: raidCapacity(st.aActive),
+      ratePct: Math.round(rate * 100),
     });
     aCur = aSurv; dCur = dSurv;
   }
