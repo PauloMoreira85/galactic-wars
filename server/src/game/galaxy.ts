@@ -271,10 +271,15 @@ export async function returnFleetToBase(fleetId: string) {
 
 async function scheduleReturn(fleetId: string, fleet: { ownerPlanetId: string; arriveTick: number; targetGalaxy: number; targetSystem: number; originGalaxy: number; originSystem: number }, units: UnitMap) {
   const owner = await prisma.planet.findUnique({ where: { id: fleet.ownerPlanetId } });
-  const back = travelTime(galaxyId(fleet.targetGalaxy, fleet.targetSystem), galaxyId(fleet.originGalaxy, fleet.originSystem), units, propLevelOf(owner?.tech ?? "{}"));
+  // IMPORTANTE: reler as units ATUAIS do banco. O combate deste mesmo tick pode ter
+  // mudado a frota (ex.: Mech ASSIMILOU naves inimigas e elas foram salvas aqui). O
+  // `units` recebido é o snapshot do INÍCIO do tick — usá-lo apagaria as assimiladas.
+  const fresh = await prisma.fleet.findUnique({ where: { id: fleetId }, select: { units: true } });
+  const current = fresh ? parseUnits(fresh.units) : units;
+  const back = travelTime(galaxyId(fleet.targetGalaxy, fleet.targetSystem), galaxyId(fleet.originGalaxy, fleet.originSystem), current, propLevelOf(owner?.tech ?? "{}"));
   await prisma.fleet.update({
     where: { id: fleetId },
-    data: { status: "returning", departTick: fleet.arriveTick, arriveTick: fleet.arriveTick + back, units: stringifyUnits(units) },
+    data: { status: "returning", departTick: fleet.arriveTick, arriveTick: fleet.arriveTick + back, units: stringifyUnits(current) },
   });
 }
 
@@ -333,6 +338,16 @@ export async function processFleets(uptoTick: number) {
       continue;
     }
     if (fleet.status === "garrison") {
+      const gcoord = `${fleet.targetGalaxy}:${fleet.targetSystem}:${fleet.targetSlot}`;
+      // Guarnição que terminaria AGORA mas o planeta está SOB ATAQUE neste tick:
+      // adia a volta 1 tick. Assim ela defende e (se for Mech) ASSIMILA no combate
+      // de hoje; sai só no próximo tick, já levando as naves assimiladas. Sem isso,
+      // ela voltaria ANTES do combate rodar e perderia as assimiladas deste tick.
+      if (fleet.arriveTick <= uptoTick && underAttackThisTick.has(gcoord)) {
+        await prisma.fleet.update({ where: { id: fleet.id }, data: { arriveTick: uptoTick + 1 } });
+        besieged.add(gcoord);
+        continue;
+      }
       // Guarnição: fica estacionada até arriveTick (= fim do reforço), aí volta.
       if (fleet.arriveTick <= uptoTick) {
         const coord = `${fleet.targetGalaxy}:${fleet.targetSystem}:${fleet.targetSlot}`;
