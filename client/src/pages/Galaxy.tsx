@@ -188,9 +188,6 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
         {/* Cabeçalho da galáxia: nome CENTRALIZADO (com bandeira) + navegação ao lado */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
           <div style={{ flex: 1, minWidth: 220, textAlign: "center" }}>
-            {data?.flag && (
-              <img src={data.flag} alt="Bandeira da Galáxia" style={{ maxWidth: 220, maxHeight: 64, borderRadius: 6, border: "1px solid var(--border)", marginBottom: 6, display: "inline-block" }} />
-            )}
             <h2 style={{ marginBottom: 2 }}>
               ⭐ {data?.name ? data.name : `Galáxia ${galaxy}:${system}`}
               {galaxy > 5 && <span className="roid-count" style={{ fontSize: 13, color: "var(--accent)", marginLeft: 8 }}>🔒 privada</span>}
@@ -441,6 +438,13 @@ export function Galaxy({ view, onChanged, onMessage, gotoCoords }: { view: Plane
             })}
           </tbody>
         </table>
+        )}
+        {/* Bandeira da galáxia — embaixo da lista, como no GW original. */}
+        {data?.flag && (
+          <div style={{ textAlign: "center", marginTop: 14, borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+            <div className="roid-count" style={{ marginBottom: 6 }}>Bandeira da Galáxia</div>
+            <img src={data.flag} alt="Bandeira da Galáxia" style={{ maxWidth: "100%", maxHeight: 220, borderRadius: 8, border: "1px solid var(--border)" }} />
+          </div>
         )}
       </div>
 
