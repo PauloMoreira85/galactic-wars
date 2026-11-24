@@ -50,7 +50,8 @@ export function Trafego({ onGoto }: { onGoto?: (coords: string) => void }) {
         // Estilo GW original: ATAQUES em cima, DEFESAS embaixo — cada grupo por TEC.
         const ataques = data.fleets.filter((f) => f.mission === "attack").sort((a, b) => a.ticks - b.ticks);
         const defesas = data.fleets.filter((f) => f.mission !== "attack").sort((a, b) => a.ticks - b.ticks);
-        const Tabela = ({ titulo, cor, rows }: { titulo: string; cor: string; rows: typeof data.fleets }) =>
+        // atk=true → tabela de ataque (vermelho); false → defesa (verde).
+        const Tabela = ({ titulo, cor, rows, atk }: { titulo: string; cor: string; rows: typeof data.fleets; atk: boolean }) =>
           rows.length === 0 ? null : (
             <div style={{ marginBottom: 14 }}>
               <div className="combat-ini" style={{ color: cor }}>{titulo} ({rows.length})</div>
@@ -58,11 +59,11 @@ export function Trafego({ onGoto }: { onGoto?: (coords: string) => void }) {
                 <thead><tr><th>Origem</th><th>Comandante</th><th>Frota</th><th>Alvo</th><th>Naves</th><th>TEC</th></tr></thead>
                 <tbody>
                   {rows.map((f, i) => (
-                    <tr key={i} style={f.toMe ? { background: "rgba(255,80,80,0.12)" } : undefined}>
+                    <tr key={i} style={f.toMe ? { background: atk ? "rgba(255,80,80,0.12)" : "rgba(69,230,165,0.12)" } : undefined}>
                       <td><Coord c={f.origin} /></td>
                       <td>{f.owner}</td>
                       <td className="roid-count">{f.fleetName}</td>
-                      <td>{f.toMe ? <b style={{ color: "var(--danger)" }}>🎯 você</b> : <Coord c={f.target} />}</td>
+                      <td>{f.toMe ? <b style={{ color: cor }}>{atk ? "🎯 você" : "🛡️ você"}</b> : <Coord c={f.target} />}</td>
                       <td>{fmt(f.ships)}</td>
                       <td>{f.status === "engaged" ? "em combate" : f.status === "garrison" ? "✓ no local" : `${f.ticks}t`}</td>
                     </tr>
@@ -73,8 +74,8 @@ export function Trafego({ onGoto }: { onGoto?: (coords: string) => void }) {
           );
         return (
           <>
-            <Tabela titulo="🔴 Ataques chegando" cor="var(--danger)" rows={ataques} />
-            <Tabela titulo="🟢 Defesas chegando" cor="var(--carbonum)" rows={defesas} />
+            <Tabela titulo="🔴 Ataques chegando" cor="var(--danger)" rows={ataques} atk={true} />
+            <Tabela titulo="🟢 Defesas chegando" cor="var(--carbonum)" rows={defesas} atk={false} />
           </>
         );
       })()}

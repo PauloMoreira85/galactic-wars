@@ -527,15 +527,21 @@ export async function finalize(fleetId: string, tick: number) {
   // Os roids saqueados já foram creditados no planeta (roidar instantâneo), então
   // aqui a notícia só avisa que a frota está voltando.
   if (atkP && arrived) await addNews(atkP.id, tick, `⚔️ Sua frota terminou o combate em ${fleet.targetGalaxy}:${fleet.targetSystem}:${fleet.targetSlot} e está voltando`);
-  // Recuo ANTES de chegar (desistência): avisa os dois lados.
-  // Só pra ataque de verdade (não finta/defesa) que ainda estava a caminho.
-  if (!arrived && fleet.mission === "attack" && !fleet.fake) {
+  // Recuo ANTES de chegar (desistência): avisa os dois lados — ataque E defesa.
+  const tgtCoord = `${fleet.targetGalaxy}:${fleet.targetSystem}:${fleet.targetSlot}`;
+  if (!arrived && !fleet.fake) {
     const tgt = await prisma.planet.findUnique({
       where: { galaxy_system_slot: { galaxy: fleet.targetGalaxy, system: fleet.targetSystem, slot: fleet.targetSlot } },
       select: { id: true },
     });
-    if (tgt) await addNews(tgt.id, tick, `🏳️ Um ataque a caminho recuou — o atacante desistiu antes de chegar`);
-    if (atkP) await addNews(atkP.id, tick, `↩️ Você recuou do ataque a ${fleet.targetGalaxy}:${fleet.targetSystem}:${fleet.targetSlot} — a frota está voltando`);
+    if (fleet.mission === "attack") {
+      if (tgt) await addNews(tgt.id, tick, `🏳️ Um ataque a caminho recuou — o atacante desistiu antes de chegar`);
+      if (atkP) await addNews(atkP.id, tick, `↩️ Você recuou do ataque a ${tgtCoord} — a frota está voltando`);
+    } else {
+      // Defesa recuada (o reforço voltou antes de chegar ao aliado).
+      if (atkP) await addNews(atkP.id, tick, `↩️ Você recuou a defesa a ${tgtCoord} — a frota está voltando`);
+      if (tgt && atkP && tgt.id !== atkP.id) await addNews(tgt.id, tick, `🏳️ Um reforço que vinha te defender recuou antes de chegar`);
+    }
   }
 }
 
