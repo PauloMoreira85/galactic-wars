@@ -344,7 +344,7 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
           </div></div>
           {nextCost && (
             <button disabled={busy || view.planet.resources.metalium < nextCost.metalium || view.planet.resources.carbonum < nextCost.carbonum}
-              onClick={() => act(() => api.createFleet())}>
+              onClick={() => { if (window.confirm(`Criar a frota #${view.planet.fleetSlots + 1}?\n\nCusta ${fmt(nextCost.metalium)} metalium · ${fmt(nextCost.carbonum)} carbonum.`)) act(() => api.createFleet()); }}>
               {busy ? "..." : "criar frota"}
             </button>
           )}
