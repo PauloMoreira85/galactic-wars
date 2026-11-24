@@ -20,6 +20,7 @@ import { Preferencias } from "./Preferencias";
 import { RaceChoiceScreen } from "../components/RaceChoiceScreen";
 import { AdBanner } from "../components/AdBanner";
 import { ShipIcon } from "../components/ShipIcon";
+import { ShipTimeline } from "../components/ShipTimeline";
 
 const RES_META: { key: Resource; label: string }[] = [
   { key: "metalium", label: "Metalium" },
@@ -977,6 +978,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             {view.queue.some((q) => q.kind === "ship") && (
               <div className="panel" style={{ borderColor: "var(--accent)" }}>
                 <h2>🛠️ Em produção</h2>
+                <ShipTimeline items={view.queue} />
                 {view.queue.filter((q) => q.kind === "ship").map((q) => (
                   <div className="roid-row" key={q.id} style={{ alignItems: "center" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
