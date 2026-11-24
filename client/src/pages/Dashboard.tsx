@@ -122,12 +122,13 @@ const MENU: MenuItem[][] = [
     { key: "frotas", label: "Frotas" },
   ],
   [
+    { key: "recursos", label: "Recursos" },
     { key: "tecnologia", label: "Tecnologia" },
+    { key: "naves", label: "Naves" },
   ],
   [
     { key: "intel", label: "Inteligência" },
     { key: "sabotagem", label: "Sabotagem" },
-    { key: "naves", label: "Naves" },
   ],
   [
     { key: "forumgalaxia", label: "Fórum da Galáxia" },
@@ -146,7 +147,6 @@ const MENU: MenuItem[][] = [
     { key: "indique", label: "Indique a um amigo", soon: true },
   ],
   [
-    { key: "recursos", label: "Recursos" },
     { key: "votacao", label: "🏛️ Votação / Governo" },
     // Itens de CARGO (👑 CG, 💰 ME, ⚔️ MG, 🕊️ MD) são injetados dinamicamente
     // no render, só pra quem ocupa o cargo (marcados com a key cargo*).
