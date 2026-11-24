@@ -61,30 +61,34 @@ interface BattleState {
 
 // Distribui os sobreviventes (por tipo) entre os contribuintes, proporcional à
 // composição inicial de cada um (sobra vai pros maiores fracionários).
-function distributeUnits(survivors: UnitMap, contributors: { id: string; units: UnitMap }[]): Record<string, UnitMap> {
+// `assimilated` (opcional) = naves que foram ASSIMILADAS neste combate: elas vão
+// SEMPRE pro contribuinte com assimiladora (quem assimila fica com elas), mesmo que
+// o tipo já exista em outra frota. Só o resto é repartido proporcionalmente.
+function distributeUnits(survivors: UnitMap, contributors: { id: string; units: UnitMap }[], assimilated?: UnitMap): Record<string, UnitMap> {
   const out: Record<string, UnitMap> = {};
   for (const c of contributors) out[c.id] = {};
+  const hasAssim = (c: { units: UnitMap }) => Object.keys(c.units).some((n) => unitByName(n)?.tipo === "Assimiladora");
+  const assimOwner = (contributors.find(hasAssim) ?? contributors[0])?.id;
   for (const type of Object.keys(survivors)) {
+    // Quantas desse tipo são naves assimiladas (vão direto pra quem tem assimiladora).
+    const assimN = Math.min(survivors[type], Math.max(0, assimilated?.[type] ?? 0));
+    if (assimN > 0 && assimOwner) out[assimOwner][type] = (out[assimOwner][type] || 0) + assimN;
+    const rest = survivors[type] - assimN; // o que sobra reparte proporcional
+
     const totalInit = contributors.reduce((a, c) => a + (c.units[type] || 0), 0);
+    if (rest <= 0) continue;
     if (totalInit <= 0) {
-      // Tipo que NENHUM contribuinte tinha = naves ASSIMILADAS nesta batalha.
-      // Só a raça c-Mech (naves Assimiladoras) assimila, então o espólio vai pro
-      // 1º contribuinte que TENHA assimiladoras — não pro dono da base (que pode
-      // ser de outra raça, só defendido por um aliado c-Mech). Sem assimiladora
-      // entre os contribuintes, cai no 1º (fallback).
-      const hasAssim = (c: { units: UnitMap }) => Object.keys(c.units).some((n) => unitByName(n)?.tipo === "Assimiladora");
-      const fb = (contributors.find(hasAssim) ?? contributors[0])?.id;
-      if (fb) out[fb][type] = (out[fb][type] || 0) + survivors[type];
+      // Tipo que nenhum contribuinte tinha E que não foi assimilado (fallback raro).
+      if (assimOwner) out[assimOwner][type] = (out[assimOwner][type] || 0) + rest;
       continue;
     }
-    const surv = survivors[type];
     const parts = contributors.map((c) => {
-      const init = c.units[type] || 0; const exact = (surv * init) / totalInit;
+      const init = c.units[type] || 0; const exact = (rest * init) / totalInit;
       return { id: c.id, floor: Math.floor(exact), frac: exact - Math.floor(exact), init };
     });
     let assigned = 0;
-    for (const p of parts) { out[p.id][type] = p.floor; assigned += p.floor; }
-    let left = surv - assigned;
+    for (const p of parts) { out[p.id][type] = (out[p.id][type] || 0) + p.floor; assigned += p.floor; }
+    let left = rest - assigned;
     parts.sort((a, b) => b.frac - a.frac);
     for (let i = 0; i < parts.length && left > 0; i++) { if (parts[i].init > 0) { out[parts[i].id][type]++; left--; } }
   }
@@ -386,8 +390,10 @@ export async function resolveSiege(target: { galaxy: number; system: number; slo
   }
 
   // Sobreviventes -> distribui de volta a cada frota/contribuinte.
-  const aDist = distributeUnits(survivors(st.aActive, st.aPem), atkContribs);
-  const dDist = distributeUnits(survivors(st.dActive, st.dPem), defContribs);
+  // dAssim = defensores que o ATACANTE assimilou (vão pra quem tem assimiladora do lado atacante).
+  // aAssim = atacantes que a DEFESA assimilou (vão pra quem tem assimiladora do lado defensor).
+  const aDist = distributeUnits(survivors(st.aActive, st.aPem), atkContribs, dAssim);
+  const dDist = distributeUnits(survivors(st.dActive, st.dPem), defContribs, aAssim);
 
   // Persiste a defesa (base + frotas defensoras) e os roids restantes.
   await prisma.planet.update({ where: { id: def.id }, data: { units: stringifyUnits(dDist["base"] ?? {}), roidMetalium: roids.metalium, roidCarbonum: roids.carbonum, roidPlutonium: roids.plutonium } });

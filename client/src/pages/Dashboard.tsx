@@ -1020,7 +1020,13 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
         {section === "forum" && <Forum />}
 
-        {section === "forumgalaxia" && <Forum board={{ key: `gal-${planet.coords.split(":")[0]}`, name: `Fórum da Galáxia ${planet.coords.split(":")[0]}` }} />}
+        {section === "forumgalaxia" && (() => {
+          // Key do fórum = galaxyId(setor, paralelo), igual ao servidor ((setor-1)*6+paralelo).
+          // Antes usava só o setor (gal-7), dava "Fórum de outra galáxia" e misturava galáxias.
+          const [setor, paralelo] = planet.coords.split(":").map(Number);
+          const galId = (setor - 1) * 6 + paralelo;
+          return <Forum board={{ key: `gal-${galId}`, name: `Fórum da Galáxia ${setor}:${paralelo}` }} />;
+        })()}
 
         {section === "chat" && <Chat myName={view.commander} initialRoom="universo" />}
         {section === "chatGalaxia" && <Chat myName={view.commander} initialRoom="galaxia" />}
