@@ -46,6 +46,22 @@ export async function createAlliance(planetId: string, name: string, tag: string
   return a;
 }
 
+// Renomeia a aliança (só o TL/Líder). A tag NÃO muda (é a identidade curta usada
+// pra entrar/mencionar); só o nome por extenso.
+export async function renameAlliance(planetId: string, name: string) {
+  const mem = await memberOf(planetId);
+  if (!mem) throw new Error("Voce nao esta em uma alianca");
+  if (mem.role !== "lider") throw new Error("Apenas o TL (Líder) pode mudar o nome da aliança");
+  name = name.trim();
+  if (name.length < 3) throw new Error("Nome muito curto (mínimo 3 caracteres)");
+  if (name.length > 40) name = name.slice(0, 40);
+  // Não pode colidir com o nome de OUTRA aliança.
+  const clash = await prisma.alliance.findFirst({ where: { name, id: { not: mem.allianceId } } });
+  if (clash) throw new Error("Já existe uma aliança com esse nome");
+  await prisma.alliance.update({ where: { id: mem.allianceId }, data: { name } });
+  await pushAlliance(mem.allianceId, planetId, "🏷️ Aliança renomeada", `Agora a aliança se chama "${name}".`);
+}
+
 // ===== Entrada por PEDIDO (o jogador pede; TL/HC aceita) =====
 // A tabela AllianceInvite passa a representar um PEDIDO pendente do jogador.
 

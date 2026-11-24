@@ -22,7 +22,7 @@ import { vote, appoint, setTax, setMarketFee, setMarketLocked, donate, contribut
 import { planetScore } from "../game/score.js";
 import { clampMorale, moraleMult } from "../game/morale.js";
 import { addNews, recentNews } from "../game/news.js";
-import { createAlliance, requestJoin, cancelJoinRequest, acceptRequest, rejectRequest, leaveAlliance, kickMember, setMemberRole, allianceView, allianceFleetsView, setOrders, attackBoardView, toggleAttackLock, addAttackTarget, removeAttackTarget, claimTarget, unclaimTarget, setTargetShared, shareIntel, allianceIntelView, unshareIntel, runAttackCommand, pushAlliance } from "../game/alliance.js";
+import { createAlliance, renameAlliance, requestJoin, cancelJoinRequest, acceptRequest, rejectRequest, leaveAlliance, kickMember, setMemberRole, allianceView, allianceFleetsView, setOrders, attackBoardView, toggleAttackLock, addAttackTarget, removeAttackTarget, claimTarget, unclaimTarget, setTargetShared, shareIntel, allianceIntelView, unshareIntel, runAttackCommand, pushAlliance } from "../game/alliance.js";
 import { forumIndex, listTopics, createTopic, getTopic, reply as forumReply, isForum } from "../game/forum.js";
 import { sendChat, recentChat, olderChat, resolveRoom } from "../game/chat.js";
 import { pushPublicKey, saveSubscription, removeSubscription, PUSH_ENABLED } from "../game/push.js";
@@ -808,6 +808,12 @@ gameRouter.post("/alliance/create", (req: AuthedRequest, res) => {
   const p = z.object({ name: z.string(), tag: z.string() }).safeParse(req.body);
   if (!p.success) return res.status(400).json({ error: "Pedido invalido" });
   return allianceAction(req, res, (id) => createAlliance(id, p.data.name, p.data.tag));
+});
+// Renomear a aliança (só o TL). A tag não muda.
+gameRouter.post("/alliance/rename", (req: AuthedRequest, res) => {
+  const p = z.object({ name: z.string() }).safeParse(req.body);
+  if (!p.success) return res.status(400).json({ error: "Pedido invalido" });
+  return allianceAction(req, res, (id) => renameAlliance(id, p.data.name));
 });
 // Jogador PEDE pra entrar numa aliança (por tag/nome).
 gameRouter.post("/alliance/request", async (req: AuthedRequest, res) => {

@@ -65,7 +65,19 @@ export function Aliancas() {
     <>
       <div className="panel">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h2>{a.name} <span className="roid-count">[{a.tag}]</span></h2>
+          <h2 style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+            {a.name} <span className="roid-count">[{a.tag}]</span>
+            {a.isLeader && (
+              <button className="link" title="renomear a aliança (só o nome; a tag não muda)" style={{ fontSize: 14 }}
+                onClick={() => {
+                  const novo = window.prompt("Novo nome da aliança:", a.name);
+                  if (novo == null) return;
+                  const n = novo.trim();
+                  if (!n || n === a.name) return;
+                  act(() => api.allianceRename(n));
+                }}>✏</button>
+            )}
+          </h2>
           <button className="link" onClick={() => act(() => api.allianceLeave())}>sair da aliança</button>
         </div>
         <div className="cost">Seu cargo: <span>{ROLE_LABEL[a.myRole!] ?? a.myRole}</span> · {a.members!.length}/{a.maxMembers ?? 18} membros</div>
