@@ -22,6 +22,31 @@ function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
+// Redimensiona/comprime o banner pra caber no limite do servidor, SEM rejeitar
+// (antes: imagem > 200KB era recusada e o form dizia "preencha imagem"). Reduz a
+// largura pra no máx `maxW` e baixa a qualidade até caber em `maxBytes`.
+async function shrinkImage(dataUrl: string, maxW = 1000, maxBytes = MAX_IMG): Promise<string> {
+  if (dataUrl.length <= maxBytes) return dataUrl; // já cabe
+  const img = new Image();
+  await new Promise<void>((ok, bad) => { img.onload = () => ok(); img.onerror = () => bad(new Error("imagem inválida")); img.src = dataUrl; });
+  const scale = Math.min(1, maxW / img.width);
+  const w = Math.max(1, Math.round(img.width * scale));
+  const h = Math.max(1, Math.round(img.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return dataUrl;
+  ctx.drawImage(img, 0, 0, w, h);
+  // Tenta webp (menor); cai pra jpeg se o navegador não suportar. Baixa a qualidade até caber.
+  for (const type of ["image/webp", "image/jpeg"]) {
+    let q = 0.9;
+    let out = canvas.toDataURL(type, q);
+    while (out.length > maxBytes && q > 0.3) { q -= 0.1; out = canvas.toDataURL(type, q); }
+    if (out.startsWith(`data:${type}`) && out.length <= maxBytes) return out;
+  }
+  return canvas.toDataURL("image/jpeg", 0.3); // último recurso
+}
+
 export function Admin() {
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [ads, setAds] = useState<AdminAd[]>([]);
@@ -50,10 +75,13 @@ export function Admin() {
   async function pickFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
-    const url = await fileToDataUrl(f);
-    if (url.length > MAX_IMG) { setErr(`Imagem grande demais (~${Math.round(url.length / 1024)}KB). Máx ~${MAX_IMG / 1024}KB — comprima/reduza.`); return; }
     setErr("");
-    setForm((s) => ({ ...s, imageUrl: url }));
+    try {
+      const raw = await fileToDataUrl(f);
+      const url = await shrinkImage(raw); // redimensiona/comprime automaticamente
+      if (url.length > MAX_IMG) { setErr("Não consegui comprimir essa imagem o suficiente — tente outra."); return; }
+      setForm((s) => ({ ...s, imageUrl: url }));
+    } catch { setErr("Não foi possível ler a imagem."); }
   }
 
   async function save() {
