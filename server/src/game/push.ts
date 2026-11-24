@@ -34,10 +34,31 @@ export async function removeSubscription(endpoint: string) {
   await prisma.pushSubscription.deleteMany({ where: { endpoint } });
 }
 
+// Push do CHAT DO UNIVERSO: avisa só quem TEM inscrição de push E optou por receber
+// (tag chatuniverso é opt-in). Itera os inscritos (conjunto pequeno), menos o autor.
+export async function pushChatUniverso(exceptUserId: string, author: string, body: string) {
+  if (!PUSH_ENABLED) return;
+  const subs = await prisma.pushSubscription.findMany({ select: { userId: true }, distinct: ["userId"] });
+  for (const s of subs) {
+    if (s.userId === exceptUserId) continue;
+    pushToUser(s.userId, { title: "🌌 Chat do Universo", body: `${author}: ${body.slice(0, 120)}`, tag: "chatuniverso", url: "/" }).catch(() => {});
+  }
+}
+
 // Envia uma notificação push a TODOS os dispositivos de um usuário.
 // Remove inscrições mortas (410/404) automaticamente. Nunca lança (best-effort).
 export async function pushToUser(userId: string, payload: { title: string; body: string; tag?: string; url?: string }) {
   if (!PUSH_ENABLED) return;
+  // Respeita as preferências do jogador (notifOff = tags desligadas).
+  // Regra geral: vazio/null = recebe tudo. EXCEÇÃO: "chatuniverso" é opt-in (barulhento)
+  // — só envia se o jogador tem prefs salvas e NÃO desligou esse tipo.
+  if (payload.tag) {
+    const u = await prisma.user.findUnique({ where: { id: userId }, select: { notifOff: true } });
+    let off: string[] = [];
+    try { off = u?.notifOff ? JSON.parse(u.notifOff) : []; } catch { off = []; }
+    if (off.includes(payload.tag)) return;
+    if (payload.tag === "chatuniverso" && u?.notifOff == null) return; // opt-in: sem prefs = não recebe
+  }
   const subs = await prisma.pushSubscription.findMany({ where: { userId } });
   if (!subs.length) return;
   const data = JSON.stringify({

@@ -237,6 +237,7 @@ export async function dispatchFleet(planetId: string, fleetId: string, target: C
         }
       } else {
         await tx.news.create({ data: { planetId: tgtP.id, tick, message: `🛡️ Reforço a caminho: ${planet.name} (${fromCoord}) mandou ${totalUnits(fleetUnits)} nave(s) pra te defender — chega em ${tt} tick(s).` } });
+        pushMsg = { userId: tgtP.userId, title: "🛡️ Defesa a caminho!", body: `${planet.name} (${fromCoord}) mandou ${totalUnits(fleetUnits)} nave(s) pra te defender — chega em ${tt} tick(s).`, tag: "defesa" };
       }
     }
     return { ok: true, arriveIn: tt, pushMsg };

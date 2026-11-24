@@ -6,6 +6,7 @@ import { isRaceKey } from "./races.js";
 import { parseUnits, addUnits } from "./unitmap.js";
 import { planetScore } from "./score.js";
 import { addNews } from "./news.js";
+import { pushToUser } from "./push.js";
 import { finalize } from "./combat.js";
 import { parseAgents, spySuccessChance } from "./agents.js";
 import { addMorale } from "./morale.js";
@@ -173,6 +174,8 @@ async function applySabotageEffect(saboteurPlanetId: string, target: { galaxy: n
   }
   const sd = SAB_BY_KEY[key];
   await addNews(tgt.id, tick, `💥 Você sofreu sabotagem: ${sd?.name ?? key} (${detail})`);
+  // Push (categoria "Notícias"): sofrer sabotagem é importante e não tinha aviso.
+  pushToUser(tgt.userId, { title: "💥 Você foi sabotado!", body: `${sd?.name ?? key} — ${detail}`, tag: "noticia", url: "/" }).catch(() => {});
   return detail;
 }
 

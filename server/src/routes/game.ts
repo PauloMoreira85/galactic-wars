@@ -25,7 +25,7 @@ import { addNews, recentNews } from "../game/news.js";
 import { createAlliance, renameAlliance, requestJoin, cancelJoinRequest, acceptRequest, rejectRequest, leaveAlliance, kickMember, setMemberRole, allianceView, allianceFleetsView, setOrders, attackBoardView, toggleAttackLock, addAttackTarget, removeAttackTarget, claimTarget, unclaimTarget, setTargetShared, shareIntel, allianceIntelView, unshareIntel, runAttackCommand, pushAlliance } from "../game/alliance.js";
 import { forumIndex, listTopics, createTopic, getTopic, reply as forumReply, isForum } from "../game/forum.js";
 import { sendChat, recentChat, olderChat, resolveRoom } from "../game/chat.js";
-import { pushPublicKey, saveSubscription, removeSubscription, PUSH_ENABLED } from "../game/push.js";
+import { pushPublicKey, saveSubscription, removeSubscription, PUSH_ENABLED, pushChatUniverso } from "../game/push.js";
 import { checkMissions, missionsView } from "../game/missions.js";
 import { sendPM, inbox, sentbox, markRead, unreadCount, conversations, conversation } from "../game/pm.js";
 import { SABOTAGES, availableSabotages, executeSabotage, sabotageOdds, sabotageCatalog } from "../game/sabotage.js";
@@ -1029,6 +1029,24 @@ gameRouter.get("/chat/unread", async (req: AuthedRequest, res) => {
 gameRouter.get("/push/key", (_req, res) => {
   res.json({ key: pushPublicKey(), enabled: PUSH_ENABLED });
 });
+// Preferências de notificação: quais TIPOS o jogador quer receber.
+const NOTIF_TYPES = ["ataque", "defesa", "build", "noticia", "chatuniverso", "pm", "alianca"] as const;
+gameRouter.get("/notif-prefs", async (req: AuthedRequest, res) => {
+  const u = await prisma.user.findUnique({ where: { id: req.userId! }, select: { notifOff: true } });
+  let off: string[] = [];
+  try { off = u?.notifOff ? JSON.parse(u.notifOff) : []; } catch {}
+  const hasPrefs = u?.notifOff != null;
+  // "on" por tipo: tudo ligado por padrão, menos chatuniverso (opt-in: off até salvar).
+  const on: Record<string, boolean> = {};
+  for (const t of NOTIF_TYPES) on[t] = t === "chatuniverso" ? (hasPrefs && !off.includes(t)) : !off.includes(t);
+  res.json({ on });
+});
+gameRouter.post("/notif-prefs", async (req: AuthedRequest, res) => {
+  const on = (req.body?.on ?? {}) as Record<string, boolean>;
+  const off = NOTIF_TYPES.filter((t) => on[t] === false);
+  await prisma.user.update({ where: { id: req.userId! }, data: { notifOff: JSON.stringify(off) } });
+  res.json({ ok: true });
+});
 gameRouter.post("/push/subscribe", async (req: AuthedRequest, res) => {
   try { await saveSubscription(req.userId!, req.body?.subscription ?? req.body); res.json({ ok: true }); }
   catch (e: any) { res.status(400).json({ error: e.message ?? "Falha ao inscrever" }); }
@@ -1075,6 +1093,9 @@ gameRouter.post("/chat/:room", async (req: AuthedRequest, res) => {
         const label = req.params.room === "ataque" ? "⚔️ Sala de Ataque" : "🤝 Chat da aliança";
         await pushAlliance(mem.allianceId, planet!.id, label, `${author}: ${p.data.body.slice(0, 120)}`);
       }
+    } else if (req.params.room === "universo") {
+      // Chat do universo: avisa só quem optou por receber (tag opt-in).
+      await pushChatUniverso(req.userId!, author, p.data.body);
     }
     res.json({ label: room.label, messages: await recentChat(room.key) });
   }

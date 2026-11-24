@@ -347,6 +347,8 @@ export const api = {
   pushKey: () => request<{ key: string; enabled: boolean }>("/game/push/key"),
   pushSubscribe: (subscription: any) => request<{ ok: boolean }>("/game/push/subscribe", { method: "POST", body: JSON.stringify({ subscription }) }),
   pushUnsubscribe: (endpoint: string) => request<{ ok: boolean }>("/game/push/unsubscribe", { method: "POST", body: JSON.stringify({ endpoint }) }),
+  notifPrefs: () => request<{ on: Record<string, boolean> }>("/game/notif-prefs"),
+  saveNotifPrefs: (on: Record<string, boolean>) => request<{ ok: boolean }>("/game/notif-prefs", { method: "POST", body: JSON.stringify({ on }) }),
   chatSeen: () => request<{ ok: boolean }>("/game/chat/seen", { method: "POST" }).catch(() => {}),
 
   alliance: () => request<AllianceView>("/game/alliance"),

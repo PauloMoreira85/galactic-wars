@@ -35,6 +35,15 @@ export function Preferencias({ view, onChanged }: { view: PlanetView; onChanged:
   const [pushOn, setPushOn] = useState(pushPermission() === "granted");
   const [pushBusy, setPushBusy] = useState(false);
   const [pushMsg, setPushMsg2] = useState("");
+  // Preferências por TIPO de notificação (liga/desliga cada um).
+  const [notif, setNotif] = useState<Record<string, boolean> | null>(null);
+  useEffect(() => { api.notifPrefs().then((r) => setNotif(r.on)).catch(() => {}); }, []);
+  async function toggleNotif(tag: string) {
+    if (!notif) return;
+    const next = { ...notif, [tag]: !notif[tag] };
+    setNotif(next);
+    try { await api.saveNotifPrefs(next); } catch {}
+  }
   async function togglePush() {
     setPushBusy(true); setPushMsg2("");
     try {
@@ -150,7 +159,7 @@ export function Preferencias({ view, onChanged }: { view: PlanetView; onChanged:
       <div className="panel">
         <h2>🔔 Notificações</h2>
         <div className="cost" style={{ marginBottom: 10 }}>
-          Receba um aviso no celular/computador quando <b>chegar um ataque</b> ou uma <b>mensagem</b> — mesmo com o jogo fechado. Pra funcionar melhor no celular, <b>instale o app</b> na tela inicial antes (veja a página inicial).
+          Receba um aviso no celular/computador quando <b>chegar um ataque</b> ou uma <b>mensagem</b> — mesmo com o jogo fechado. Ative abaixo e <b>escolha quais tipos</b> quer receber. Pra funcionar melhor no celular, <b>instale o app</b> na tela inicial antes (veja a página inicial).
         </div>
         {!pushSupported() ? (
           <div className="roid-count">Seu navegador não suporta notificações push.</div>
@@ -160,6 +169,29 @@ export function Preferencias({ view, onChanged }: { view: PlanetView; onChanged:
               {pushBusy ? "..." : pushOn ? "🔕 Desativar notificações" : "🔔 Ativar notificações"}
             </button>
             {pushMsg && <div className="roid-count" style={{ marginTop: 8, color: pushOn ? "var(--carbonum)" : "var(--muted)" }}>{pushMsg}</div>}
+
+            {/* Personalizar quais tipos receber */}
+            {notif && (
+              <div style={{ marginTop: 14, borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+                <div className="roid-count" style={{ marginBottom: 8 }}>Escolha o que quer receber:</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {([
+                    ["ataque", "⚔️ Ataque chegando"],
+                    ["defesa", "🛡️ Defesa a caminho"],
+                    ["build", "🔬 Tecnologia / construção pronta"],
+                    ["noticia", "📰 Notícias (sabotagem sofrida, etc.)"],
+                    ["pm", "📩 Mensagem privada"],
+                    ["alianca", "🤝 Chat da aliança / Sala de ataque"],
+                    ["chatuniverso", "🌌 Chat do Universo (pode ser barulhento)"],
+                  ] as const).map(([tag, label]) => (
+                    <label key={tag} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                      <input type="checkbox" checked={!!notif[tag]} onChange={() => toggleNotif(tag)} />
+                      <span>{label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>

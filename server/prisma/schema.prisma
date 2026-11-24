@@ -30,6 +30,9 @@ model User {
   whatsapp  String?  // contato (premiação) — privado
   pixKey    String?  // chave PIX (premiação) — privado
   avatar    String?  // foto do comandante (data URL base64, limitada)
+  // Notificações push DESLIGADAS pelo jogador (JSON array de tags: ataque, pm,
+  // alianca, build, protection). Vazio/null = recebe tudo (default).
+  notifOff  String?
   planet    Planet?
 }
 
