@@ -500,6 +500,17 @@ export async function finalize(fleetId: string, tick: number) {
   if (!arrived && ticksTraveled <= 0 && totalUnits(atkSurv) > 0) {
     // Vira idle JÁ, mantendo as naves (inline pra evitar import circular de galaxy.ts).
     await prisma.fleet.update({ where: { id: fleetId }, data: { status: "idle", departTick: 0, arriveTick: 0, capMetalium: 0, capCarbonum: 0, capPlutonium: 0 } });
+    // Reembolso do combustível: a frota recuou no MESMO tick do envio — nem chegou a
+    // viajar, então devolve 100% do plutônio gasto no lançamento. (Pedido do Kxsto:
+    // reembolso proporcional no recuo, igual ao cancelamento de treino/construção.)
+    if (atkP) {
+      let fuel = 0;
+      for (const n of Object.keys(atkSurv)) { const u = unitByName(n); if (u) fuel += atkSurv[n] * u.comb; }
+      if (fuel > 0) {
+        await prisma.planet.update({ where: { id: atkP.id }, data: { plutonium: { increment: fuel } } });
+        await addNews(atkP.id, tick, `↩️ Frota recuada no mesmo tick — combustível (${fuel} P) devolvido.`);
+      }
+    }
     return;
   }
   const back = arrived
