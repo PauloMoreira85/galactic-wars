@@ -407,10 +407,10 @@ export async function resolveSiege(target: { galaxy: number; system: number; slo
   }
 
   // Sobreviventes -> distribui de volta a cada frota/contribuinte.
-  // dAssim = defensores que o ATACANTE assimilou (vão pra quem tem assimiladora do lado atacante).
-  // aAssim = atacantes que a DEFESA assimilou (vão pra quem tem assimiladora do lado defensor).
-  const aDist = distributeUnits(survivors(st.aActive, st.aPem), atkContribs, dAssim);
-  const dDist = distributeUnits(survivors(st.dActive, st.dPem), defContribs, aAssim);
+  // aAssim = o que o ATACANTE assimilou (entrou em st.aActive) -> vai pra frota atacante com assimiladora.
+  // dAssim = o que a DEFESA assimilou (entrou em st.dActive) -> vai pra frota defensora com assimiladora.
+  const aDist = distributeUnits(survivors(st.aActive, st.aPem), atkContribs, aAssim);
+  const dDist = distributeUnits(survivors(st.dActive, st.dPem), defContribs, dAssim);
 
   // Persiste a defesa (base + frotas defensoras) e os roids restantes.
   await prisma.planet.update({ where: { id: def.id }, data: { units: stringifyUnits(dDist["base"] ?? {}), roidMetalium: roids.metalium, roidCarbonum: roids.carbonum, roidPlutonium: roids.plutonium } });
