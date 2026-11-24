@@ -480,6 +480,7 @@ gameRouter.get("/agents", async (req: AuthedRequest, res) => {
   const orders = await prisma.buildOrder.findMany({ where: { planetId: me.id, kind: "agent" }, orderBy: { completeTick: "asc" } });
   const tick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
   res.json({
+    race: raceKey, // raça do jogador — o cliente usa pra escolher a arte dos agentes
     catalog: AGENT_KEYS.map((k) => {
       const d = AGENTS[k];
       return { key: k, name: d.name, desc: d.desc, level: d.level, offensive: d.offensive,

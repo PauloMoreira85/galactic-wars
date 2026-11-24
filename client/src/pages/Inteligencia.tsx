@@ -14,21 +14,29 @@ const AGENT_EMOJI: Record<string, string> = {
   AE: "🗡️", // Espionagem ofensiva
   CE: "🛡️", // Contra-Espionagem
 };
-// Artes dos agentes (game asset). Se a imagem falhar, cai pro emoji.
+// Artes dos agentes (game asset). Cada raça tem a sua; cascata de fallback:
+// arte da raça -> arte genérica -> emoji. Só o dono vê (não vaza raça).
 const AGENT_ART = new Set(["P", "M", "T", "D", "AE", "CE"]);
-function AgentIcon({ k, size = 30 }: { k: string; size?: number }) {
-  const [broken, setBroken] = useState(false);
+const AGENT_RACES = new Set(["humanos", "daharan", "rakshasa", "mech", "insecta"]);
+function AgentIcon({ k, race, size = 30 }: { k: string; race?: string; size?: number }) {
+  // Candidatos de imagem em ordem de preferência.
+  const sources: string[] = [];
+  if (AGENT_ART.has(k)) {
+    if (race && AGENT_RACES.has(race)) sources.push(`/art/agents/${race}/${k}.jpg`);
+    sources.push(`/art/agents/${k}.jpg`);
+  }
+  const [idx, setIdx] = useState(0);
   const box = {
     display: "inline-flex", alignItems: "center", justifyContent: "center",
     width: size, height: size, borderRadius: 7, border: "1px solid var(--border)",
     background: "rgba(0,0,0,0.3)", overflow: "hidden", flex: "0 0 auto",
   } as const;
-  if (AGENT_ART.has(k) && !broken) {
+  if (idx < sources.length) {
     return (
       <span style={box}>
-        <img src={`/art/agents/${k}.jpg`} alt={k} width={size} height={size}
+        <img src={sources[idx]} alt={k} width={size} height={size}
           style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-          onError={() => setBroken(true)} />
+          onError={() => setIdx((i) => i + 1)} />
       </span>
     );
   }
@@ -130,7 +138,7 @@ export function Inteligencia() {
               {data.training.map((t) => (
                 <div key={t.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "6px 10px", border: "1px solid var(--border)", borderRadius: 8, background: "rgba(0,0,0,0.2)" }}>
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
-                    <AgentIcon k={t.key} size={34} />
+                    <AgentIcon k={t.key} race={data.race} size={34} />
                     <span><b style={{ color: "var(--text)" }}>{t.quantity}x {t.key}</b> <span className="roid-count">— faltam <b style={{ color: "var(--accent)" }}>{t.ticksRemaining}t</b></span></span>
                   </span>
                   <button className="btn-danger" onClick={() => cancelTraining(t.id)} title="Cancelar — reembolso proporcional ao tempo que falta" style={{ padding: "2px 10px", fontSize: 11 }}>cancelar</button>
@@ -144,7 +152,7 @@ export function Inteligencia() {
           <tbody>
             {data?.catalog.map((a: AgentCat) => (
               <tr key={a.key} style={!a.unlocked ? { opacity: 0.5 } : undefined}>
-                <td><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><AgentIcon k={a.key} size={28} /><span><b>{a.key}</b> — {a.name}<div className="roid-count">{a.desc}</div></span></span></td>
+                <td><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><AgentIcon k={a.key} race={data?.race} size={28} /><span><b>{a.key}</b> — {a.name}<div className="roid-count">{a.desc}</div></span></span></td>
                 <td>{fmt(a.count)}</td>
                 <td className="roid-count">{fmt(a.cost.metalium)}/{fmt(a.cost.carbonum)}/{fmt(a.cost.plutonium)} · {a.ticks}t</td>
                 <td>
