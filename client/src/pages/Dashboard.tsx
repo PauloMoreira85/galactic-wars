@@ -115,6 +115,7 @@ interface MenuItem {
 const MENU: MenuItem[][] = [
   [
     { key: "planeta", label: "Página Principal" },
+    { key: "noticias", label: "Notícias" },
     { key: "missoes", label: "🎖️ Missões" },
     { key: "galaxia", label: "Galáxia" },
     { key: "combates", label: "Combates" },
@@ -140,7 +141,6 @@ const MENU: MenuItem[][] = [
     // só pra quem está numa aliança (marcados com as keys chatAlianca/chatAtaque).
   ],
   [
-    { key: "noticias", label: "Notícias" },
     { key: "anotacoes", label: "Anotações", soon: true },
     { key: "enquetes", label: "Enquetes", soon: true },
     { key: "amigos", label: "Lista de Amigos", soon: true },
