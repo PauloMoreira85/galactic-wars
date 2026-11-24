@@ -173,19 +173,20 @@ export function Preferencias({ view, onChanged }: { view: PlanetView; onChanged:
             {/* Personalizar quais tipos receber */}
             {notif && (
               <div style={{ marginTop: 14, borderTop: "1px solid var(--border)", paddingTop: 12 }}>
-                <div className="roid-count" style={{ marginBottom: 8 }}>Escolha o que quer receber:</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div className="roid-count" style={{ marginBottom: 10 }}>Escolha o que quer receber:</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 4, maxWidth: 420 }}>
                   {([
-                    ["ataque", "⚔️ Ataque chegando"],
-                    ["defesa", "🛡️ Defesa a caminho"],
-                    ["build", "🔬 Tecnologia / construção pronta"],
-                    ["noticia", "📰 Notícias (sabotagem sofrida, etc.)"],
-                    ["pm", "📩 Mensagem privada"],
-                    ["alianca", "🤝 Chat da aliança / Sala de ataque"],
-                    ["chatuniverso", "🌌 Chat do Universo (pode ser barulhento)"],
-                  ] as const).map(([tag, label]) => (
-                    <label key={tag} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                      <input type="checkbox" checked={!!notif[tag]} onChange={() => toggleNotif(tag)} />
+                    ["ataque", "⚔️", "Ataque chegando"],
+                    ["defesa", "🛡️", "Defesa a caminho"],
+                    ["build", "🔬", "Tecnologia / construção pronta"],
+                    ["noticia", "📰", "Notícias (sabotagem sofrida, etc.)"],
+                    ["pm", "📩", "Mensagem privada"],
+                    ["alianca", "🤝", "Chat da aliança / Sala de ataque"],
+                    ["chatuniverso", "🌌", "Chat do Universo (pode ser barulhento)"],
+                  ] as const).map(([tag, icon, label]) => (
+                    <label key={tag} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "7px 10px", borderRadius: 8, background: "rgba(255,255,255,0.03)" }}>
+                      <input type="checkbox" checked={!!notif[tag]} onChange={() => toggleNotif(tag)} style={{ width: 18, height: 18, flexShrink: 0, margin: 0, cursor: "pointer" }} />
+                      <span style={{ fontSize: 17, width: 22, textAlign: "center", flexShrink: 0 }}>{icon}</span>
                       <span>{label}</span>
                     </label>
                   ))}
