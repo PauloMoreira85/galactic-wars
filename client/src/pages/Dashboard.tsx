@@ -19,6 +19,7 @@ import { Inteligencia } from "./Inteligencia";
 import { Preferencias } from "./Preferencias";
 import { RaceChoiceScreen } from "../components/RaceChoiceScreen";
 import { AdBanner } from "../components/AdBanner";
+import { ShipIcon } from "../components/ShipIcon";
 
 const RES_META: { key: Resource; label: string }[] = [
   { key: "metalium", label: "Metalium" },
@@ -974,17 +975,20 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             </div>
 
             {view.queue.some((q) => q.kind === "ship") && (
-              <div className="panel">
-                <h2>Fila de produção</h2>
-                {view.queue.filter((q) => q.kind === "ship").map((q) => { const t = queueTag(q); return (
-                  <div className="roid-row" key={q.id}>
-                    <div>{t.icon} <span className="roid-count" style={{ color: t.color }}>{t.tag}:</span> {q.label}</div>
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      <span className="roid-count">{q.ticksRemaining} tick(s) restante(s)</span>
-                      <button onClick={() => doCancel(q.id, q.label)} title="Cancelar — reembolso proporcional ao tempo que falta" style={{ padding: "2px 8px", fontSize: 11 }}>cancelar</button>
+              <div className="panel" style={{ borderColor: "var(--accent)" }}>
+                <h2>🛠️ Em produção</h2>
+                {view.queue.filter((q) => q.kind === "ship").map((q) => (
+                  <div className="roid-row" key={q.id} style={{ alignItems: "center" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      {q.shipClass && <ShipIcon name={q.shipClass} size={36} />}
+                      <div>
+                        <b style={{ color: "#eafcff" }}>{q.quantity}x {q.shipClass ?? q.label}</b>
+                        <div className="roid-count">faltam <b style={{ color: "var(--accent)" }}>{q.ticksRemaining}t</b></div>
+                      </div>
                     </div>
+                    <button className="btn-danger" onClick={() => doCancel(q.id, q.label)} title="Cancelar — reembolso proporcional ao tempo que falta" style={{ padding: "2px 10px", fontSize: 11 }}>cancelar</button>
                   </div>
-                ); })}
+                ))}
               </div>
             )}
           </>
