@@ -119,7 +119,7 @@ export function Combats() {
               vem de d.attackers. Fora do ally-defense, usa os campos normais. */}
           {d.allyDefense ? (
             <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginTop: 8 }}>
-              <div><div className="roid-count">Atacante</div><b style={{ color: "var(--danger)" }}>{d.attackers?.[0]?.name ?? "inimigo"}</b> <span className="roid-count">· {d.attackerRace}</span></div>
+              <div><div className="roid-count">Atacante</div><b style={{ color: "var(--danger)" }}>{d.attackers?.[0]?.name ?? "inimigo"}</b> <span className="roid-count">{d.attackers?.[0]?.coords ? <>(<CoordLink c={d.attackers[0].coords} />) </> : ""}· {d.attackerRace}</span></div>
               <div><div className="roid-count">Planeta atacado (aliado)</div><b style={{ color: "var(--carbonum)" }}>{d.defendedName}</b> <span className="roid-count">(<CoordLink c={d.defendedCoords ?? ""} />) · {d.defenderRace}</span></div>
               <div><div className="roid-count">Você (defensor)</div><b style={{ color: "var(--accent)" }}>{detail.defenderName}</b> <span className="roid-count">(<CoordLink c={detail.defenderCoords} />)</span></div>
             </div>
