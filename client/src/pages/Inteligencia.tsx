@@ -90,6 +90,22 @@ export function Inteligencia() {
         <div className="cost" style={{ marginBottom: 8 }}>
           A <b>pesquisa</b> de Inteligência destrava cada tipo; aqui você treina a <b>quantidade</b>. Os agentes funcionam em qualquer planeta (inclusive da sua galáxia).
         </div>
+        {/* Fila de produção EM CIMA (igual à árvore de tecnologia). */}
+        {data && data.training.length > 0 && (
+          <div style={{ marginBottom: 14, border: "1px solid var(--accent)", borderRadius: 10, padding: "10px 12px", background: "rgba(37,211,255,0.08)" }}>
+            <div style={{ fontFamily: "Orbitron, sans-serif", fontSize: 13, letterSpacing: 0.5, color: "var(--accent)", marginBottom: 8 }}>
+              🕵️ EM PRODUÇÃO ({data.training.length})
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {data.training.map((t) => (
+                <div key={t.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "6px 10px", border: "1px solid var(--border)", borderRadius: 8, background: "rgba(0,0,0,0.2)" }}>
+                  <span><b style={{ color: "var(--text)" }}>{t.quantity}x {t.key}</b> <span className="roid-count">— faltam <b style={{ color: "var(--accent)" }}>{t.ticksRemaining}t</b></span></span>
+                  <button className="btn-danger" onClick={() => cancelTraining(t.id)} title="Cancelar — reembolso proporcional ao tempo que falta" style={{ padding: "2px 10px", fontSize: 11 }}>cancelar</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         <table>
           <thead><tr><th>Agente</th><th>Tenho</th><th>Custo (M/C/P)</th><th>Treino</th><th></th></tr></thead>
           <tbody>
@@ -110,21 +126,6 @@ export function Inteligencia() {
             ))}
           </tbody>
         </table>
-        {data && data.training.length > 0 && (
-          <div style={{ marginTop: 14, border: "1px solid var(--accent)", borderRadius: 10, padding: "10px 12px", background: "rgba(37,211,255,0.08)" }}>
-            <div style={{ fontFamily: "Orbitron, sans-serif", fontSize: 13, letterSpacing: 0.5, color: "var(--accent)", marginBottom: 8 }}>
-              🕵️ EM PRODUÇÃO ({data.training.length})
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {data.training.map((t) => (
-                <div key={t.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "6px 10px", border: "1px solid var(--border)", borderRadius: 8, background: "rgba(0,0,0,0.2)" }}>
-                  <span><b style={{ color: "var(--text)" }}>{t.quantity}x {t.key}</b> <span className="roid-count">— faltam <b style={{ color: "var(--accent)" }}>{t.ticksRemaining}t</b></span></span>
-                  <button className="btn-danger" onClick={() => cancelTraining(t.id)} title="Cancelar — reembolso proporcional ao tempo que falta" style={{ padding: "2px 10px", fontSize: 11 }}>cancelar</button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
         {msg && <div className="cost" style={{ marginTop: 8, color: "var(--carbonum)" }}>{msg}</div>}
       </div>
 
