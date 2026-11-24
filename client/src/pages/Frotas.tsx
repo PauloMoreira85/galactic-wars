@@ -230,7 +230,8 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
                   {fleets.map((f) => (
                     <td key={f.id}>
                       {!f.idle && f.canRecall ? (
-                        <button disabled={busy} style={{ padding: "2px 8px", fontSize: 11 }} onClick={() => act(() => api.recallFleet(f.id))}>↩ recuar</button>
+                        <button disabled={busy} className="btn-danger" style={{ padding: "2px 8px", fontSize: 11 }}
+                          onClick={() => { if (window.confirm(`Recuar a ${f.name} (${f.totalShips} naves) que vai pra ${f.target}?\n\nA frota volta pra base.`)) act(() => api.recallFleet(f.id)); }}>↩ recuar</button>
                       ) : <span className="roid-count">—</span>}
                     </td>
                   ))}
