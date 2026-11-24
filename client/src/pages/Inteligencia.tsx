@@ -111,14 +111,18 @@ export function Inteligencia() {
           </tbody>
         </table>
         {data && data.training.length > 0 && (
-          <div style={{ marginTop: 8 }}>
-            <div className="roid-count">Em treino:</div>
-            {data.training.map((t) => (
-              <div key={t.id} className="roid-count" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span>• {t.quantity}x {t.key} — faltam {t.ticksRemaining}t</span>
-                <button onClick={() => cancelTraining(t.id)} title="Cancelar — reembolso proporcional ao tempo que falta" style={{ padding: "1px 7px", fontSize: 11 }}>cancelar</button>
-              </div>
-            ))}
+          <div style={{ marginTop: 14, border: "1px solid var(--accent)", borderRadius: 10, padding: "10px 12px", background: "rgba(37,211,255,0.08)" }}>
+            <div style={{ fontFamily: "Orbitron, sans-serif", fontSize: 13, letterSpacing: 0.5, color: "var(--accent)", marginBottom: 8 }}>
+              🕵️ EM PRODUÇÃO ({data.training.length})
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {data.training.map((t) => (
+                <div key={t.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "6px 10px", border: "1px solid var(--border)", borderRadius: 8, background: "rgba(0,0,0,0.2)" }}>
+                  <span><b style={{ color: "var(--text)" }}>{t.quantity}x {t.key}</b> <span className="roid-count">— faltam <b style={{ color: "var(--accent)" }}>{t.ticksRemaining}t</b></span></span>
+                  <button className="btn-danger" onClick={() => cancelTraining(t.id)} title="Cancelar — reembolso proporcional ao tempo que falta" style={{ padding: "2px 10px", fontSize: 11 }}>cancelar</button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
         {msg && <div className="cost" style={{ marginTop: 8, color: "var(--carbonum)" }}>{msg}</div>}
