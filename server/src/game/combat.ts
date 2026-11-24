@@ -40,6 +40,19 @@ function fleetScore(m: UnitMap): number {
   return s;
 }
 
+// Score só de COMBATE (ignora roiders): usado pra calcular o cap de roids. Roiders
+// não lutam, então não devem inflar o "quão forte é o ataque" — senão um ataque só
+// de roiders contra alvo fraco dava ratio alto e caía no cap mínimo (5%), o oposto
+// do esperado (roidar deve saquear bem).
+function combatScore(m: UnitMap): number {
+  let s = 0;
+  for (const name of Object.keys(m)) {
+    const u = unitByName(name); if (!u || u.roider) continue;
+    s += m[name] * (u.m + u.c) * 0.1;
+  }
+  return s;
+}
+
 // Evento do log "Combate Completo" (um disparo de um tipo de nave contra um alvo).
 interface LogEvent {
   side: "a" | "d"; ini: number; ship: string; count: number;
@@ -245,7 +258,8 @@ export function simulateCombat(attacker0: UnitMap, defender0: UnitMap, ticks = B
   let lastFiredA: UnitMap = {}, lastFiredD: UnitMap = {};
   for (let t = 1; t <= N; t++) {
     if (totalUnits(aCur) <= 0 || totalUnits(dCur) <= 0) break;
-    const ratio = fleetScore(aCur) / Math.max(1, fleetScore(dCur));
+    // Cap de roids pelo score de COMBATE (sem roiders), igual ao combate real.
+    const ratio = combatScore(aCur) / Math.max(1, combatScore(dCur));
     const rate = Math.max(CAP_MIN, Math.min(CAP_MAX, CAP_MAX - (CAP_MAX - CAP_MIN) * (ratio - 1) / (CAP_RATIO_FULL - 1)));
     const st: BattleState = { atkInit: { ...aCur }, defInit: { ...dCur }, aActive: { ...aCur }, dActive: { ...dCur }, aLost: {}, dLost: {}, aPem: {}, dPem: {}, rate };
     const firedA: UnitMap = {}, firedD: UnitMap = {};
@@ -351,7 +365,10 @@ export async function resolveSiege(target: { galaxy: number; system: number; slo
   const aActive: UnitMap = {}; for (const c of atkContribs) for (const n of Object.keys(c.units)) aActive[n] = (aActive[n] || 0) + c.units[n];
   const dActive: UnitMap = {}; for (const c of defContribs) for (const n of Object.keys(c.units)) dActive[n] = (dActive[n] || 0) + c.units[n];
 
-  const ratio = fleetScore(aActive) / Math.max(1, fleetScore(dActive));
+  // Cap de roids usa o score de COMBATE (sem roiders): atacar só com roiders não
+  // deve cair no cap mínimo. Se o ataque não tem naves de combate (só roiders), o
+  // ratio é 0 → cap máximo (15%), que é o certo pra quem vai só roidar.
+  const ratio = combatScore(aActive) / Math.max(1, combatScore(dActive));
   const rate = Math.max(CAP_MIN, Math.min(CAP_MAX, CAP_MAX - (CAP_MAX - CAP_MIN) * (ratio - 1) / (CAP_RATIO_FULL - 1)));
   const st: BattleState = { atkInit: { ...aActive }, defInit: { ...dActive }, aActive: { ...aActive }, dActive: { ...dActive }, aLost: {}, dLost: {}, aPem: {}, dPem: {}, rate };
   // dAssim = atacantes assimilados pela defesa; aAssim = defensores assimilados pelo atacante.
