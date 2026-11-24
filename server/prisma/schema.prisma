@@ -501,6 +501,25 @@ model SabotageOrder {
   resolveTick      Int
 
   @@index([resolveTick])
+  @@index([saboteurPlanetId])
+}
+
+// Histórico de sabotagens CONCLUÍDAS (do ponto de vista do saboteur): alvo + efeito.
+// (A SabotageOrder é apagada ao resolver; este log fica pra consulta na página.)
+model SabotageLog {
+  id               String @id @default(cuid())
+  saboteurPlanetId String
+  targetGalaxy     Int
+  targetSystem     Int
+  targetSlot       Int
+  targetName       String
+  key              String
+  success          Boolean
+  detail           String
+  tick             Int    // tick em que resolveu
+  createdAt        DateTime @default(now())
+
+  @@index([saboteurPlanetId])
 }
 
 // Notícias: log de eventos do planeta (pesquisa, construção, combate, espionagem...).

@@ -88,8 +88,15 @@ export async function executeSabotage(saboteurPlanetId: string, target: { galaxy
   const tgtRoids = tgt.roidMetalium + tgt.roidCarbonum + tgt.roidPlutonium;
   const myAE = parseAgents(me.agents)["AE"] ?? 0;
   const succ = spySuccessChance(myAE, tgtCE, tgtRoids, tgt.user.race, true);
+  const coord = `${target.galaxy}:${target.system}:${target.slot}`;
   if (Math.random() > succ) {
     await addNews(tgt.id, tick, `🛡️ Sua contra-espionagem barrou uma tentativa de sabotagem (${def.name})`);
+    // Log + notícia pro saboteur: tentativa falha também entra no histórico.
+    await prisma.sabotageLog.create({ data: {
+      saboteurPlanetId: me.id, targetGalaxy: target.galaxy, targetSystem: target.system, targetSlot: target.slot,
+      targetName: tgt.name, key, success: false, detail: `barrada pela contra-espionagem (AE ${myAE} vs AC ${tgtCE})`, tick,
+    } }).catch(() => {});
+    await addNews(me.id, tick, `🛡️ Sua sabotagem (${def.name}) em ${tgt.name} (${coord}) foi barrada pela contra-espionagem`);
     return { success: false, message: `A sabotagem falhou (chance de sucesso ${Math.round(succ * 100)}% — AE ${myAE} vs AC ${tgtCE} do alvo). Custou ${def.plut} de plutônio.` };
   }
 
@@ -173,9 +180,19 @@ async function applySabotageEffect(saboteurPlanetId: string, target: { galaxy: n
     }
   }
   const sd = SAB_BY_KEY[key];
+  const coord = `${target.galaxy}:${target.system}:${target.slot}`;
   await addNews(tgt.id, tick, `💥 Você sofreu sabotagem: ${sd?.name ?? key} (${detail})`);
   // Push (categoria "Notícias"): sofrer sabotagem é importante e não tinha aviso.
   pushToUser(tgt.userId, { title: "💥 Você foi sabotado!", body: `${sd?.name ?? key} — ${detail}`, tag: "noticia", url: "/" }).catch(() => {});
+
+  // Log + notícia pro SABOTEUR (pedido do lythorf): histórico de quem você sabotou.
+  await prisma.sabotageLog.create({ data: {
+    saboteurPlanetId, targetGalaxy: target.galaxy, targetSystem: target.system, targetSlot: target.slot,
+    targetName: tgt.name, key, success: true, detail, tick,
+  } }).catch(() => {});
+  const me = await prisma.planet.findUnique({ where: { id: saboteurPlanetId }, select: { userId: true } });
+  await addNews(saboteurPlanetId, tick, `🕵️ Sua sabotagem em ${tgt.name} (${coord}) surtiu efeito: ${sd?.name ?? key} — ${detail}`);
+  if (me) pushToUser(me.userId, { title: "🕵️ Sabotagem concluída", body: `${tgt.name} (${coord}) — ${sd?.name ?? key}: ${detail}`, tag: "noticia", url: "/" }).catch(() => {});
   return detail;
 }
 

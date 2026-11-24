@@ -928,7 +928,23 @@ gameRouter.get("/sabotage", async (req: AuthedRequest, res) => {
   const planet = await myPlanet(req.userId!);
   if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
   const available = availableSabotages(planet.tech);
-  res.json({ all: SABOTAGES, available });
+  const nameOf = (k: string) => SABOTAGES.find((s) => s.key === k)?.name ?? k;
+  const tick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
+  // Em andamento: sabotagens lançadas por mim, aguardando efeito (TEC = ticks restantes).
+  const orders = await prisma.sabotageOrder.findMany({ where: { saboteurPlanetId: planet.id }, orderBy: { resolveTick: "asc" } });
+  const pending = orders.map((o) => ({
+    id: o.id, key: o.key, name: nameOf(o.key),
+    coords: `${o.targetGalaxy}:${o.targetSystem}:${o.targetSlot}`,
+    tec: Math.max(0, o.resolveTick - tick), // Tempo Estimado de Chegada (ticks até o efeito)
+  }));
+  // Histórico: sabotagens já concluídas (sucesso ou barradas), mais recentes primeiro.
+  const logs = await prisma.sabotageLog.findMany({ where: { saboteurPlanetId: planet.id }, orderBy: { tick: "desc" }, take: 40 });
+  const history = logs.map((l) => ({
+    id: l.id, key: l.key, name: nameOf(l.key), target: l.targetName,
+    coords: `${l.targetGalaxy}:${l.targetSystem}:${l.targetSlot}`,
+    success: l.success, detail: l.detail, tick: l.tick,
+  }));
+  res.json({ all: SABOTAGES, available, pending, history });
 });
 gameRouter.post("/sabotage", async (req: AuthedRequest, res) => {
   const p = z.object({ galaxy: z.number().int().min(1), system: z.number().int().min(1), slot: z.number().int().min(1).max(15), key: z.string() }).safeParse(req.body);

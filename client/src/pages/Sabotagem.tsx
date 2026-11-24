@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
+import { CoordLink } from "../components/CoordLink";
 
 type Sab = Awaited<ReturnType<typeof api.sabotage>>;
 
@@ -12,7 +13,8 @@ export function Sabotagem() {
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
 
-  useEffect(() => { api.sabotage().then(setData).catch((e) => setError(e.message)); }, []);
+  const reload = () => api.sabotage().then(setData).catch((e) => setError(e.message));
+  useEffect(() => { reload(); }, []);
 
   async function run(key: string) {
     setError(""); setMsg("");
@@ -21,6 +23,7 @@ export function Sabotagem() {
     try {
       const r = await api.sabotageRun(gg, ss, sl, key);
       setMsg(r.message ?? (r.success ? "Sabotagem aplicada!" : "Sabotagem falhou."));
+      reload(); // atualiza "em andamento" e histórico
     } catch (e: any) { setError(e.message ?? "Falha"); }
   }
 
@@ -57,6 +60,53 @@ export function Sabotagem() {
           })}
         </tbody>
       </table>
+
+      {/* Em andamento: sabotagens lançadas aguardando efeito (TEC = ticks restantes). */}
+      {data.pending.length > 0 && (
+        <div style={{ marginTop: 18 }}>
+          <h3 style={{ margin: "0 0 6px" }}>🕓 Em andamento</h3>
+          <div style={{ overflowX: "auto" }}>
+            <table>
+              <thead><tr><th>Sabotagem</th><th>Alvo</th><th title="Tempo Estimado de Chegada — ticks até o efeito">TEC</th></tr></thead>
+              <tbody>
+                {data.pending.map((p) => (
+                  <tr key={p.id}>
+                    <td><b>{p.name}</b></td>
+                    <td><CoordLink c={p.coords} /></td>
+                    <td><b style={{ color: "var(--accent)" }}>{p.tec}t</b></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Histórico: sabotagens concluídas (sucesso ou barradas). */}
+      {data.history.length > 0 && (
+        <div style={{ marginTop: 18 }}>
+          <h3 style={{ margin: "0 0 6px" }}>📜 Histórico</h3>
+          <div style={{ overflowX: "auto" }}>
+            <table>
+              <thead><tr><th>Sabotagem</th><th>Alvo</th><th className="hide-sm">Coord.</th><th>Resultado</th><th className="hide-sm">Tick</th></tr></thead>
+              <tbody>
+                {data.history.map((h) => (
+                  <tr key={h.id} style={{ opacity: h.success ? 1 : 0.6 }}>
+                    <td><b>{h.name}</b></td>
+                    <td>{h.target}</td>
+                    <td className="hide-sm"><CoordLink c={h.coords} /></td>
+                    <td className="roid-count">
+                      {h.success ? <span style={{ color: "#37e07a" }}>✅ </span> : <span style={{ color: "#ff6b6b" }}>🛡️ </span>}
+                      {h.detail}
+                    </td>
+                    <td className="hide-sm roid-count">#{h.tick}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
