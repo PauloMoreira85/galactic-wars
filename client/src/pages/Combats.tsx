@@ -133,7 +133,7 @@ export function Combats() {
             <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginTop: 10, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
               <div>
                 <div className="roid-count">⚔️ Atacantes ({d.attackers!.length})</div>
-                {d.attackers!.map((a, i) => <div key={i}><b style={{ color: "var(--danger)" }}>{a.name}</b> <span className="roid-count">{fmt(a.ships)} naves</span></div>)}
+                {d.attackers!.map((a, i) => <div key={i}><b style={{ color: "var(--danger)" }}>{a.name}</b>{a.coords ? <span className="roid-count"> (<CoordLink c={a.coords} />)</span> : null} <span className="roid-count">{fmt(a.ships)} naves</span></div>)}
               </div>
               <div>
                 <div className="roid-count">🛡️ Defensores ({d.defenders!.length})</div>
@@ -141,7 +141,7 @@ export function Combats() {
                   // No ally-defense o backend marca `you` no planeta defendido (errado p/ quem
                   // mandou reforço). "Você" é sempre o dono do relatório = detail.defenderName.
                   const isYou = d.allyDefense ? x.name === detail.defenderName : x.you;
-                  return <div key={i}><b style={{ color: isYou ? "var(--accent)" : "var(--carbonum)" }}>{x.name}{isYou ? " (você)" : " · aliado"}</b> <span className="roid-count">{fmt(x.ships)} naves</span></div>;
+                  return <div key={i}><b style={{ color: isYou ? "var(--accent)" : "var(--carbonum)" }}>{x.name}</b>{x.coords ? <span className="roid-count"> (<CoordLink c={x.coords} />)</span> : null} <span className="roid-count">{isYou ? "(você) " : "· aliado "}{fmt(x.ships)} naves</span></div>;
                 })}
               </div>
             </div>

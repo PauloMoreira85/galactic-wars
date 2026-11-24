@@ -336,10 +336,13 @@ export async function resolveSiege(target: { galaxy: number; system: number; slo
   if (defOwn > 0) defTotals.set(def.id, defOwn);
   for (const f of garr) defTotals.set(f.ownerPlanetId, (defTotals.get(f.ownerPlanetId) ?? 0) + totalUnits(parseUnits(f.units)));
   const partIds = [...new Set([...atkTotals.keys(), ...defTotals.keys()])];
-  const partPlanets = await prisma.planet.findMany({ where: { id: { in: partIds } }, select: { id: true, name: true } });
+  const partPlanets = await prisma.planet.findMany({ where: { id: { in: partIds } }, select: { id: true, name: true, galaxy: true, system: true, slot: true } });
   const partName = new Map(partPlanets.map((p) => [p.id, p.name]));
-  const attackers = [...atkTotals].map(([id, ships]) => ({ name: partName.get(id) ?? "?", ships })).sort((a, b) => b.ships - a.ships);
-  const defenders = [...defTotals].map(([id, ships]) => ({ name: partName.get(id) ?? "?", ships, you: id === def.id })).sort((a, b) => b.ships - a.ships);
+  const partCoord = new Map(partPlanets.map((p) => [p.id, `${p.galaxy}:${p.system}:${p.slot}`]));
+  // Inclui a coord de cada participante pro relatório ter link direto (ver quem
+  // atacou/defendeu sem ir no ranking procurar).
+  const attackers = [...atkTotals].map(([id, ships]) => ({ name: partName.get(id) ?? "?", coords: partCoord.get(id) ?? "", ships })).sort((a, b) => b.ships - a.ships);
+  const defenders = [...defTotals].map(([id, ships]) => ({ name: partName.get(id) ?? "?", coords: partCoord.get(id) ?? "", ships, you: id === def.id })).sort((a, b) => b.ships - a.ships);
 
   const aActive: UnitMap = {}; for (const c of atkContribs) for (const n of Object.keys(c.units)) aActive[n] = (aActive[n] || 0) + c.units[n];
   const dActive: UnitMap = {}; for (const c of defContribs) for (const n of Object.keys(c.units)) dActive[n] = (dActive[n] || 0) + c.units[n];
