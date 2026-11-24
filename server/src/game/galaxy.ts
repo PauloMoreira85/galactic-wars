@@ -501,6 +501,7 @@ export async function galaxyTraffic(planetId: string) {
     return {
       origin: `${f.originGalaxy}:${f.originSystem}:${f.originSlot}`,
       owner: o?.user.username ?? "?",
+      fleetName: f.name,             // nome que o atacante deu à frota (intel, como no GW original)
       target: `${f.targetGalaxy}:${f.targetSystem}:${f.targetSlot}`,
       targetName: targetMap.get(`${f.targetSystem}:${f.targetSlot}`) ?? null,
       mission: f.mission,            // "attack" | "transport"
@@ -511,7 +512,10 @@ export async function galaxyTraffic(planetId: string) {
       toMe: f.targetSystem === me.system && f.targetSlot === me.slot,
       own: f.ownerPlanetId === planetId, // frota MINHA (não conta como ameaça/reforço recebido)
     };
-  }).sort((a, b) => a.ticks - b.ticks);
+  }).sort((a, b) =>
+    // Igual ao GW original: ATAQUES primeiro (em cima), DEFESAS depois — cada grupo por TEC.
+    (a.mission === "attack" ? 0 : 1) - (b.mission === "attack" ? 0 : 1) || a.ticks - b.ticks
+  );
 
   // Movimentação da galáxia: TODAS as frotas em movimento dos planetas da MINHA
   // galáxia (ataque/defesa), agrupadas por planeta dono.

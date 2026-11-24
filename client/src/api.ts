@@ -444,7 +444,7 @@ export const api = {
       incomingAttacks: number;
       incomingToMe: number;
       fleets: {
-        origin: string; owner: string; target: string; targetName: string | null;
+        origin: string; owner: string; fleetName: string; target: string; targetName: string | null;
         mission: string; status: string; ships: number; ticks: number; toMe: boolean; own: boolean;
       }[];
       movements: {
