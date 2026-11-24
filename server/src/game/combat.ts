@@ -516,7 +516,11 @@ export async function finalize(fleetId: string, tick: number) {
   const atkSurv = parseUnits(fleet.units);
   let propLevel = 0;
   try { propLevel = atkP ? travelReductionTicks(JSON.parse(atkP.tech)) : 0; } catch {}
-  const arrived = fleet.status === "engaged" || tick >= fleet.arriveTick;
+  // "Chegou" = em combate, guarnecendo (garrison), ou já passou do arriveTick.
+  // IMPORTANTE: em garrison o arriveTick é estendido pro FIM da defesa, então não
+  // dá pra confiar só em `tick >= arriveTick` — a frota em garrison JÁ chegou, e a
+  // volta deve ser o tempo de viagem (simétrico à ida), não ticksTraveled.
+  const arrived = fleet.status === "engaged" || fleet.status === "garrison" || tick >= fleet.arriveTick;
   // Recuo NO MESMO TICK do lançamento: a frota nem saiu — devolve as naves na HORA
   // (sem tempo de volta). Só vale pra quem ainda não chegou (outbound) e partiu agora.
   const ticksTraveled = tick - fleet.departTick;
