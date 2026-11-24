@@ -2,7 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma, TX_OPTS, withWrite } from "../db.js";
 import { requireAuth, type AuthedRequest } from "../auth.js";
-import { RESOURCES, ROID_PRODUCTION_PER_TICK, nextRoidCost, nextFleetSlotCost, MARKET_FEE, RESOURCE_CAP, NEWBIE_PROTECTION_TICKS, STARTING } from "../game/constants.js";
+import { RESOURCES, ROID_PRODUCTION_PER_TICK, nextRoidCost, nextFleetSlotCost, MARKET_FEE, RESOURCE_CAP, NEWBIE_PROTECTION_TICKS, ATTACK_RANGE_MIN_PCT, STARTING } from "../game/constants.js";
 import { buildRoid, totalRoids } from "../game/roids.js";
 import { RACES, isRaceKey, RACE_KEYS } from "../game/races.js";
 import { PLANET_SKINS, SKIN_KEYS, DEFAULT_SKIN, isSkinKey } from "../game/skins.js";
@@ -1165,21 +1165,36 @@ gameRouter.get("/combats/:id", async (req: AuthedRequest, res) => {
 gameRouter.get("/ranking", async (req: AuthedRequest, res) => {
   const planets = await prisma.planet.findMany({ include: { user: { select: { username: true } } } });
   // Qual planeta é o DO JOGADOR (pra destacar a própria linha no ranking).
-  const myPlanetId = (await prisma.planet.findUnique({ where: { userId: req.userId! }, select: { id: true } }))?.id ?? null;
+  const myP = await prisma.planet.findUnique({ where: { userId: req.userId! }, select: { id: true, galaxy: true, system: true } });
+  const myPlanetId = myP?.id ?? null;
+  const nowTick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
   // Soma as naves de TODAS as frotas de cada planeta (hangar + atacando + defendendo
   // + voando + voltando), pra pontuação bater com /me e com a espionagem.
   const allF = await prisma.fleet.findMany({ select: { ownerPlanetId: true, units: true } });
   const fleetUnitsBy: Record<string, Record<string, number>> = {};
   for (const f of allF) { const fu = parseUnits(f.units); const m = (fleetUnitsBy[f.ownerPlanetId] ??= {}); for (const n of Object.keys(fu)) m[n] = (m[n] || 0) + fu[n]; }
+  const scoreOf = (p: typeof planets[number]) => {
+    const u: Record<string, number> = { ...parseUnits(p.units) };
+    const fl = fleetUnitsBy[p.id] ?? {}; for (const n of Object.keys(fl)) u[n] = (u[n] || 0) + fl[n];
+    return planetScore(p, u);
+  };
+  const myScore = myPlanetId ? scoreOf(planets.find((p) => p.id === myPlanetId)!) : 0;
   const ranked = planets
     .map((p) => {
-      const u: Record<string, number> = { ...parseUnits(p.units) };
-      const fl = fleetUnitsBy[p.id] ?? {}; for (const n of Object.keys(fl)) u[n] = (u[n] || 0) + fl[n];
+      const score = scoreOf(p);
+      const you = p.id === myPlanetId;
+      // Está no meu alcance de ataque? (mesma regra que o jogo valida ao atacar)
+      // Fora: eu mesmo, aliado da minha galáxia, sob proteção de novato, ou score < 50% do meu.
+      const sameGalaxy = !!myP && p.galaxy === myP.galaxy && p.system === myP.system;
+      const underProtection = nowTick < p.createdTick + NEWBIE_PROTECTION_TICKS;
+      const inRange = !you && !!myP && !sameGalaxy && !underProtection &&
+        (myScore <= 0 || score >= (myScore * ATTACK_RANGE_MIN_PCT) / 100);
       return {
         username: p.user.username,
         planet: p.name, coords: `${p.galaxy}:${p.system}:${p.slot}`,
-        score: planetScore(p, u), roids: totalRoids(p),
-        you: p.id === myPlanetId, // marca a própria linha
+        score, roids: totalRoids(p),
+        you, // marca a própria linha
+        inRange, // dá pra atacar a partir do meu planeta?
       };
     })
     .sort((a, b) => b.score - a.score); // todos os planetas, por PONTUAÇÃO
