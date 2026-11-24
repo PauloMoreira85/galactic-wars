@@ -5,7 +5,7 @@ import { IntelReport } from "../components/IntelReport";
 
 function fmt(n: number) { return n.toLocaleString("pt-BR"); }
 
-// Ícone por tipo de agente (emoji temático — não há arte dedicada ainda).
+// Emoji de fallback por tipo de agente (usado se a arte dedicada não carregar).
 const AGENT_EMOJI: Record<string, string> = {
   P: "🔍", // Padrão (recon)
   M: "🎖️", // Militar (naves)
@@ -14,13 +14,25 @@ const AGENT_EMOJI: Record<string, string> = {
   AE: "🗡️", // Espionagem ofensiva
   CE: "🛡️", // Contra-Espionagem
 };
+// Artes dos agentes (game asset). Se a imagem falhar, cai pro emoji.
+const AGENT_ART = new Set(["P", "M", "T", "D", "AE", "CE"]);
 function AgentIcon({ k, size = 30 }: { k: string; size?: number }) {
-  return (
-    <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: size, height: size,
-      fontSize: size * 0.56, borderRadius: 7, border: "1px solid var(--border)", background: "rgba(0,0,0,0.3)" }}>
-      {AGENT_EMOJI[k] ?? "🕵️"}
-    </span>
-  );
+  const [broken, setBroken] = useState(false);
+  const box = {
+    display: "inline-flex", alignItems: "center", justifyContent: "center",
+    width: size, height: size, borderRadius: 7, border: "1px solid var(--border)",
+    background: "rgba(0,0,0,0.3)", overflow: "hidden", flex: "0 0 auto",
+  } as const;
+  if (AGENT_ART.has(k) && !broken) {
+    return (
+      <span style={box}>
+        <img src={`/art/agents/${k}.jpg`} alt={k} width={size} height={size}
+          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+          onError={() => setBroken(true)} />
+      </span>
+    );
+  }
+  return <span style={{ ...box, fontSize: size * 0.56 }}>{AGENT_EMOJI[k] ?? "🕵️"}</span>;
 }
 
 type AgentCat = Awaited<ReturnType<typeof api.agents>>["catalog"][number];
