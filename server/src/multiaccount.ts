@@ -5,9 +5,22 @@ import { prisma } from "./db.js";
 //   node server/dist/multiaccount.js allow <a> <b>        # LIBERA o par (podem interagir)
 //   node server/dist/multiaccount.js block <a> <b>        # re-bloqueia (remove a liberação)
 //   node server/dist/multiaccount.js allowed              # lista pares liberados
-// <a>/<b> podem ser o username OU o id da conta.
+//   ex.: node server/dist/multiaccount.js allow 6:1:1 6:1:2   # libera por coordenada
+// <a>/<b> podem ser o username, o id da conta OU a coordenada do planeta
+// (setor:paralelo:slot, ex.: 6:1:1).
 
 async function resolveUser(arg: string) {
+  // Coordenada "setor:paralelo:slot" → acha o planeta e o dono.
+  const m = arg.match(/^(\d+):(\d+):(\d+)$/);
+  if (m) {
+    const [, g, s, slot] = m;
+    const p = await prisma.planet.findUnique({
+      where: { galaxy_system_slot: { galaxy: Number(g), system: Number(s), slot: Number(slot) } },
+      select: { user: { select: { id: true, username: true } } },
+    });
+    if (!p) throw new Error(`Nenhum planeta na coordenada: ${arg}`);
+    return p.user;
+  }
   const u = await prisma.user.findFirst({
     where: { OR: [{ id: arg }, { username: arg }] },
     select: { id: true, username: true },
