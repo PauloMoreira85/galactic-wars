@@ -7,7 +7,7 @@ function fmt(n: number) {
 
 const STATUS: Record<string, string> = { outbound: "indo", engaged: "em combate", returning: "voltando", garrison: "defendendo" };
 
-// Tráfego: frotas chegando na sua galáxia. Ataque = vermelho, defesa/transporte = verde.
+// Tráfego: frotas chegando na sua galáxia. Ataque = ⚔️, defesa/transporte = 🛡️.
 export function Trafego({ onGoto }: { onGoto?: (coords: string) => void }) {
   const [data, setData] = useState<Awaited<ReturnType<typeof api.traffic>> | null>(null);
   const [error, setError] = useState("");
@@ -39,7 +39,7 @@ export function Trafego({ onGoto }: { onGoto?: (coords: string) => void }) {
     <div className="panel">
       <h2>Tráfego — frotas chegando na galáxia {data.galaxy}</h2>
       <div className="cost" style={{ marginBottom: 10 }}>
-        🔴 ataque · 🟢 defesa · linha destacada = chegando no SEU planeta.
+        ⚔️ ataque · 🛡️ defesa · linha destacada = chegando no SEU planeta.
         {data.incomingToMe > 0 && (
           <span style={{ color: "var(--danger)", marginLeft: 8 }}>⚠ {data.incomingToMe} ataque(s) vindo para você!</span>
         )}
@@ -63,7 +63,7 @@ export function Trafego({ onGoto }: { onGoto?: (coords: string) => void }) {
                       <td><Coord c={f.origin} /></td>
                       <td>{f.owner}</td>
                       <td className="roid-count">{f.fleetName}</td>
-                      <td>{f.toMe ? <b style={{ color: cor }}>{atk ? "🎯 você" : "🛡️ você"}</b> : <Coord c={f.target} />}</td>
+                      <td>{f.toMe ? <b style={{ color: cor }}>{atk ? "⚔️ você" : "🛡️ você"}</b> : <Coord c={f.target} />}</td>
                       <td>{fmt(f.ships)}</td>
                       <td>{f.status === "engaged" ? "em combate" : f.status === "garrison" ? "✓ no local" : `${f.ticks}t`}</td>
                     </tr>
@@ -74,8 +74,8 @@ export function Trafego({ onGoto }: { onGoto?: (coords: string) => void }) {
           );
         return (
           <>
-            <Tabela titulo="🔴 Ataques chegando" cor="var(--danger)" rows={ataques} atk={true} />
-            <Tabela titulo="🟢 Defesas chegando" cor="var(--carbonum)" rows={defesas} atk={false} />
+            <Tabela titulo="⚔️ Ataques chegando" cor="var(--danger)" rows={ataques} atk={true} />
+            <Tabela titulo="🛡️ Defesas chegando" cor="var(--carbonum)" rows={defesas} atk={false} />
           </>
         );
       })()}
@@ -98,7 +98,7 @@ export function Trafego({ onGoto }: { onGoto?: (coords: string) => void }) {
                 return (
                   <tr key={j}>
                     <td>{f.name}</td>
-                    <td style={{ color: atk ? "var(--danger)" : "var(--carbonum)" }}>{atk ? "🔴 ataque" : "🟢 defesa"}</td>
+                    <td style={{ color: atk ? "var(--danger)" : "var(--carbonum)" }}>{atk ? "⚔️ ataque" : "🛡️ defesa"}</td>
                     <td><Coord c={f.target} /></td>
                     <td>{fmt(f.ships)}</td>
                     <td className="roid-count" style={has ? { color: "var(--carbonum)" } : undefined}>{has ? `${fmt(c.metalium)}/${fmt(c.carbonum)}/${fmt(c.plutonium)}` : "—"}</td>
