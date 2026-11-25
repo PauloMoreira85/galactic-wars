@@ -293,7 +293,7 @@ export function Combats() {
         <div style={{ overflowX: "auto" }}>
         <table>
           <thead>
-            <tr><th>Tick</th><th>Papel</th><th>Oponente</th><th className="hide-sm">Coord.</th><th>Perdi</th><th className="hide-sm">Inimigo perdeu</th><th className="hide-sm">Captura (M/C/P)</th><th></th></tr>
+            <tr><th>Tick</th><th>Papel</th><th>Oponente</th><th>Perdi</th><th className="hide-sm">Inimigo perdeu</th><th className="hide-sm">Captura (M/C/P)</th><th></th></tr>
           </thead>
           <tbody>
             {list.map((c) => {
@@ -308,9 +308,15 @@ export function Combats() {
                   c.role === "defense-sent" ? "🛡️ defendi" :
                   c.role === "defense-received" ? "🛡️ fui defendido" : "🛡️ defesa"
                 }</td>
-                <td>{c.opponent}</td>
-                {/* stopPropagation: clicar na coord navega, não abre o relatório */}
-                <td className="hide-sm" onClick={(e) => e.stopPropagation()}><CoordLink c={c.opponentCoords} /></td>
+                {/* Oponente = nome + coord (sempre visível, até no celular). */}
+                <td>
+                  <b>{c.opponent}</b>
+                  {c.opponentCoords && (
+                    <span className="roid-count" style={{ display: "block", fontSize: 11 }} onClick={(e) => e.stopPropagation()}>
+                      <CoordLink c={c.opponentCoords} />
+                    </span>
+                  )}
+                </td>
                 <td style={{ color: c.myLost > 0 ? "var(--danger)" : undefined }}>{fmt(c.myLost)}</td>
                 <td className="hide-sm" style={{ color: c.oppLost > 0 ? "var(--carbonum)" : undefined }}>{fmt(c.oppLost)}</td>
                 <td className="hide-sm roid-count">{fmt(c.captured.metalium)}/{fmt(c.captured.carbonum)}/{fmt(c.captured.plutonium)}</td>
