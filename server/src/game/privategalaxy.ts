@@ -1,18 +1,15 @@
 import { prisma } from "../db.js";
 import { GALAXIES } from "./constants.js";
 import { relocate } from "./relocation.js";
-import { galaxyId, galaxyWhere, NUM_PARALELOS } from "./geo.js";
-
-// Galáxias privadas ocupam os SETORES 6..10 (logo após os 5 públicos), sem colidir
-// com o universo público (setores 1..5). O id interno vem de galaxyId(setor, paralelo).
-const PRIVATE_SETOR_MIN = 6;
-const PRIVATE_SETOR_MAX = 10;
+import { galaxyId, galaxyWhere, NUM_SETORES, NUM_PARALELOS } from "./geo.js";
 
 async function userOf(planetId: string) {
   return prisma.planet.findUnique({ where: { id: planetId }, include: { user: true } });
 }
 
 // Associado cria uma galáxia privada (vira dono e é realocado para lá).
+// A galáxia privada é SORTEADA entre as galáxias VAZIAS do universo — não há
+// setores reservados a privadas: qualquer galáxia livre pode virar uma.
 export async function createPrivateGalaxy(planetId: string, name: string) {
   const p = await userOf(planetId);
   if (!p) throw new Error("Planeta nao encontrado");
@@ -20,19 +17,20 @@ export async function createPrivateGalaxy(planetId: string, name: string) {
   const already = await prisma.galaxyState.findFirst({ where: { ownerPlanetId: planetId } });
   if (already) throw new Error("Você já tem uma galáxia privada");
 
-  // Acha a primeira galáxia privada livre (setores 6-10, espalhando entre eles
-  // antes de usar paralelos maiores). Livre = sem GalaxyState e sem planetas.
-  let g = 0;
-  outer:
-  for (let par = 1; par <= NUM_PARALELOS; par++) {
-    for (let setor = PRIVATE_SETOR_MIN; setor <= PRIVATE_SETOR_MAX; setor++) {
+  // Candidatas = todas as galáxias do universo (setor×paralelo) que estão VAZIAS:
+  // sem GalaxyState registrado E sem nenhum planeta. Sorteia uma delas.
+  const livres: number[] = [];
+  for (let setor = 1; setor <= NUM_SETORES; setor++) {
+    for (let par = 1; par <= NUM_PARALELOS; par++) {
       const id = galaxyId(setor, par);
       const st = await prisma.galaxyState.findUnique({ where: { galaxy: id } });
+      if (st) continue; // já tem estado (pública em uso ou outra privada)
       const occupied = await prisma.planet.count({ where: { galaxy: setor, system: par } });
-      if (!st && occupied === 0) { g = id; break outer; }
+      if (occupied === 0) livres.push(id);
     }
   }
-  if (!g) throw new Error("Sem espaço para galáxia privada (setores 6-10 lotados)");
+  if (livres.length === 0) throw new Error("Sem galáxia vazia no universo para criar uma privada agora");
+  const g = livres[Math.floor(Math.random() * livres.length)]; // sorteio
   await prisma.galaxyState.create({
     data: { galaxy: g, isPrivate: true, ownerPlanetId: planetId, name: name.trim().slice(0, 40) || `Galáxia Privada` },
   });

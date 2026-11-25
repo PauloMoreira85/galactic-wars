@@ -1560,8 +1560,8 @@ gameRouter.get("/universe", async (req: AuthedRequest, res) => {
     if (myAllyPlanetIds.has(p.id)) a.hasAlly = true;
   }
 
-  // Grade cobre os setores/paralelos que EXISTEM (público 1..NUM_SETORES + onde houver
-  // planeta, ex: a galáxia privada do próprio jogador no setor 7). Garante incluir a minha.
+  // Grade cobre os setores/paralelos que EXISTEM (1..NUM_SETORES + onde houver
+  // planeta). Garante incluir a minha galáxia, inclusive se for privada.
   const maxSetor = Math.max(NUM_SETORES, planet.galaxy, ...planets.map((p) => p.galaxy));
   const maxParalelo = Math.max(NUM_PARALELOS, planet.system, ...planets.map((p) => p.system));
 

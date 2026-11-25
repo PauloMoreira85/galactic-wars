@@ -55,9 +55,15 @@ const registerSchema = z.object({
 // dezenas de galáxias com 1-2 planetas) sem deixar todo mundo aliado no começo.
 export async function allocateSlot() {
   const planets = await prisma.planet.findMany({
-    where: { galaxy: { lte: NUM_SETORES } }, // só públicas (privadas usam setor 6-10)
+    where: { galaxy: { lte: NUM_SETORES } },
     select: { galaxy: true, system: true, slot: true },
   });
+  // Galáxias PRIVADAS: não há setor reservado — uma privada pode ser qualquer
+  // galáxia do universo, então elas são EXCLUÍDAS da alocação de novatos (tratadas
+  // como cheias, pra ninguém cair numa privada sem convite).
+  const privateIds = new Set(
+    (await prisma.galaxyState.findMany({ where: { isPrivate: true }, select: { galaxy: true } })).map((s) => s.galaxy)
+  );
   // Contagem por galáxia (id) e por SETOR.
   const count = new Array(GALAXIES + 1).fill(0);
   const bySetor = new Array(NUM_SETORES + 1).fill(0);
@@ -80,6 +86,7 @@ export async function allocateSlot() {
     let bestPar = -1, bestCount = Infinity;
     for (let paralelo = 1; paralelo <= NUM_PARALELOS; paralelo++) {
       const id = galaxyId(setor, paralelo);
+      if (privateIds.has(id)) continue; // nunca alocar novato numa galáxia privada
       if (count[id] >= SLOTS_PER_SYSTEM) continue;
       if (count[id] < bestCount) { bestCount = count[id]; bestPar = paralelo; }
     }

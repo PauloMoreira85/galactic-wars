@@ -18,8 +18,9 @@ export interface Coords {
   slot: number;
 }
 
-// id único de uma galáxia a partir do par (setor, paralelo). Funciona também para
-// galáxias privadas (setor >= 100), gerando ids altos que não colidem com os 1..30.
+// id único de uma galáxia a partir do par (setor, paralelo), 1..30. Galáxias
+// privadas NÃO têm setor reservado — são sorteadas entre as galáxias vazias do
+// universo (mesma faixa de ids), e marcadas por GalaxyState.isPrivate.
 export function galaxyId(setor: number, paralelo: number): number {
   return (setor - 1) * NUM_PARALELOS + paralelo;
 }
