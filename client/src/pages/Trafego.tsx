@@ -61,7 +61,7 @@ export function Trafego({ onGoto }: { onGoto?: (coords: string) => void }) {
           <tr key={f.origin + f.fleetName} style={{ color: atk ? "var(--danger)" : "var(--carbonum)" }}>
             <td>
               <span style={{ fontFamily: "var(--mono)" }}>{atk ? "− " : "+ "}</span>
-              {f.originName ? <>{f.originName} <span style={{ opacity: 0.85 }}>de {f.owner}</span> </> : <>{f.owner} </>}
+              {f.originName ? <>{f.owner} <span style={{ opacity: 0.85 }}>de {f.originName}</span> </> : <>{f.owner} </>}
               (<Coord c={f.origin} />)
             </td>
             <td>{f.fleetName}</td>
