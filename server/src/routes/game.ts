@@ -557,7 +557,7 @@ gameRouter.post("/spy", async (req: AuthedRequest, res) => {
   const units = parseUnits(target.units);
   const tgtFleets = await prisma.fleet.findMany({ where: { ownerPlanetId: target.id }, select: { units: true } });
   for (const f of tgtFleets) { const fu = parseUnits(f.units); for (const n of Object.keys(fu)) units[n] = (units[n] || 0) + fu[n]; }
-  const intel: any = { agent, coords: `${galaxy}:${system}:${slot}`, name: target.name, commander: target.user.username, race: RACES[raceKey].name };
+  const intel: any = { agent, tick: tkNow, coords: `${galaxy}:${system}:${slot}`, name: target.name, commander: target.user.username, race: RACES[raceKey].name };
 
   if (agent === "P") {
     // Padrão: raça, pontuação, recursos em estoque, roids e qtd TOTAL de naves.

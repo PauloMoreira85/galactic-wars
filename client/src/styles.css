@@ -101,6 +101,10 @@ body::after {
 .prot-badge.has-text { width: auto; height: auto; padding: 1px 7px; gap: 3px; white-space: nowrap; line-height: 1.4; }
 /* Cabeçalho de grupo de raça no Hangar (c-Mech com naves de várias raças). */
 .ship-race-head td { background: rgba(37,211,255,0.08); border-top: 1px solid var(--border); color: var(--accent); font-family: var(--mono); font-weight: 700; font-size: 12px; letter-spacing: 0.5px; padding: 6px 10px; text-transform: uppercase; }
+/* Linha/visão da BASE realçada (Frotas e Ministro da Guerra) — bate o olho rápido. */
+.fleet-base-row { background: rgba(18,181,176,0.1); border-left: 2px solid var(--carbonum); border-radius: 4px; padding: 3px 8px; }
+/* Coluna BASE da grade de Frotas destacada (fundo + borda), pra separar das frotas. */
+.fleet-grid th.fleet-base-col, .fleet-grid td.fleet-base-col { background: rgba(18,181,176,0.1); border-left: 2px solid var(--carbonum); border-right: 1px solid var(--border); }
 .sh-grid {
   flex: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(108px, 1fr)); gap: 4px 18px;
   align-content: center; font-family: var(--mono);

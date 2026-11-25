@@ -344,6 +344,7 @@ export async function mgFleets(mgPlanetId: string) {
   if (g == null) throw new Error("Planeta nao encontrado");
   const st = await ensureGalaxy(g);
   if (st.mgPlanetId !== mgPlanetId) throw new Error("Apenas o Ministro da Guerra pode ver isto");
+  const tick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
   const planets = await prisma.planet.findMany({ where: galaxyWhere(g), include: { user: { select: { username: true } } } });
   const allFleets = await prisma.fleet.findMany({ where: { ownerPlanetId: { in: planets.map((p) => p.id) } } });
   // Visão militar COMPLETA de aliado: naves na base (hangar) + todas as frotas,
@@ -355,6 +356,8 @@ export async function mgFleets(mgPlanetId: string) {
       return {
         name: f.name, mission: f.mission, status: f.status,
         target: `${f.targetGalaxy}:${f.targetSystem}:${f.targetSlot}`,
+        // TEC: ticks restantes até chegar/voltar (idle = 0; engaged = em combate).
+        ticks: f.status === "idle" ? 0 : Math.max(0, f.arriveTick - tick),
         units: u, total: totalUnits(u),
       };
     });

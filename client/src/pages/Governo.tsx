@@ -323,15 +323,15 @@ export function CargoMG() {
         <div className="roid-count">Nenhum planeta na galáxia.</div>
       ) : mgFleets.map((p, i) => (
         <div key={i} className="roid-row" style={{ display: "block" }}>
-          <div><b>{p.planet}</b> <span className="roid-count"><CoordLink c={p.coords} /> · {p.commander}</span></div>
-          <div className="roid-count" style={{ marginTop: 2 }}>
+          <div><b>{p.planet}</b> <span className="roid-count">({p.commander}) · <CoordLink c={p.coords} /></span></div>
+          <div className="roid-count fleet-base-row" style={{ marginTop: 2 }}>
             🏠 Base ({p.baseTotal} naves): <span style={{ color: "var(--text)" }}>{fmtUnits(p.base)}</span>
           </div>
           {p.fleets.length === 0 ? (
             <div className="roid-count">Sem frotas montadas.</div>
           ) : p.fleets.map((f, j) => (
             <div key={j} className="roid-count" style={{ marginTop: 2 }}>
-              🚀 {f.name} <span style={{ opacity: 0.8 }}>[{f.status === "idle" ? "na base" : <>{f.mission} → <CoordLink c={f.target} /></>}]</span> ({f.total}): <span style={{ color: "var(--text)" }}>{fmtUnits(f.units)}</span>
+              🚀 {f.name} <span style={{ opacity: 0.8 }}>[{f.status === "idle" ? "na base" : <>{f.mission} → <CoordLink c={f.target} />{f.status === "engaged" ? " · em combate" : f.ticks > 0 ? <> · <b style={{ color: "var(--accent)" }}>TEC {f.ticks}t</b></> : ""}</>}]</span> ({f.total}): <span style={{ color: "var(--text)" }}>{fmtUnits(f.units)}</span>
             </div>
           ))}
         </div>

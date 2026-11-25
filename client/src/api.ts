@@ -612,7 +612,7 @@ export const api = {
   adminAdDelete: (id: string) => request<{ ok: boolean }>(`/ads/admin/${id}`, { method: "DELETE" }),
 };
 
-export interface MgFleet { name: string; mission: string; status: string; target: string; units: Record<string, number>; total: number }
+export interface MgFleet { name: string; mission: string; status: string; target: string; ticks: number; units: Record<string, number>; total: number }
 export interface MgPlanet { planet: string; commander: string; coords: string; base: Record<string, number>; baseTotal: number; fleets: MgFleet[] }
 
 export type AdPlacement = "landing" | "cadastro" | "game" | "round" | "todas";

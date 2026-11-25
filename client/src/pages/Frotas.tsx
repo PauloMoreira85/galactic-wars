@@ -159,7 +159,7 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
               <thead>
                 <tr>
                   <th>Naves</th>
-                  <th>Base</th>
+                  <th className="fleet-base-col">🏠 Base</th>
                   {fleets.map((f) => (
                     <th key={f.id}>
                       <div style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
@@ -185,7 +185,7 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
                 {shipNames.map((name) => (
                   <tr key={name}>
                     <td className="fg-name"><span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}><ShipIcon name={name} size={26} /><span><b>{name}</b> <span className="roid-count" style={{ fontSize: 10.5 }}>({classeOf(name)})</span><div className="roid-count" style={{ fontSize: 10.5, opacity: 0.85 }}>🎯 {alvosOf(name)}</div></span></span></td>
-                    <td>{fmt(baseOf(name))}</td>
+                    <td className="fleet-base-col">{fmt(baseOf(name))}</td>
                     {fleets.map((f) => (
                       <td key={f.id} className={!f.idle && !(f.units[name]) ? "fg-zero" : ""}>
                         {f.idle ? (
