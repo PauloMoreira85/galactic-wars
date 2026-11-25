@@ -185,8 +185,9 @@ function Calculadora() {
       if (p?.defHash) { setHash(String(p.defHash)); setTimeout(() => loadHash(String(p.defHash)), 0); }
     } catch {}
   }, []);
-  const races = Array.from(new Set(units.map((u) => u.race)));
-  const shown = units.filter((u) => u.race === race);
+  // "todas" = sem filtro de raça (pedido da galera): mostra o catálogo inteiro.
+  const races = ["todas", ...Array.from(new Set(units.map((u) => u.race)))];
+  const shown = race === "todas" ? units : units.filter((u) => u.race === race);
   const nameToRace = Object.fromEntries(units.map((u) => [u.name, u.race]));
 
   function setQty(side: "a" | "d", name: string, raw: string) {
@@ -322,18 +323,19 @@ function Calculadora() {
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
         {races.map((r) => (
           <button key={r} className={`action-tab ${race === r ? "active" : ""}`} style={{ padding: "4px 10px" }} onClick={() => setRace(r)}>
-            {RACE_LABEL[r] ?? r}
+            {r === "todas" ? "Todas" : RACE_LABEL[r] ?? r}
           </button>
         ))}
       </div>
 
       <div style={{ overflowX: "auto" }}>
         <table>
-          <thead><tr><th>Nave</th><th>Classe</th><th>Alvos</th><th>⚔️ Ataque</th><th>🛡️ Defesa</th></tr></thead>
+          <thead><tr><th>Nave</th>{race === "todas" && <th>Raça</th>}<th>Classe</th><th>Alvos</th><th>⚔️ Ataque</th><th>🛡️ Defesa</th></tr></thead>
           <tbody>
             {shown.map((u) => (
-              <tr key={u.name}>
+              <tr key={u.race + u.name}>
                 <td><b>{u.name}</b>{u.roider && " ⛏️"}</td>
+                {race === "todas" && <td className="roid-count">{RACE_LABEL[u.race] ?? u.race}</td>}
                 <td className="roid-count">{u.classe}</td>
                 <td className="roid-count">{u.roider ? "rouba roids" : (u.alvos.join(", ") || "—")}</td>
                 <td><input type="text" inputMode="numeric" value={atk[u.name] ?? ""} placeholder="0" onChange={(e) => setQty("a", u.name, e.target.value.replace(/\D/g, ""))} style={{ width: 90, margin: 0, padding: "4px 6px" }} /></td>

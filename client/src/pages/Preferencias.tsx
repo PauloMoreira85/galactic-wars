@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, type PlanetView, type RaceInfo } from "../api";
-import { enablePush, disablePush, pushSupported, pushPermission } from "../push";
+import { enablePush, disablePush, pushSupported, pushPermission, pushUnsupportedReason } from "../push";
 
 // Redimensiona uma imagem (File) para um data URL pequeno (máx ~160px, JPEG).
 function fileToAvatar(file: File): Promise<string> {
@@ -162,7 +162,19 @@ export function Preferencias({ view, onChanged }: { view: PlanetView; onChanged:
           Receba um aviso no celular/computador quando <b>chegar um ataque</b> ou uma <b>mensagem</b> — mesmo com o jogo fechado. Ative abaixo e <b>escolha quais tipos</b> quer receber. Pra funcionar melhor no celular, <b>instale o app</b> na tela inicial antes (veja a página inicial).
         </div>
         {!pushSupported() ? (
-          <div className="roid-count">Seu navegador não suporta notificações push.</div>
+          pushUnsupportedReason() === "ios-precisa-instalar" ? (
+            <div className="roid-count" style={{ lineHeight: 1.5 }}>
+              📱 No <b>iPhone/iPad</b>, as notificações só funcionam com o jogo <b>instalado na tela inicial</b>:
+              <div style={{ marginTop: 6 }}>
+                1. No Safari, toque em <b>Compartilhar</b> (ícone de caixa com seta) → <b>Adicionar à Tela de Início</b>.<br />
+                2. Abra o Galactic War pelo <b>ícone</b> que apareceu na tela inicial.<br />
+                3. Volte aqui em Preferências e toque em <b>Ativar notificações</b>.
+              </div>
+              <div style={{ marginTop: 6, opacity: 0.8 }}>Requer iOS 16.4 ou mais novo.</div>
+            </div>
+          ) : (
+            <div className="roid-count">Seu navegador não suporta notificações push.</div>
+          )
         ) : (
           <>
             <button disabled={pushBusy} onClick={togglePush}>

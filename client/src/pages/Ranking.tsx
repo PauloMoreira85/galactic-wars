@@ -69,7 +69,7 @@ function RankPlanetas() {
       )}
       <div style={{ overflowX: "auto" }}>
         <table>
-          <thead><tr><th className="rank-num">#</th><th>Comandante</th><th>Planeta</th><th className="hide-sm">Coord.</th><th>Pontuação</th><th className="hide-sm">Roids</th><th title="Dá pra atacar a partir do seu planeta?">Alvo</th></tr></thead>
+          <thead><tr><th className="rank-num">#</th><th>Comandante</th><th>Planeta</th><th className="hide-sm">Coord.</th><th>Pontuação</th><th>Roids</th><th title="Dá pra atacar a partir do seu planeta?">Alvo</th></tr></thead>
           <tbody>
             {rows.map((r, i) => (
               <tr key={i} ref={r.you ? myRowRef : undefined} className={r.you ? "rank-me" : undefined}>
@@ -78,7 +78,7 @@ function RankPlanetas() {
                 <td>{r.planet}</td>
                 <td className="hide-sm"><CoordLink c={r.coords} /></td>
                 <td>{fmt(r.score)}</td>
-                <td className="hide-sm roid-count">{fmt(r.roids)}</td>
+                <td className="roid-count">{fmt(r.roids)}</td>
                 <td>
                   {r.you ? <span className="roid-count">—</span>
                     : r.inRange

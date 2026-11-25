@@ -14,6 +14,26 @@ export function pushSupported(): boolean {
   return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
 }
 
+// iOS (iPhone/iPad). No iOS, o Web Push SÓ funciona com o app INSTALADO na tela inicial
+// (standalone) e em iOS 16.4+. No Safari normal o PushManager nem existe.
+export function isIOS(): boolean {
+  const ua = navigator.userAgent || "";
+  const iOSLike = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && (navigator as any).maxTouchPoints > 1);
+  return iOSLike;
+}
+// App rodando instalado na tela inicial (PWA standalone).
+export function isStandalone(): boolean {
+  return (navigator as any).standalone === true ||
+    (typeof matchMedia !== "undefined" && matchMedia("(display-mode: standalone)").matches);
+}
+// Motivo pelo qual o push não está disponível (pra UI mostrar a dica certa).
+// null = suportado. "ios-precisa-instalar" = iOS no Safari (precisa instalar na tela inicial).
+export function pushUnsupportedReason(): null | "ios-precisa-instalar" | "nao-suportado" {
+  if (pushSupported()) return null;
+  if (isIOS() && !isStandalone()) return "ios-precisa-instalar";
+  return "nao-suportado";
+}
+
 export function pushPermission(): NotificationPermission {
   return typeof Notification !== "undefined" ? Notification.permission : "denied";
 }
