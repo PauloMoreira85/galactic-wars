@@ -98,7 +98,8 @@ export function Associados({ onChanged }: { onChanged: () => void }) {
         </div>
       )}
 
-      {view.associado && <GalaxiaPrivada onChanged={onChanged} />}
+      {/* Galáxia privada liberada pra TODOS (não só Associados). */}
+      <GalaxiaPrivada onChanged={onChanged} />
     </>
   );
 }

@@ -13,7 +13,7 @@ async function userOf(planetId: string) {
 export async function createPrivateGalaxy(planetId: string, name: string) {
   const p = await userOf(planetId);
   if (!p) throw new Error("Planeta nao encontrado");
-  if (!p.user.associado) throw new Error("Apenas Associados podem criar galáxia privada");
+  // Qualquer jogador pode criar 1 galáxia privada (não exige ser Associado).
   const already = await prisma.galaxyState.findFirst({ where: { ownerPlanetId: planetId } });
   if (already) throw new Error("Você já tem uma galáxia privada");
 
