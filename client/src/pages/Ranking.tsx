@@ -80,6 +80,16 @@ function RankPlanetas() {
           <button className="link" onClick={scrollToMe}>ir pra minha posição →</button>
         </div>
       )}
+      {/* Legenda dos símbolos (pedido do Kxsto): o que cada bolinha/ícone significa. */}
+      <div className="cost rank-legend" style={{ marginBottom: 10, display: "flex", gap: 14, flexWrap: "wrap", alignItems: "center" }}>
+        <span><b>Relações:</b></span>
+        <span>🔵 mesma galáxia</span>
+        <span>🟢 aliado</span>
+        <span style={{ opacity: 0.6 }}>–  nenhuma</span>
+        <span style={{ marginLeft: 8 }}><b>Alvo:</b></span>
+        <span>⚔️ no seu alcance</span>
+        <span>🔒 fora do alcance</span>
+      </div>
       <div style={{ overflowX: "auto" }}>
         <table>
           <thead><tr><th className="rank-num">#</th><th>Comandante</th><th>Planeta</th><th className="hide-sm">Coord.</th><th title="🔵 mesma galáxia · 🟢 aliado">Relações</th><th>Pontuação</th><th>Roids</th><th title="Dá pra atacar a partir do seu planeta?">Alvo</th></tr></thead>
