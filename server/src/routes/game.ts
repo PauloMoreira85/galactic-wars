@@ -549,7 +549,7 @@ gameRouter.post("/spy", async (req: AuthedRequest, res) => {
   const succ = spySuccessChance(myAE, tgtCE, tgtRoids, target.user.race);
   if (Math.random() > succ) {
     await addNews(target.id, tkNow, `🛡️ Sua contra-espionagem barrou um ${AGENT_FULL_NAME[agent]} de ${myCoords}`);
-    return res.json({ failed: true, error: `Espionagem barrada (chance de sucesso ${Math.round(succ * 100)}% — seu AE ${myAE} vs AC ${tgtCE} do alvo). Perdeu 1 agente ${agent} — treine mais AE pra aumentar a chance.` });
+    return res.json({ failed: true, error: `Espionagem barrada pela contra-espionagem do alvo (sua chance era ${Math.round(succ * 100)}%, seu AE ${myAE}). Perdeu 1 agente ${agent} — treine mais AE pra aumentar a chance.` });
   }
   // Naves do alvo = base (hangar) + TODAS as frotas dele (idle/atacando/defendendo).
   // (Sem isso, a pontuação/força espionada saía MUITO menor que a real quando o

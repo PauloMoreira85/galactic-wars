@@ -94,10 +94,10 @@ export async function executeSabotage(saboteurPlanetId: string, target: { galaxy
     // Log + notícia pro saboteur: tentativa falha também entra no histórico.
     await prisma.sabotageLog.create({ data: {
       saboteurPlanetId: me.id, targetGalaxy: target.galaxy, targetSystem: target.system, targetSlot: target.slot,
-      targetName: tgt.name, key, success: false, detail: `barrada pela contra-espionagem (AE ${myAE} vs AC ${tgtCE})`, tick,
+      targetName: tgt.name, key, success: false, detail: `barrada pela contra-espionagem (sua chance era ${Math.round(succ * 100)}%, seu AE ${myAE})`, tick,
     } }).catch(() => {});
     await addNews(me.id, tick, `🛡️ Sua sabotagem (${def.name}) em ${tgt.name} (${coord}) foi barrada pela contra-espionagem`);
-    return { success: false, message: `A sabotagem falhou (chance de sucesso ${Math.round(succ * 100)}% — AE ${myAE} vs AC ${tgtCE} do alvo). Custou ${def.plut} de plutônio.` };
+    return { success: false, message: `A sabotagem falhou (sua chance era ${Math.round(succ * 100)}%, seu AE ${myAE}). Custou ${def.plut} de plutônio.` };
   }
 
   // Sucesso no lançamento: o efeito leva `def.ticks` ticks pra concluir.
