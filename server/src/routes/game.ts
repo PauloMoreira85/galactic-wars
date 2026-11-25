@@ -1144,8 +1144,13 @@ gameRouter.get("/combats", async (req: AuthedRequest, res) => {
     where: { OR: [{ attackerPlanetId: planet.id }, { defenderPlanetId: planet.id }] },
     orderBy: { tick: "desc" }, take: 50,
   });
+  // Comandante de cada planeta oponente (pra UI mostrar "Planeta (Comandante)").
+  const oppIds = [...new Set(reports.map((r) => (r.attackerPlanetId === planet.id ? r.defenderPlanetId : r.attackerPlanetId)))];
+  const oppPlanets = await prisma.planet.findMany({ where: { id: { in: oppIds } }, select: { id: true, user: { select: { username: true } } } });
+  const oppCmd = new Map(oppPlanets.map((p) => [p.id, p.user.username]));
   const out = reports.map((r) => {
     const iAmAttacker = r.attackerPlanetId === planet.id;
+    const oppId = iAmAttacker ? r.defenderPlanetId : r.attackerPlanetId;
     const detail = JSON.parse(r.report);
     const sumLost = (rows: { lost: number }[]) => rows.reduce((s, x) => s + x.lost, 0);
     // Registro de DEFESA (sem combate): atacante = quem defendeu; defensor = planeta protegido.
@@ -1159,6 +1164,7 @@ gameRouter.get("/combats", async (req: AuthedRequest, res) => {
       id: r.id, tick: r.tick, role,
       // No ally-defense o "oponente" é quem foi defendido (defendedName), não o def.name genérico.
       opponent: isAllyDefense ? (detail.defendedName ?? r.attackerName) : (iAmAttacker ? r.defenderName : r.attackerName),
+      opponentCommander: isAllyDefense ? null : (oppCmd.get(oppId) ?? null),
       opponentCoords: isAllyDefense ? (detail.defendedCoords ?? r.attackerCoords) : (iAmAttacker ? r.defenderCoords : r.attackerCoords),
       // Perdas do MEU lado: atacante olha detail.attacker; defensor (base ou aliado) olha detail.defender.
       myLost: isDefense ? 0 : sumLost((iAmAttacker && !isAllyDefense ? detail.attacker : detail.defender) ?? []),
@@ -1176,8 +1182,12 @@ gameRouter.get("/combats/:id", async (req: AuthedRequest, res) => {
   if (!r || (r.attackerPlanetId !== planet.id && r.defenderPlanetId !== planet.id)) {
     return res.status(404).json({ error: "Relatorio nao encontrado" });
   }
+  // Comandantes dos dois lados, pra UI mostrar "Planeta (Comandante)" padronizado.
+  const sides = await prisma.planet.findMany({ where: { id: { in: [r.attackerPlanetId, r.defenderPlanetId] } }, select: { id: true, user: { select: { username: true } } } });
+  const cmdById = new Map(sides.map((p) => [p.id, p.user.username]));
   res.json({
     id: r.id, tick: r.tick, attackerName: r.attackerName, defenderName: r.defenderName,
+    attackerCommander: cmdById.get(r.attackerPlanetId) ?? null, defenderCommander: cmdById.get(r.defenderPlanetId) ?? null,
     attackerCoords: r.attackerCoords, defenderCoords: r.defenderCoords,
     iAmAttacker: r.attackerPlanetId === planet.id, detail: JSON.parse(r.report),
   });

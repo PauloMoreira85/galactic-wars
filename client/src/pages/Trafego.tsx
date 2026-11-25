@@ -88,7 +88,7 @@ export function Trafego({ onGoto }: { onGoto?: (coords: string) => void }) {
         <div className="roid-count">Nenhuma frota em movimento na galáxia.</div>
       ) : data.movements.map((m, i) => (
         <div key={i} style={{ marginBottom: 14 }}>
-          <div className="combat-ini"><b>{m.planet}</b> <span className="roid-count">(<Coord c={m.coords} />) · {m.owner}</span></div>
+          <div className="combat-ini"><b>{m.planet}</b> <span className="roid-count">({m.owner}) · <Coord c={m.coords} /></span></div>
           <table>
             <thead><tr><th>Frota</th><th>Tipo</th><th>Destino</th><th>Naves</th><th>Espólio (M/C/P)</th><th>Estado</th></tr></thead>
             <tbody>

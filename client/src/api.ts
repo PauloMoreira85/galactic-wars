@@ -470,6 +470,7 @@ export const api = {
         tick: number;
         role: "attacker" | "defender" | "defense-sent" | "defense-received";
         opponent: string;
+        opponentCommander: string | null;
         opponentCoords: string;
         myLost: number;
         oppLost: number;
@@ -483,6 +484,8 @@ export const api = {
       tick: number;
       attackerName: string;
       defenderName: string;
+      attackerCommander: string | null;
+      defenderCommander: string | null;
       attackerCoords: string;
       defenderCoords: string;
       iAmAttacker: boolean;

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, REFRESH_MS } from "../api";
 import { CoordLink } from "../components/CoordLink";
+import { PlanetTag } from "../components/PlanetTag";
 import { ShipName } from "../components/ShipIcon";
 import { CombatChart } from "../components/CombatChart";
 import { CombatStats } from "../components/CombatStats";
@@ -121,12 +122,12 @@ export function Combats() {
             <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginTop: 8 }}>
               <div><div className="roid-count">Atacante</div><b style={{ color: "var(--danger)" }}>{d.attackers?.[0]?.name ?? "inimigo"}</b> <span className="roid-count">{d.attackers?.[0]?.coords ? <>(<CoordLink c={d.attackers[0].coords} />) </> : ""}· {d.attackerRace}</span></div>
               <div><div className="roid-count">Planeta atacado (aliado)</div><b style={{ color: "var(--carbonum)" }}>{d.defendedName}</b> <span className="roid-count">(<CoordLink c={d.defendedCoords ?? ""} />) · {d.defenderRace}</span></div>
-              <div><div className="roid-count">Você (defensor)</div><b style={{ color: "var(--accent)" }}>{detail.defenderName}</b> <span className="roid-count">(<CoordLink c={detail.defenderCoords} />)</span></div>
+              <div><div className="roid-count">Você (defensor)</div><span style={{ color: "var(--accent)" }}><PlanetTag planet={detail.defenderName} commander={detail.defenderCommander} bold /></span> <span className="roid-count">(<CoordLink c={detail.defenderCoords} />)</span></div>
             </div>
           ) : (
             <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginTop: 8 }}>
-              <div><div className="roid-count">Atacante {iAmAtk && "(você)"}</div><b style={{ color: "var(--danger)" }}>{detail.attackerName}</b> <span className="roid-count">(<CoordLink c={detail.attackerCoords} />) · {d.attackerRace}</span></div>
-              <div><div className="roid-count">Defensor {!iAmAtk && "(você)"}</div><b style={{ color: "var(--carbonum)" }}>{detail.defenderName}</b> <span className="roid-count">(<CoordLink c={detail.defenderCoords} />) · {d.defenderRace}</span></div>
+              <div><div className="roid-count">Atacante {iAmAtk && "(você)"}</div><span style={{ color: "var(--danger)" }}><PlanetTag planet={detail.attackerName} commander={detail.attackerCommander} bold /></span> <span className="roid-count">(<CoordLink c={detail.attackerCoords} />) · {d.attackerRace}</span></div>
+              <div><div className="roid-count">Defensor {!iAmAtk && "(você)"}</div><span style={{ color: "var(--carbonum)" }}><PlanetTag planet={detail.defenderName} commander={detail.defenderCommander} bold /></span> <span className="roid-count">(<CoordLink c={detail.defenderCoords} />) · {d.defenderRace}</span></div>
             </div>
           )}
           {((d.attackers?.length ?? 0) > 1 || (d.defenders?.length ?? 0) > 1) && (
@@ -330,7 +331,7 @@ export function Combats() {
                 }</td>
                 {/* Oponente = nome + coord (sempre visível, até no celular). */}
                 <td>
-                  <b>{c.opponent}</b>
+                  <PlanetTag planet={c.opponent} commander={c.opponentCommander} bold />
                   {c.opponentCoords && (
                     <span className="roid-count" style={{ display: "block", fontSize: 11 }} onClick={(e) => e.stopPropagation()}>
                       <CoordLink c={c.opponentCoords} />
