@@ -377,9 +377,13 @@ export async function warInfo(viewerPlanetId: string) {
   const g = await planetGalaxy(viewerPlanetId);
   if (g == null) throw new Error("Planeta nao encontrado");
   const st = await ensureGalaxy(g);
-  if (st.mgPlanetId !== viewerPlanetId && st.cgPlanetId !== viewerPlanetId) {
+  const isMG = st.mgPlanetId === viewerPlanetId;
+  const isCG = st.cgPlanetId === viewerPlanetId;
+  if (!isMG && !isCG) {
     throw new Error("Apenas o Ministro da Guerra ou o Comandante da Galáxia podem ver isto");
   }
+  // Só o MG enxerga a FORÇA (nº de naves). O CG vê que há ataque/defesa chegando
+  // e o TEC, mas NÃO a quantidade de naves — isso é inteligência militar do MG.
   const tick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
   const { setor, paralelo } = galaxyDecompose(g);
   // Planetas da galáxia (= par setor:paralelo).
@@ -390,7 +394,7 @@ export async function warInfo(viewerPlanetId: string) {
   const owners = await prisma.planet.findMany({ where: { id: { in: ownerIds } }, include: { user: { select: { username: true } } } });
   const ownerMap = new Map(owners.map((o) => [o.id, o]));
 
-  return planets.map((p) => {
+  const rows = planets.map((p) => {
     const mine = incoming.filter((f) => f.targetSlot === p.slot);
     const row = (f: typeof incoming[number]) => {
       const o = ownerMap.get(f.ownerPlanetId);
@@ -398,7 +402,8 @@ export async function warInfo(viewerPlanetId: string) {
         fleetName: f.name,
         from: o ? `${o.galaxy}:${o.system}:${o.slot}` : "?",
         fromPlanet: o?.name ?? "?", fromCommander: o?.user.username ?? "?",
-        ships: radarVisibleCount(parseUnits(f.units)), // radar esconde invisíveis (Rakshasa)
+        // nº de naves SÓ pro MG; o CG recebe null (não vê a força).
+        ships: isMG ? radarVisibleCount(parseUnits(f.units)) : null, // radar esconde invisíveis (Rakshasa)
         status: f.status,
         tec: f.status === "engaged" ? 0 : Math.max(0, f.arriveTick - tick),
         engaged: f.status === "engaged",
@@ -413,4 +418,5 @@ export async function warInfo(viewerPlanetId: string) {
       attacks, defenses,
     };
   });
+  return { canSeeShips: isMG, planets: rows };
 }

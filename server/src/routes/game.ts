@@ -787,7 +787,7 @@ gameRouter.get("/galaxy/mg-fleets", async (req: AuthedRequest, res) => {
 gameRouter.get("/galaxy/war-info", async (req: AuthedRequest, res) => {
   const planet = await myPlanet(req.userId!);
   if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
-  try { res.json({ planets: await warInfo(planet.id) }); }
+  try { res.json(await warInfo(planet.id)); }
   catch (e: any) { return res.status(403).json({ error: e.message ?? "Sem acesso" }); }
 });
 

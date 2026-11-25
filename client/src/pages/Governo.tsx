@@ -352,7 +352,7 @@ function WarRow({ m, kind }: { m: WarMove; kind: "atk" | "def" }) {
       </span>
       <span style={{ color: kind === "atk" ? "var(--danger)" : "var(--carbonum)" }}>{kind === "atk" ? "⚔️" : "🛡️"}</span>
       <span><PlanetTag planet={m.fromPlanet} commander={m.fromCommander} /> <span style={{ opacity: 0.7 }}>(<CoordLink c={m.from} />)</span></span>
-      <span style={{ opacity: 0.8 }}>· {fmt(m.ships)} nave(s)</span>
+      {m.ships != null && <span style={{ opacity: 0.8 }}>· {fmt(m.ships)} nave(s)</span>}
     </div>
   );
 }
@@ -360,10 +360,11 @@ function WarRow({ m, kind }: { m: WarMove; kind: "atk" | "def" }) {
 export function InfoGuerra() {
   const { gov } = useGov();
   const [planets, setPlanets] = useState<WarInfoPlanet[]>([]);
+  const [canSeeShips, setCanSeeShips] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => {
     let alive = true;
-    async function load() { try { const r = await api.warInfo(); if (alive) { setPlanets(r.planets); setError(""); } } catch (e: any) { if (alive) setError(e.message ?? ""); } }
+    async function load() { try { const r = await api.warInfo(); if (alive) { setPlanets(r.planets); setCanSeeShips(r.canSeeShips); setError(""); } } catch (e: any) { if (alive) setError(e.message ?? ""); } }
     load(); const t = setInterval(load, REFRESH_MS); return () => { alive = false; clearInterval(t); };
   }, []);
   if (!gov) return LOADING;
@@ -374,6 +375,7 @@ export function InfoGuerra() {
       <h2>🗺️ Informação de Guerra</h2>
       <div className="cost" style={{ marginBottom: 10 }}>
         Por planeta da galáxia: os <b style={{ color: "var(--danger)" }}>⚔️ ataques</b> chegando (ordem de TEC) e, embaixo, as <b style={{ color: "var(--carbonum)" }}>🛡️ defesas</b> (reforços) — também por TEC.
+        {!canSeeShips && <> <span className="roid-count">A <b>força (nº de naves)</b> é inteligência do <b>Ministro da Guerra</b> — como CG você vê os movimentos e o TEC, mas não a quantidade.</span></>}
       </div>
       {error && <div className="error" style={{ marginBottom: 8 }}>{error}</div>}
       {comMovimento.length === 0 ? (
