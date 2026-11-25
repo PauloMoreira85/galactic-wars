@@ -32,6 +32,28 @@ export function Sabotagem() {
   return (
     <div className="panel">
       <h2>Sabotagem</h2>
+
+      {/* Fila EM ANDAMENTO no topo (igual à produção de agentes na Inteligência). */}
+      {data.pending.length > 0 && (
+        <div className="panel" style={{ borderColor: "var(--accent)", margin: "0 0 14px" }}>
+          <h3 style={{ margin: "0 0 6px" }}>🕓 Em andamento</h3>
+          <div style={{ overflowX: "auto" }}>
+            <table>
+              <thead><tr><th>Sabotagem</th><th>Alvo</th><th title="Tempo Estimado de Chegada — ticks até o efeito">TEC</th></tr></thead>
+              <tbody>
+                {data.pending.map((p) => (
+                  <tr key={p.id}>
+                    <td><b>{p.name}</b></td>
+                    <td><CoordLink c={p.coords} /></td>
+                    <td><b style={{ color: "var(--accent)" }}>{p.tec}t</b></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       <div className="cost">Escolha o alvo (outra galáxia) e a sabotagem que você desbloqueou. Pode ser repelida pela contra-espionagem do alvo. <b>Sem Agente de Espionagem (AE) a sabotagem não funciona.</b> Há um <b>cooldown de 5 ticks</b> entre tentativas de sabotagem.</div>
       <div style={{ display: "flex", gap: 6, alignItems: "center", margin: "8px 0", flexWrap: "wrap" }}>
         <span className="roid-count">Alvo</span>
@@ -60,27 +82,6 @@ export function Sabotagem() {
           })}
         </tbody>
       </table>
-
-      {/* Em andamento: sabotagens lançadas aguardando efeito (TEC = ticks restantes). */}
-      {data.pending.length > 0 && (
-        <div style={{ marginTop: 18 }}>
-          <h3 style={{ margin: "0 0 6px" }}>🕓 Em andamento</h3>
-          <div style={{ overflowX: "auto" }}>
-            <table>
-              <thead><tr><th>Sabotagem</th><th>Alvo</th><th title="Tempo Estimado de Chegada — ticks até o efeito">TEC</th></tr></thead>
-              <tbody>
-                {data.pending.map((p) => (
-                  <tr key={p.id}>
-                    <td><b>{p.name}</b></td>
-                    <td><CoordLink c={p.coords} /></td>
-                    <td><b style={{ color: "var(--accent)" }}>{p.tec}t</b></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
 
       {/* Histórico: sabotagens concluídas (sucesso ou barradas). */}
       {data.history.length > 0 && (

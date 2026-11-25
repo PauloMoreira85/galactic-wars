@@ -910,6 +910,25 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
         {section === "naves" && (
           <>
+            {/* Fila de produção no TOPO (pedido do lythorf). */}
+            {view.queue.some((q) => q.kind === "ship") && (
+              <div className="panel" style={{ borderColor: "var(--accent)" }}>
+                <h2>🛠️ Em produção</h2>
+                <ShipTimeline items={view.queue} />
+                {view.queue.filter((q) => q.kind === "ship").map((q) => (
+                  <div className="roid-row" key={q.id} style={{ alignItems: "center" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      {q.shipClass && <ShipIcon name={q.shipClass} size={36} />}
+                      <div>
+                        <b style={{ color: "#eafcff" }}>{q.quantity}x {q.shipClass ?? q.label}</b>
+                        <div className="roid-count">faltam <b style={{ color: "var(--accent)" }}>{q.ticksRemaining}t</b></div>
+                      </div>
+                    </div>
+                    <button className="btn-danger" onClick={() => doCancel(q.id, q.label)} title="Cancelar — reembolso proporcional ao tempo que falta" style={{ padding: "2px 10px", fontSize: 11 }}>cancelar</button>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="panel">
               <h2>Hangar — {view.race.name}</h2>
               <div className="cost">
@@ -975,25 +994,6 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
               </table>
               {error && <div className="error" style={{ marginTop: 12 }}>{error}</div>}
             </div>
-
-            {view.queue.some((q) => q.kind === "ship") && (
-              <div className="panel" style={{ borderColor: "var(--accent)" }}>
-                <h2>🛠️ Em produção</h2>
-                <ShipTimeline items={view.queue} />
-                {view.queue.filter((q) => q.kind === "ship").map((q) => (
-                  <div className="roid-row" key={q.id} style={{ alignItems: "center" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      {q.shipClass && <ShipIcon name={q.shipClass} size={36} />}
-                      <div>
-                        <b style={{ color: "#eafcff" }}>{q.quantity}x {q.shipClass ?? q.label}</b>
-                        <div className="roid-count">faltam <b style={{ color: "var(--accent)" }}>{q.ticksRemaining}t</b></div>
-                      </div>
-                    </div>
-                    <button className="btn-danger" onClick={() => doCancel(q.id, q.label)} title="Cancelar — reembolso proporcional ao tempo que falta" style={{ padding: "2px 10px", fontSize: 11 }}>cancelar</button>
-                  </div>
-                ))}
-              </div>
-            )}
           </>
         )}
 
