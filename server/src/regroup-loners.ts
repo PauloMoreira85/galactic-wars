@@ -45,9 +45,16 @@ function pickTarget(count: Record<number, number>, privateIds: Set<number>, myGa
 
 async function main() {
   const { privateIds, planets, count } = await snapshot();
-  // Sozinhos = planeta cuja galáxia tem exatamente 1 planeta.
-  const loners = planets.filter((p) => (count[galaxyId(p.galaxy, p.system)] ?? 0) === 1);
-  if (loners.length === 0) { console.log("✅ Ninguém sozinho numa galáxia. Nada a fazer."); return; }
+  // Sozinhos = planeta cuja galáxia PÚBLICA tem exatamente 1 planeta.
+  // IMPORTANTE: planetas em galáxia PRIVADA ficam de fora — quem tem galáxia
+  // privada (próprio dono, ex.: Ramb2016) pode estar "sozinho" ali de propósito;
+  // reagrupar só vale pra galáxias públicas.
+  const loners = planets.filter((p) => {
+    const id = galaxyId(p.galaxy, p.system);
+    if (privateIds.has(id)) return false; // nunca mexe em quem está numa privada
+    return (count[id] ?? 0) === 1;
+  });
+  if (loners.length === 0) { console.log("✅ Ninguém sozinho numa galáxia pública. Nada a fazer."); return; }
   console.log(`${loners.length} jogador(es) sozinho(s). ${DRY ? "(dry-run)" : ""}`);
 
   // Trabalha num count mutável pra ir enchendo as galáxias conforme realoca.
