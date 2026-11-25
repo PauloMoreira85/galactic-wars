@@ -68,14 +68,14 @@ export function Aliancas() {
           <h2 style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
             {a.name} <span className="roid-count">[{a.tag}]</span>
             {a.isLeader && (
-              <button className="link" title="renomear a aliança (só o nome; a tag não muda)" style={{ fontSize: 14 }}
+              <button title="renomear a aliança (só o nome; a tag não muda)" style={{ fontSize: 12, padding: "2px 8px", marginLeft: 4 }}
                 onClick={() => {
-                  const novo = window.prompt("Novo nome da aliança:", a.name);
+                  const novo = window.prompt("Novo nome da aliança (a tag não muda):", a.name);
                   if (novo == null) return;
                   const n = novo.trim();
                   if (!n || n === a.name) return;
                   act(() => api.allianceRename(n));
-                }}>✏</button>
+                }}>✏ renomear</button>
             )}
           </h2>
           <button className="link" onClick={() => act(() => api.allianceLeave())}>sair da aliança</button>

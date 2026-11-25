@@ -57,7 +57,7 @@ export function Trafego({ onGoto }: { onGoto?: (coords: string) => void }) {
           rows.length === 0 ? null : (
             <div style={{ marginBottom: 14 }}>
               <table className="traffic-table">
-                <thead><tr><th>Origem</th><th>Frota</th><th>Naves</th><th>TEC</th></tr></thead>
+                <thead><tr><th>Origem</th><th>Alvo</th><th>Frota</th><th>Naves</th><th>TEC</th></tr></thead>
                 <tbody>
                   {rows.map((f, i) => (
                     <tr key={i} style={{ color: cor, ...(f.toMe ? { background: atk ? "rgba(255,80,80,0.14)" : "rgba(69,230,165,0.14)", fontWeight: 700 } : undefined) }}>
@@ -65,7 +65,10 @@ export function Trafego({ onGoto }: { onGoto?: (coords: string) => void }) {
                         <span style={{ fontFamily: "var(--mono)" }}>{atk ? "− " : "+ "}</span>
                         {f.originName ? <>{f.originName} <span style={{ opacity: 0.85 }}>de {f.owner}</span> </> : <>{f.owner} </>}
                         (<Coord c={f.origin} />)
-                        {f.toMe && <b> → {atk ? "⚔️ VOCÊ" : "🛡️ você"}</b>}
+                      </td>
+                      <td>
+                        {f.toMe ? <b>{atk ? "⚔️ VOCÊ" : "🛡️ você"} (<Coord c={f.target} />)</b>
+                          : <>{f.targetName ? <>{f.targetName} </> : null}(<Coord c={f.target} />)</>}
                       </td>
                       <td>{f.fleetName}</td>
                       <td>{fmt(f.ships)}</td>
