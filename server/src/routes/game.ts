@@ -820,9 +820,9 @@ gameRouter.post("/alliance/create", (req: AuthedRequest, res) => {
 });
 // Renomear a aliança (só o TL). A tag não muda.
 gameRouter.post("/alliance/rename", (req: AuthedRequest, res) => {
-  const p = z.object({ name: z.string() }).safeParse(req.body);
+  const p = z.object({ name: z.string(), tag: z.string().optional() }).safeParse(req.body);
   if (!p.success) return res.status(400).json({ error: "Pedido invalido" });
-  return allianceAction(req, res, (id) => renameAlliance(id, p.data.name));
+  return allianceAction(req, res, (id) => renameAlliance(id, p.data.name, p.data.tag));
 });
 // Jogador PEDE pra entrar numa aliança (por tag/nome).
 gameRouter.post("/alliance/request", async (req: AuthedRequest, res) => {

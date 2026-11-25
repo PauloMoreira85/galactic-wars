@@ -68,13 +68,17 @@ export function Aliancas() {
           <h2 style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
             {a.name} <span className="roid-count">[{a.tag}]</span>
             {a.isLeader && (
-              <button title="renomear a aliança (só o nome; a tag não muda)" style={{ fontSize: 12, padding: "2px 8px", marginLeft: 4 }}
+              <button title="mudar o nome e/ou a tag da aliança" style={{ fontSize: 12, padding: "2px 8px", marginLeft: 4 }}
                 onClick={() => {
-                  const novo = window.prompt("Novo nome da aliança (a tag não muda):", a.name);
-                  if (novo == null) return;
-                  const n = novo.trim();
-                  if (!n || n === a.name) return;
-                  act(() => api.allianceRename(n));
+                  const novoNome = window.prompt("Nome da aliança:", a.name);
+                  if (novoNome == null) return;
+                  const n = novoNome.trim();
+                  if (!n) return;
+                  const novaTag = window.prompt("Tag (sigla) da aliança — 2 a 5 letras/números:", a.tag);
+                  if (novaTag == null) return; // cancelou a 2ª pergunta: aborta tudo
+                  const t = novaTag.trim().toUpperCase();
+                  if (n === a.name && t === a.tag) return; // nada mudou
+                  act(() => api.allianceRename(n, t));
                 }}>✏ renomear</button>
             )}
           </h2>

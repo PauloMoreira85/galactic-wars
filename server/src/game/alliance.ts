@@ -46,20 +46,35 @@ export async function createAlliance(planetId: string, name: string, tag: string
   return a;
 }
 
-// Renomeia a aliança (só o TL/Líder). A tag NÃO muda (é a identidade curta usada
-// pra entrar/mencionar); só o nome por extenso.
-export async function renameAlliance(planetId: string, name: string) {
+// Renomeia a aliança (só o TL/Líder): o nome por extenso e, opcionalmente, a TAG
+// (identidade curta usada pra entrar/mencionar). Ambos únicos no universo.
+export async function renameAlliance(planetId: string, name: string, tag?: string) {
   const mem = await memberOf(planetId);
   if (!mem) throw new Error("Voce nao esta em uma alianca");
-  if (mem.role !== "lider") throw new Error("Apenas o TL (Líder) pode mudar o nome da aliança");
+  if (mem.role !== "lider") throw new Error("Apenas o TL (Líder) pode mudar o nome/tag da aliança");
   name = name.trim();
   if (name.length < 3) throw new Error("Nome muito curto (mínimo 3 caracteres)");
   if (name.length > 40) name = name.slice(0, 40);
   // Não pode colidir com o nome de OUTRA aliança.
-  const clash = await prisma.alliance.findFirst({ where: { name, id: { not: mem.allianceId } } });
-  if (clash) throw new Error("Já existe uma aliança com esse nome");
-  await prisma.alliance.update({ where: { id: mem.allianceId }, data: { name } });
-  await pushAlliance(mem.allianceId, planetId, "🏷️ Aliança renomeada", `Agora a aliança se chama "${name}".`);
+  if (await prisma.alliance.findFirst({ where: { name, id: { not: mem.allianceId } } })) {
+    throw new Error("Já existe uma aliança com esse nome");
+  }
+  const current = await prisma.alliance.findUnique({ where: { id: mem.allianceId }, select: { tag: true } });
+  const data: { name: string; tag?: string } = { name };
+  // Tag opcional: valida formato (2-5 alfanumérico) e unicidade.
+  if (tag != null) {
+    const t = tag.trim().toUpperCase();
+    if (t && t !== current?.tag) {
+      if (!/^[A-Z0-9]{2,5}$/.test(t)) throw new Error("Tag inválida: use 2 a 5 letras/números");
+      if (await prisma.alliance.findFirst({ where: { tag: t, id: { not: mem.allianceId } } })) {
+        throw new Error("Já existe uma aliança com essa tag");
+      }
+      data.tag = t;
+    }
+  }
+  await prisma.alliance.update({ where: { id: mem.allianceId }, data });
+  const tagMsg = data.tag ? ` [${data.tag}]` : "";
+  await pushAlliance(mem.allianceId, planetId, "🏷️ Aliança atualizada", `Agora a aliança é "${name}"${tagMsg}.`);
 }
 
 // ===== Entrada por PEDIDO (o jogador pede; TL/HC aceita) =====

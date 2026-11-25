@@ -367,8 +367,8 @@ export const api = {
   }>("/game/alliance/fleets"),
   allianceCreate: (name: string, tag: string) =>
     request<AllianceView>("/game/alliance/create", { method: "POST", body: JSON.stringify({ name, tag }) }),
-  allianceRename: (name: string) =>
-    request<AllianceView>("/game/alliance/rename", { method: "POST", body: JSON.stringify({ name }) }),
+  allianceRename: (name: string, tag?: string) =>
+    request<AllianceView>("/game/alliance/rename", { method: "POST", body: JSON.stringify({ name, tag }) }),
   allianceRequest: (tag: string) =>
     request<AllianceView>("/game/alliance/request", { method: "POST", body: JSON.stringify({ tag }) }),
   allianceRequestCancel: () =>
