@@ -539,6 +539,7 @@ export async function galaxyTraffic(planetId: string) {
     const o = ownerMap.get(f.ownerPlanetId);
     return {
       origin: `${f.originGalaxy}:${f.originSystem}:${f.originSlot}`,
+      originName: o?.name ?? null,   // nome do planeta de origem (pro formato "Planeta de Comandante (coord)")
       owner: o?.user.username ?? "?",
       fleetName: f.name,             // nome que o atacante deu à frota (intel, como no GW original)
       target: `${f.targetGalaxy}:${f.targetSystem}:${f.targetSlot}`,

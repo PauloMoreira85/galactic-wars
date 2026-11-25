@@ -51,21 +51,25 @@ export function Trafego({ onGoto }: { onGoto?: (coords: string) => void }) {
         const ataques = data.fleets.filter((f) => f.mission === "attack").sort((a, b) => a.ticks - b.ticks);
         const defesas = data.fleets.filter((f) => f.mission !== "attack").sort((a, b) => a.ticks - b.ticks);
         // atk=true → tabela de ataque (vermelho); false → defesa (verde).
-        const Tabela = ({ titulo, cor, rows, atk }: { titulo: string; cor: string; rows: typeof data.fleets; atk: boolean }) =>
+        // Layout fiel ao GW original: Origem ("- Planeta de Comandante (coord)") |
+        // Frota | Naves | TEC. Ataque com "-" em vermelho, defesa com "+" em verde.
+        const Tabela = ({ cor, rows, atk }: { cor: string; rows: typeof data.fleets; atk: boolean }) =>
           rows.length === 0 ? null : (
             <div style={{ marginBottom: 14 }}>
-              <div className="combat-ini" style={{ color: cor }}>{titulo} ({rows.length})</div>
-              <table>
-                <thead><tr><th>Origem</th><th>Comandante</th><th>Frota</th><th>Alvo</th><th>Naves</th><th>TEC</th></tr></thead>
+              <table className="traffic-table">
+                <thead><tr><th>Origem</th><th>Frota</th><th>Naves</th><th>TEC</th></tr></thead>
                 <tbody>
                   {rows.map((f, i) => (
-                    <tr key={i} style={f.toMe ? { background: atk ? "rgba(255,80,80,0.12)" : "rgba(69,230,165,0.12)" } : undefined}>
-                      <td><Coord c={f.origin} /></td>
-                      <td>{f.owner}</td>
-                      <td className="roid-count">{f.fleetName}</td>
-                      <td>{f.toMe ? <b style={{ color: cor }}>{atk ? "⚔️ você" : "🛡️ você"}</b> : <Coord c={f.target} />}</td>
+                    <tr key={i} style={{ color: cor, ...(f.toMe ? { background: atk ? "rgba(255,80,80,0.14)" : "rgba(69,230,165,0.14)", fontWeight: 700 } : undefined) }}>
+                      <td>
+                        <span style={{ fontFamily: "var(--mono)" }}>{atk ? "− " : "+ "}</span>
+                        {f.originName ? <>{f.originName} <span style={{ opacity: 0.85 }}>de {f.owner}</span> </> : <>{f.owner} </>}
+                        (<Coord c={f.origin} />)
+                        {f.toMe && <b> → {atk ? "⚔️ VOCÊ" : "🛡️ você"}</b>}
+                      </td>
+                      <td>{f.fleetName}</td>
                       <td>{fmt(f.ships)}</td>
-                      <td>{f.status === "engaged" ? "em combate" : f.status === "garrison" ? "✓ no local" : `${f.ticks}t`}</td>
+                      <td>{f.status === "engaged" ? "em combate" : f.status === "garrison" ? "✓ no local" : `${f.ticks}`}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -74,8 +78,10 @@ export function Trafego({ onGoto }: { onGoto?: (coords: string) => void }) {
           );
         return (
           <>
-            <Tabela titulo="⚔️ Ataques chegando" cor="var(--danger)" rows={ataques} atk={true} />
-            <Tabela titulo="🛡️ Defesas chegando" cor="var(--carbonum)" rows={defesas} atk={false} />
+            {ataques.length > 0 && <div className="combat-ini" style={{ color: "var(--danger)" }}>⚔️ Ataques chegando ({ataques.length})</div>}
+            <Tabela cor="var(--danger)" rows={ataques} atk={true} />
+            {defesas.length > 0 && <div className="combat-ini" style={{ color: "var(--carbonum)" }}>🛡️ Defesas chegando ({defesas.length})</div>}
+            <Tabela cor="var(--carbonum)" rows={defesas} atk={false} />
           </>
         );
       })()}
