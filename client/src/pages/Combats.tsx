@@ -146,6 +146,26 @@ export function Combats() {
               </div>
             </div>
           )}
+          {/* Assimilação (c-Mech): naves capturadas de cada lado. Deixa claro que
+              elas VOLTAM na frota do assimilador. */}
+          {((d.assimByDefense?.length ?? 0) > 0 || (d.assimByAttacker?.length ?? 0) > 0) && (
+            <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginTop: 10, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+              {(d.assimByDefense?.length ?? 0) > 0 && (
+                <div>
+                  <div className="roid-count" title="naves do atacante capturadas pela defesa — voltam na frota do assimilador">🔧 Defesa assimilou {youIsDefender ? "(suas naves ganhas)" : ""}</div>
+                  <div style={{ color: "var(--accent)" }}>{d.assimByDefense!.map((u) => `${u.name} ×${fmt(u.count)}`).join(" · ")}</div>
+                  {youIsDefender && <div className="roid-count" style={{ fontSize: 11, opacity: 0.85 }}>voltam na sua frota quando ela retornar à base</div>}
+                </div>
+              )}
+              {(d.assimByAttacker?.length ?? 0) > 0 && (
+                <div>
+                  <div className="roid-count" title="naves da defesa capturadas pelo atacante — voltam na frota do assimilador">🔧 Atacante assimilou {!youIsDefender ? "(suas naves ganhas)" : ""}</div>
+                  <div style={{ color: "var(--accent)" }}>{d.assimByAttacker!.map((u) => `${u.name} ×${fmt(u.count)}`).join(" · ")}</div>
+                  {!youIsDefender && <div className="roid-count" style={{ fontSize: 11, opacity: 0.85 }}>voltam na sua frota quando ela retornar à base</div>}
+                </div>
+              )}
+            </div>
+          )}
           {/* Naves que sobraram SEM ATIRAR (não acharam alvo) — por lado. */}
           {((d.aUnused?.length ?? 0) > 0 || (d.dUnused?.length ?? 0) > 0) && (
             <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginTop: 10, borderTop: "1px solid var(--border)", paddingTop: 10 }}>

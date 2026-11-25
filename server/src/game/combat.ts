@@ -470,6 +470,11 @@ export async function resolveSiege(target: { galaxy: number; system: number; slo
     defender: rows(st.defInit, st.dLost, st.dPem, aAssim),
     captured: roundCap, raid: { capacity, ratePct: Math.round(st.rate * 100), targetRoids: targetRoidsTotal, rows: raidRows, captured: roundCap.metalium + roundCap.carbonum + roundCap.plutonium },
     attackers, defenders,
+    // Assimilação (c-Mech): o que CADA lado capturou do outro, pra deixar claro que
+    // essas naves voltam na frota do assimilador. dAssim = a defesa capturou do
+    // atacante; aAssim = o atacante capturou da defesa.
+    assimByDefense: Object.entries(dAssim).filter(([, q]) => q > 0).map(([name, count]) => ({ name, count })),
+    assimByAttacker: Object.entries(aAssim).filter(([, q]) => q > 0).map(([name, count]) => ({ name, count })),
     aUnused, dUnused, // naves que sobraram sem atirar, por lado
     round: 1, ticks: 1, log: st.log ?? [],
   };

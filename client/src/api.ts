@@ -500,6 +500,8 @@ export const api = {
         defenders?: { name: string; coords?: string; ships: number; you?: boolean }[];
         aUnused?: { name: string; count: number }[];
         dUnused?: { name: string; count: number }[];
+        assimByDefense?: { name: string; count: number }[];
+        assimByAttacker?: { name: string; count: number }[];
         log?: { side: "a" | "d"; ini: number; ship: string; count: number; target: string; shots: number; action: "pem" | "destroy" | "assim"; amount: number; chance: number; assimCost?: number }[];
       };
     }>(`/game/combats/${id}`),
