@@ -78,6 +78,26 @@ export function Associados({ onChanged }: { onChanged: () => void }) {
         </div>
       )}
 
+      {view.shield && (
+        <div className="panel">
+          <h2>🛡️ Escudo de proteção</h2>
+          <div className="cost" style={{ marginBottom: 10 }}>
+            Ativa uma proteção de <b>{view.shield.ticks} ticks</b> — ninguém pode te atacar enquanto durar.
+            É um recurso de <b>uso único</b>: só dá pra usar <b>1 vez</b>. Se você ainda estiver sob proteção de novato, o escudo começa a contar quando ela acabar.
+          </div>
+          {view.shield.active ? (
+            <div className="status-row"><span>Escudo</span><b style={{ color: "var(--carbonum)" }}>🛡️ ativo — {view.shield.ticksLeft} tick(s) restantes</b></div>
+          ) : view.shield.used ? (
+            <div className="status-row"><span>Escudo</span><b style={{ color: "var(--muted)" }}>já utilizado (acabou)</b></div>
+          ) : (
+            <button style={{ marginTop: 4 }} disabled={busy} onClick={() => {
+              if (!window.confirm(`Ativar o escudo de proteção por ${view.shield!.ticks} ticks? É 1 vez só — não dá pra usar de novo depois.`)) return;
+              act(() => api.associadoShield());
+            }}>{busy ? "..." : `🛡️ Ativar proteção (${view.shield.ticks} ticks) — 1 uso`}</button>
+          )}
+        </div>
+      )}
+
       {view.associado && <GalaxiaPrivada onChanged={onChanged} />}
     </>
   );

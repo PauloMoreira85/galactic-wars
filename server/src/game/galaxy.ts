@@ -184,6 +184,11 @@ export async function dispatchFleet(planetId: string, fleetId: string, target: C
         const left = tgt.createdTick + NEWBIE_PROTECTION_TICKS - nowTick;
         throw new Error(`Alvo sob proteção de novato (${left} tick(s) restante(s))`);
       }
+      // Escudo manual (recurso de Associado): também bloqueia o ataque.
+      if (nowTick < (tgt.shieldUntilTick ?? 0)) {
+        const left = (tgt.shieldUntilTick ?? 0) - nowTick;
+        throw new Error(`Alvo sob escudo de proteção (${left} tick(s) restante(s))`);
+      }
       const myFleets = await tx.fleet.findMany({ where: { ownerPlanetId: planetId }, select: { units: true } });
       const tgtFleets = await tx.fleet.findMany({ where: { ownerPlanetId: tgt.id }, select: { units: true } });
       const myTotal = myFleets.reduce((acc, f) => addUnits(acc, parseUnits(f.units)), parseUnits(planet.units));
@@ -504,7 +509,7 @@ export async function viewSystem(galaxy: number, system: number, viewer: { id: s
       score: scoreOf(p), rank: rankById[p.id],
       online: sameGalaxy ? idleMs < ONLINE_MS : null,
       idleMs: sameGalaxy ? idleMs : null,
-      protected: nowTick < p.createdTick + NEWBIE_PROTECTION_TICKS,
+      protected: nowTick < p.createdTick + NEWBIE_PROTECTION_TICKS || nowTick < (p.shieldUntilTick ?? 0),
     });
   }
   return {

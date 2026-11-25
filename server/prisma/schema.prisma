@@ -108,6 +108,11 @@ model Planet {
   // Auto-exílios restantes (cai em galáxia aleatória não-privada). Máx 3 por planeta.
   autoExiles Int @default(3)
 
+  // Escudo manual (recurso de Associado, 1x por conta): protege por 72 ticks.
+  // shieldUntilTick = tick até o qual o escudo manual está ativo; shieldUsed = já gastou o uso único.
+  shieldUntilTick Int @default(0)
+  shieldUsed      Boolean @default(false)
+
   // Missões de novato já concluídas e recompensadas (JSON array de keys). Evita pagar 2x.
   missionsDone String @default("[]")
 

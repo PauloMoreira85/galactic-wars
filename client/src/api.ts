@@ -592,6 +592,8 @@ export const api = {
     request<AssociadoView>("/game/associado/rename", { method: "POST", body: JSON.stringify({ name }) }),
   associadoSkin: (skin: string) =>
     request<AssociadoView>("/game/associado/skin", { method: "POST", body: JSON.stringify({ skin }) }),
+  associadoShield: () =>
+    request<AssociadoView>("/game/associado/shield", { method: "POST" }),
 
   privateView: () =>
     request<PrivateView>("/game/private"),
@@ -637,4 +639,5 @@ export interface AssociadoView {
   maxNameChanges: number;
   skins?: { key: string; name: string }[];
   skin?: string;
+  shield?: { ticks: number; used: boolean; active: boolean; ticksLeft: number };
 }

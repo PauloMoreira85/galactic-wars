@@ -13,7 +13,7 @@ import { galaxyId, galaxyDecompose, NUM_SETORES, NUM_PARALELOS } from "../game/g
 import { recallFleet, BATTLE_TICKS, simulateCombat, roidCapRate } from "../game/combat.js";
 import { unitsOfRace, isUnitUnlocked, CLASS_LABEL, unitByName, shipImage, radarVisibleCount } from "../game/catalog.js";
 import { UNIT_TABLE } from "../game/unitTable.js";
-import { associadoView, becomeAssociado, changeName, changeSkin } from "../game/associados.js";
+import { associadoView, becomeAssociado, changeName, changeSkin, activateShield } from "../game/associados.js";
 import { autoExile } from "../game/relocation.js";
 import { randomBytes } from "node:crypto";
 import { createPrivateGalaxy, invitePrivate, joinPrivate, declinePrivate, privateView } from "../game/privategalaxy.js";
@@ -202,10 +202,16 @@ async function planetView(userId: string) {
       autoExiles: planet.autoExiles,
       morale: clampMorale(planet.morale),
       moralePct: Math.round(moraleMult(planet.morale) * 100), // % de produção pela moral
-      protection: {
-        active: tick < planet.createdTick + NEWBIE_PROTECTION_TICKS,
-        ticksLeft: Math.max(0, planet.createdTick + NEWBIE_PROTECTION_TICKS - tick),
-      },
+      protection: (() => {
+        // Proteção = a de novato (createdTick+72) OU o escudo manual (shieldUntilTick), o que durar mais.
+        const novatoUntil = planet.createdTick + NEWBIE_PROTECTION_TICKS;
+        const until = Math.max(novatoUntil, planet.shieldUntilTick ?? 0);
+        return {
+          active: tick < until,
+          ticksLeft: Math.max(0, until - tick),
+          source: tick < until ? ((planet.shieldUntilTick ?? 0) > novatoUntil ? "shield" : "novato") : null,
+        };
+      })(),
     },
     agents: (() => {
       const a = parseAgents(planet.agents);
@@ -1229,7 +1235,7 @@ gameRouter.get("/ranking", async (req: AuthedRequest, res) => {
       const ally = allyIds.has(p.id);
       // Está no meu alcance de ataque? (mesma regra que o jogo valida ao atacar)
       // Fora: eu mesmo, aliado da minha galáxia, sob proteção de novato, ou score < 50% do meu.
-      const underProtection = nowTick < p.createdTick + NEWBIE_PROTECTION_TICKS;
+      const underProtection = nowTick < p.createdTick + NEWBIE_PROTECTION_TICKS || nowTick < (p.shieldUntilTick ?? 0);
       const inRange = !you && !!myP && !sameGalaxy && !underProtection &&
         (myScore <= 0 || score >= (myScore * ATTACK_RANGE_MIN_PCT) / 100);
       return {
@@ -1481,6 +1487,12 @@ gameRouter.post("/associado/rename", async (req: AuthedRequest, res) => {
 gameRouter.post("/associado/skin", async (req: AuthedRequest, res) => {
   const skin = typeof req.body?.skin === "string" ? req.body.skin : "";
   try { await changeSkin(req.userId!, skin); }
+  catch (e: any) { return res.status(400).json({ error: e.message ?? "Falha" }); }
+  res.json(await associadoView(req.userId!));
+});
+// Ativar o ESCUDO de proteção (72 ticks) — uso ÚNICO por planeta.
+gameRouter.post("/associado/shield", async (req: AuthedRequest, res) => {
+  try { await activateShield(req.userId!); }
   catch (e: any) { return res.status(400).json({ error: e.message ?? "Falha" }); }
   res.json(await associadoView(req.userId!));
 });
