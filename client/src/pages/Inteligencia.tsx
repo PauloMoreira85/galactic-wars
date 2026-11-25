@@ -27,24 +27,32 @@ function AgentIcon({ k, race, size = 30, onZoom }: { k: string; race?: string; s
     sources.push(`/art/agents/${k}.jpg`);
   }
   const [idx, setIdx] = useState(0);
+  const hasImg = idx < sources.length;
+  const src = hasImg ? sources[idx] : "";
+  // Clique amplia (lightbox). O handler fica no CONTAINER (não só na img) e a img
+  // não captura o clique (pointerEvents none) — assim o toque funciona melhor no
+  // celular e a área clicável é a moldura inteira. Só amplia se houver arte real.
+  const clickable = !!onZoom && hasImg;
   const box = {
     display: "inline-flex", alignItems: "center", justifyContent: "center",
     width: size, height: size, borderRadius: 7, border: "1px solid var(--border)",
     background: "rgba(0,0,0,0.3)", overflow: "hidden", flex: "0 0 auto",
+    cursor: clickable ? "zoom-in" : undefined,
+    ...(hasImg ? {} : { fontSize: size * 0.56 }),
   } as const;
-  if (idx < sources.length) {
-    const src = sources[idx];
-    return (
-      <span style={box}>
+  return (
+    <span
+      style={box}
+      title={clickable ? "Clique para ampliar" : undefined}
+      onClick={clickable ? (e) => { e.stopPropagation(); onZoom!(src, k); } : undefined}
+    >
+      {hasImg ? (
         <img src={src} alt={k} width={size} height={size}
-          title={onZoom ? "Clique para ampliar" : undefined}
-          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", cursor: onZoom ? "zoom-in" : undefined }}
-          onClick={onZoom ? (e) => { e.stopPropagation(); onZoom(src, k); } : undefined}
+          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none" }}
           onError={() => setIdx((i) => i + 1)} />
-      </span>
-    );
-  }
-  return <span style={{ ...box, fontSize: size * 0.56 }}>{AGENT_EMOJI[k] ?? "🕵️"}</span>;
+      ) : (AGENT_EMOJI[k] ?? "🕵️")}
+    </span>
+  );
 }
 
 type AgentCat = Awaited<ReturnType<typeof api.agents>>["catalog"][number];
