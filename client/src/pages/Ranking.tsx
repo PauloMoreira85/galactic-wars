@@ -5,14 +5,24 @@ import { CoordLink } from "../components/CoordLink";
 function fmt(n: number) { return n.toLocaleString("pt-BR"); }
 type Tab = "planetas" | "galaxias" | "aliancas";
 
-// Símbolos de relação (cumulativos): 🔵 mesma galáxia, 🟢 aliado. Legenda no hover.
-export function Relacoes({ sameGalaxy, ally }: { sameGalaxy?: boolean; ally?: boolean }) {
+// Símbolos de relação (cumulativos). Estáticos: 🔵 mesma galáxia, 🟢 aliado.
+// Combate (só o VIEWER vê, não vaza — mesma info do Tráfego dele):
+// ⚔️ eu ataco · 🔴 me ataca · 🟠 ataca minha galáxia · ⚠️ ataca um aliado.
+export type RelacoesProps = {
+  sameGalaxy?: boolean; ally?: boolean;
+  iAttack?: boolean; attacksMe?: boolean; attacksMyGalaxy?: boolean; attacksAlly?: boolean;
+};
+export function Relacoes({ sameGalaxy, ally, iAttack, attacksMe, attacksMyGalaxy, attacksAlly }: RelacoesProps) {
   const sym: { e: string; t: string }[] = [];
   if (sameGalaxy) sym.push({ e: "🔵", t: "Mesma galáxia" });
   if (ally) sym.push({ e: "🟢", t: "Aliado" });
+  if (iAttack) sym.push({ e: "⚔️", t: "Você está atacando este planeta" });
+  if (attacksMe) sym.push({ e: "🔴", t: "Este planeta está atacando VOCÊ" });
+  if (attacksMyGalaxy) sym.push({ e: "🟠", t: "Está atacando um planeta da sua galáxia" });
+  if (attacksAlly) sym.push({ e: "⚠️", t: "Está atacando um aliado seu" });
   if (sym.length === 0) return <span className="roid-count">–</span>;
   return (
-    <span style={{ display: "inline-flex", gap: 3 }}>
+    <span style={{ display: "inline-flex", gap: 3, flexWrap: "wrap" }}>
       {sym.map((s, i) => <span key={i} title={s.t} style={{ cursor: "help" }}>{s.e}</span>)}
     </span>
   );
@@ -85,9 +95,13 @@ function RankPlanetas() {
         <span><b>Relações:</b></span>
         <span>🔵 mesma galáxia</span>
         <span>🟢 aliado</span>
+        <span>⚔️ você ataca</span>
+        <span>🔴 te ataca</span>
+        <span>🟠 ataca sua galáxia</span>
+        <span>⚠️ ataca aliado</span>
         <span style={{ opacity: 0.6 }}>–  nenhuma</span>
         <span style={{ marginLeft: 8 }}><b>Alvo:</b></span>
-        <span>⚔️ no seu alcance</span>
+        <span>🎯 no seu alcance</span>
         <span>🔒 fora do alcance</span>
       </div>
       <div style={{ overflowX: "auto" }}>
@@ -100,13 +114,13 @@ function RankPlanetas() {
                 <td><b>{r.username}</b>{r.you && <span className="roid-count" style={{ color: "var(--accent)" }}> (você)</span>}</td>
                 <td>{r.planet}</td>
                 <td className="hide-sm"><CoordLink c={r.coords} /></td>
-                <td>{r.you ? <span className="roid-count">–</span> : <Relacoes sameGalaxy={r.sameGalaxy} ally={r.ally} />}</td>
+                <td>{r.you ? <span className="roid-count">–</span> : <Relacoes sameGalaxy={r.sameGalaxy} ally={r.ally} iAttack={r.iAttack} attacksMe={r.attacksMe} attacksMyGalaxy={r.attacksMyGalaxy} attacksAlly={r.attacksAlly} />}</td>
                 <td>{fmt(r.score)}</td>
                 <td className="roid-count">{fmt(r.roids)}</td>
                 <td>
                   {r.you ? <span className="roid-count">—</span>
                     : r.inRange
-                      ? <span style={{ color: "var(--good, #4bd47a)" }} title="No seu alcance — você pode atacar">⚔️ no alcance</span>
+                      ? <span style={{ color: "var(--good, #4bd47a)" }} title="No seu alcance — você pode atacar">🎯 no alcance</span>
                       : <span className="roid-count" title="Fora do alcance (aliado, sob proteção de novato, ou pontuação baixa demais)">🔒 fora</span>}
                 </td>
               </tr>

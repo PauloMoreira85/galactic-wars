@@ -1210,7 +1210,7 @@ gameRouter.get("/combats/:id", async (req: AuthedRequest, res) => {
 gameRouter.get("/ranking", async (req: AuthedRequest, res) => {
   const planets = await prisma.planet.findMany({ include: { user: { select: { username: true } } } });
   // Qual planeta é o DO JOGADOR (pra destacar a própria linha no ranking).
-  const myP = await prisma.planet.findUnique({ where: { userId: req.userId! }, select: { id: true, galaxy: true, system: true } });
+  const myP = await prisma.planet.findUnique({ where: { userId: req.userId! }, select: { id: true, galaxy: true, system: true, slot: true } });
   const myPlanetId = myP?.id ?? null;
   const nowTick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
   // Soma as naves de TODAS as frotas de cada planeta (hangar + atacando + defendendo
@@ -1226,6 +1226,32 @@ gameRouter.get("/ranking", async (req: AuthedRequest, res) => {
   const myScore = myPlanetId ? scoreOf(planets.find((p) => p.id === myPlanetId)!) : 0;
   // Aliados (outros membros da minha aliança) — pra marcar a relação 🟢 no ranking.
   const allyIds = myPlanetId ? new Set(await allianceMateIds(myPlanetId)) : new Set<string>();
+
+  // Estados de COMBATE do ponto de vista do VIEWER (só o que envolve ele/galáxia/aliados).
+  // Não vaza nada: cada jogador só vê os combates que já aparecem no Tráfego dele.
+  // Ataques ativos (frota mission=attack, ainda a caminho ou engajada).
+  const atkFleets = myP ? await prisma.fleet.findMany({
+    where: { mission: "attack", status: { in: ["outbound", "engaged"] } },
+    select: { ownerPlanetId: true, targetGalaxy: true, targetSystem: true, targetSlot: true },
+  }) : [];
+  const planetById = new Map(planets.map((p) => [p.id, p]));
+  const coordStr = (g: number, s: number, sl: number) => `${g}:${s}:${sl}`;
+  // Pra cada planeta ATACANTE, as coords que ele está atacando.
+  const attacksByOwner = new Map<string, Set<string>>();
+  // Alvos mirados por CADA planeta atacante (pra saber se EU estou atacando alguém).
+  for (const f of atkFleets) {
+    let set = attacksByOwner.get(f.ownerPlanetId);
+    if (!set) { set = new Set(); attacksByOwner.set(f.ownerPlanetId, set); }
+    set.add(coordStr(f.targetGalaxy, f.targetSystem, f.targetSlot));
+  }
+  const myCoord = myP ? coordStr(myP.galaxy, myP.system, myP.slot) : "";
+  // coords dos meus aliados (pra marcar "ataca um aliado").
+  const allyCoords = new Set<string>();
+  for (const id of allyIds) { const ap = planetById.get(id); if (ap) allyCoords.add(coordStr(ap.galaxy, ap.system, ap.slot)); }
+  // coords da MINHA galáxia (setor:paralelo), menos eu, pra "ataca alguém da minha galáxia".
+  const myGalaxyCoords = new Set<string>();
+  if (myP) for (const p of planets) if (p.galaxy === myP.galaxy && p.system === myP.system && p.id !== myP.id) myGalaxyCoords.add(coordStr(p.galaxy, p.system, p.slot));
+
   const ranked = planets
     .map((p) => {
       const score = scoreOf(p);
@@ -1238,13 +1264,21 @@ gameRouter.get("/ranking", async (req: AuthedRequest, res) => {
       const underProtection = nowTick < p.createdTick + NEWBIE_PROTECTION_TICKS || nowTick < (p.shieldUntilTick ?? 0);
       const inRange = !you && !!myP && !sameGalaxy && !underProtection &&
         (myScore <= 0 || score >= (myScore * ATTACK_RANGE_MIN_PCT) / 100);
+      // Estados de combate (só pro viewer): o que ESTE planeta p está fazendo em relação a mim.
+      const pAttacks = attacksByOwner.get(p.id) ?? new Set<string>();
+      const pCoord = coordStr(p.galaxy, p.system, p.slot);
+      const iAttack = !you && !!myP && (attacksByOwner.get(myP.id)?.has(pCoord) ?? false); // EU ataco p
+      const attacksMe = !you && pAttacks.has(myCoord);                                      // p me ataca
+      const attacksMyGalaxy = !you && [...pAttacks].some((c) => myGalaxyCoords.has(c));      // p ataca minha galáxia
+      const attacksAlly = !you && [...pAttacks].some((c) => allyCoords.has(c));              // p ataca um aliado meu
       return {
         username: p.user.username,
-        planet: p.name, coords: `${p.galaxy}:${p.system}:${p.slot}`,
+        planet: p.name, coords: pCoord,
         score, roids: totalRoids(p),
         you, // marca a própria linha
         inRange, // dá pra atacar a partir do meu planeta?
         sameGalaxy, ally, // relações estáticas (🔵 mesma galáxia, 🟢 aliado)
+        iAttack, attacksMe, attacksMyGalaxy, attacksAlly, // estados de combate (só pro viewer)
       };
     })
     .sort((a, b) => b.score - a.score); // todos os planetas, por PONTUAÇÃO

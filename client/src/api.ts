@@ -534,7 +534,7 @@ export const api = {
 
   ranking: () =>
     request<{
-      ranking: { username: string; planet: string; coords: string; roids: number; score: number; you?: boolean; inRange?: boolean; sameGalaxy?: boolean; ally?: boolean }[];
+      ranking: { username: string; planet: string; coords: string; roids: number; score: number; you?: boolean; inRange?: boolean; sameGalaxy?: boolean; ally?: boolean; iAttack?: boolean; attacksMe?: boolean; attacksMyGalaxy?: boolean; attacksAlly?: boolean }[];
     }>("/game/ranking"),
   allianceRanking: () =>
     request<{ ranking: { id: string; name: string; tag: string; score: number; members: number; avg: number }[] }>("/game/ranking/alliances"),

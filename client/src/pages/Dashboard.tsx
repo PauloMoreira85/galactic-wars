@@ -764,7 +764,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                           {r.coords}
                         </button>
                       </td>
-                      <td>{r.you ? <span className="roid-count">–</span> : <Relacoes sameGalaxy={r.sameGalaxy} ally={r.ally} />}</td>
+                      <td>{r.you ? <span className="roid-count">–</span> : <Relacoes sameGalaxy={r.sameGalaxy} ally={r.ally} iAttack={r.iAttack} attacksMe={r.attacksMe} attacksMyGalaxy={r.attacksMyGalaxy} attacksAlly={r.attacksAlly} />}</td>
                       <td><b>{(r.score ?? 0).toLocaleString("pt-BR")}</b></td>
                       <td>{r.roids}</td>
                     </tr>
