@@ -10,31 +10,24 @@ import { addMorale } from "./morale.js";
 
 // ===== Balanceamento =====
 export const BATTLE_TICKS = 3;
-// % de roids saqueados por tick. Regra: furar uma DEFESA FORTE compensa MAIS — quanto
-// mais forte a defesa (que mesmo assim foi roidada), MAIOR o cap pro atacante. Atacar
-// alvo indefeso (atacante esmagando) rende o piso (não vale muito roidar quem não resiste).
-//   defesa ≥ 2× o atacante  → 15% (teto — furou defesa forte, recompensa máxima)
-//   equilíbrio (1×1)        → ~10% (base)
-//   atacante ≥ 3× a defesa  →  5% (piso — alvo indefeso)
-// Escala LINEAR pelo ratio DEFESA/ATAQUE entre o piso e o teto.
-const CAP_MIN = 0.05;   // piso (atacante domina — defesa fraca)
-const CAP_BASE = 0.10;  // combate equilibrado (defesa = ataque)
-const CAP_MAX = 0.15;   // teto (defesa forte furada)
-const CAP_DEF_FULL = 2;  // defesa ≥ 2× o atacante → teto
-const CAP_ATK_FULL = 3;  // atacante ≥ 3× a defesa → piso
+// % de roids saqueados por tick. Regra: SEMPRE favorece o atacante — o cap fica no
+// teto (15%) do equilíbrio até 3× de vantagem do atacante. Só começa a cair quando o
+// ataque passa de 3× a força da defesa, chegando ao piso (5%) em 20× (força absurda
+// contra defesa irrisória — nesse caso roidar não deve render o máximo).
+//   ataque ≤ 3× a defesa  → 15% (teto, inclui equilíbrio e defesa forte)
+//   ataque 20× a defesa   →  5% (piso)
+const CAP_MIN = 0.05;      // piso (ataque esmagador, ≥ CAP_FLOOR_AT× a defesa)
+const CAP_MAX = 0.15;      // teto (até CAP_FULL_UNTIL× de vantagem)
+const CAP_FULL_UNTIL = 3;  // ataque até 3× a defesa ainda rende o teto
+const CAP_FLOOR_AT = 20;   // ataque 20× a defesa → piso
 
 // Cap de roids por tick, pela força relativa (usa o score de COMBATE, sem roiders).
 export function roidCapRate(atkScore: number, defScore: number): number {
-  const d = Math.max(1, defScore) / Math.max(1, atkScore); // ratio defesa/ataque
-  if (d >= 1) {
-    // Defesa igual ou mais forte: sobe de BASE (1×) até MAX (≥ CAP_DEF_FULL×).
-    const t = Math.min(1, (d - 1) / (CAP_DEF_FULL - 1));
-    return CAP_BASE + (CAP_MAX - CAP_BASE) * t;
-  }
-  // Atacante mais forte: desce de BASE (1×) até MIN (atacante ≥ CAP_ATK_FULL× a defesa).
-  const a = 1 / d; // ratio ataque/defesa (>1)
-  const t = Math.min(1, (a - 1) / (CAP_ATK_FULL - 1));
-  return CAP_BASE - (CAP_BASE - CAP_MIN) * t;
+  const a = Math.max(1, atkScore) / Math.max(1, defScore); // ratio ataque/defesa
+  if (a <= CAP_FULL_UNTIL) return CAP_MAX; // até 3× (e defesa igual/forte) = teto
+  // Acima de 3×: desce linear até o piso em CAP_FLOOR_AT×.
+  const t = Math.min(1, (a - CAP_FULL_UNTIL) / (CAP_FLOOR_AT - CAP_FULL_UNTIL));
+  return CAP_MAX - (CAP_MAX - CAP_MIN) * t;
 }
 // Mech: a assimilação CONSOME a assimiladora e é equilibrada por VALOR (custo),
 // não 1:1. Pra assimilar naves inimigas de valor V, gasta V em assimiladoras.
