@@ -54,6 +54,7 @@ export interface RaceInfo {
 // Nave real da tabela oficial.
 export interface UnitItem {
   name: string;
+  race: string;          // Humana/Daharan/Rakshasa/c-Mech/Insecta
   img: string;           // /art/ships/<slug>.png
   classe: string;        // Ca/Co/Fr/De/Cr/Na/Ro
   classeLabel: string;   // Caça/Corveta/...

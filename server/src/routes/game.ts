@@ -124,7 +124,7 @@ async function planetView(userId: string) {
 
   // Catalogo de naves REAIS da raca (tabela oficial).
   const units = unitsOfRace(raceKey).map((u) => ({
-    name: u.nome, classe: u.classe, classeLabel: CLASS_LABEL[u.classe], tipo: u.tipo, roider: u.roider,
+    name: u.nome, race: u.race, classe: u.classe, classeLabel: CLASS_LABEL[u.classe], tipo: u.tipo, roider: u.roider,
     img: shipImage(u.nome),
     alvos: u.alvos.map((a) => CLASS_LABEL[a]),
     stats: { ini: u.ini, agi: u.agi, varm: u.varm, qarm: u.qarm, pfog: u.pfog, fusel: u.fusel, rp: u.rp, tec: u.tec, comb: u.comb },
@@ -145,7 +145,7 @@ async function planetView(userId: string) {
     const u = unitByName(name);
     if (!u) continue;
     units.push({
-      name: u.nome, classe: u.classe, classeLabel: CLASS_LABEL[u.classe], tipo: u.tipo, roider: u.roider,
+      name: u.nome, race: u.race, classe: u.classe, classeLabel: CLASS_LABEL[u.classe], tipo: u.tipo, roider: u.roider,
       img: shipImage(u.nome),
       alvos: u.alvos.map((a) => CLASS_LABEL[a]),
       stats: { ini: u.ini, agi: u.agi, varm: u.varm, qarm: u.qarm, pfog: u.pfog, fusel: u.fusel, rp: u.rp, tec: u.tec, comb: u.comb },

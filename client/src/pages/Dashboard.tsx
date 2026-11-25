@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { api, clearToken, IS_RUR, MAIN_URL, RUR_URL, REFRESH_MS, type PlanetView, type Resource, type TechItem } from "../api";
+import { useEffect, useState, Fragment } from "react";
+import { api, clearToken, IS_RUR, MAIN_URL, RUR_URL, REFRESH_MS, type PlanetView, type Resource, type TechItem, type UnitItem } from "../api";
 import { CoordNavContext, CoordLink } from "../components/CoordLink";
 import { Galaxy } from "./Galaxy";
 import { Missoes } from "./Missoes";
@@ -30,6 +30,35 @@ const RES_META: { key: Resource; label: string }[] = [
 
 function fmt(n: number) {
   return n.toLocaleString("pt-BR");
+}
+
+// Ordem canônica das classes (Caça > Corveta > Fragata > Destroyer > Cruzador > Nave-mãe > Roider).
+const CLASS_ORDER: Record<string, number> = { Ca: 0, Co: 1, Fr: 2, De: 3, Cr: 4, Na: 5, Ro: 6 };
+
+// Agrupa o catálogo de naves por RAÇA (a sua primeiro, depois as capturadas de
+// outras raças — útil pro c-Mech, que acumula naves de várias raças). Dentro de
+// cada raça, ordena por classe. Só mostra cabeçalho se houver mais de uma raça.
+function groupUnitsByRace(units: UnitItem[], ownRace: string) {
+  const byRace = new Map<string, UnitItem[]>();
+  for (const u of units) {
+    const arr = byRace.get(u.race) ?? [];
+    arr.push(u);
+    byRace.set(u.race, arr);
+  }
+  const multi = byRace.size > 1;
+  // Própria raça primeiro; as demais (capturadas) em ordem alfabética.
+  const races = [...byRace.keys()].sort((a, b) => {
+    if (a === ownRace) return -1;
+    if (b === ownRace) return 1;
+    return a.localeCompare(b, "pt-BR");
+  });
+  return races.map((race) => ({
+    race,
+    captured: race !== ownRace,
+    showHeader: multi,
+    units: (byRace.get(race) ?? []).sort((a, b) =>
+      (CLASS_ORDER[a.classe] ?? 9) - (CLASS_ORDER[b.classe] ?? 9) || a.name.localeCompare(b.name, "pt-BR")),
+  }));
 }
 
 // Imagem de arte com fallback: tenta .png, depois .jpg/.jpeg/.webp; se nenhuma
@@ -944,7 +973,16 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {view.units.map((u) => (
+                  {groupUnitsByRace(view.units, view.race.name).map((grp) => (
+                    <Fragment key={grp.race}>
+                      {grp.showHeader && (
+                        <tr className="ship-race-head">
+                          <td colSpan={9}>
+                            {grp.captured ? "🛸 " : "⚙️ "}{grp.race}{grp.captured ? " (capturadas)" : ""}
+                          </td>
+                        </tr>
+                      )}
+                      {grp.units.map((u) => (
                     <tr key={u.name} style={{ opacity: (u.unlocked || u.captured) ? 1 : 0.4 }}>
                       <td>
                         <div className="ship-cell">
@@ -992,6 +1030,8 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                         )}
                       </td>
                     </tr>
+                      ))}
+                    </Fragment>
                   ))}
                 </tbody>
               </table>
