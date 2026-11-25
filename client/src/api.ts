@@ -310,6 +310,7 @@ export const api = {
     available: string[];
     pending: { id: string; key: string; name: string; coords: string; tec: number }[];
     history: { id: string; key: string; name: string; target: string; coords: string; success: boolean; detail: string; tick: number }[];
+    tick: number; cooldownLeft: number; cooldownUntilTick: number;
   }>("/game/sabotage"),
   sabotageRun: (galaxy: number, system: number, slot: number, key: string) =>
     request<{ success?: boolean; message?: string }>("/game/sabotage", { method: "POST", body: JSON.stringify({ galaxy, system, slot, key }) }),

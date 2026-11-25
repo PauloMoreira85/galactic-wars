@@ -11,7 +11,7 @@ import { finalize } from "./combat.js";
 import { parseAgents, spySuccessChance } from "./agents.js";
 import { addMorale } from "./morale.js";
 
-const SAB_COOLDOWN = 5; // ticks entre sabotagens do mesmo sabotador
+export const SAB_COOLDOWN = 5; // ticks entre sabotagens do mesmo sabotador
 
 export interface SabotageDef { key: string; name: string; building: string; desc: string; ticks: number; plut: number }
 // Cada sabotagem exige a construção (tech) correspondente.

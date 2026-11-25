@@ -28,7 +28,7 @@ import { sendChat, recentChat, olderChat, resolveRoom } from "../game/chat.js";
 import { pushPublicKey, saveSubscription, removeSubscription, PUSH_ENABLED, pushChatUniverso } from "../game/push.js";
 import { checkMissions, missionsView } from "../game/missions.js";
 import { sendPM, inbox, sentbox, markRead, unreadCount, conversations, conversation } from "../game/pm.js";
-import { SABOTAGES, availableSabotages, executeSabotage, sabotageOdds, sabotageCatalog } from "../game/sabotage.js";
+import { SABOTAGES, availableSabotages, executeSabotage, sabotageOdds, sabotageCatalog, SAB_COOLDOWN } from "../game/sabotage.js";
 import { parseUnits, totalUnits } from "../game/unitmap.js";
 import {
   TECHS, TECH_BY_KEY, levelOf, upgradeCost, upgradeTicks, reqsMet, espionageLevel,
@@ -944,7 +944,11 @@ gameRouter.get("/sabotage", async (req: AuthedRequest, res) => {
     coords: `${l.targetGalaxy}:${l.targetSystem}:${l.targetSlot}`,
     success: l.success, detail: l.detail, tick: l.tick,
   }));
-  res.json({ all: SABOTAGES, available, pending, history });
+  // Cooldown: trava a lista e diz em qual tick libera (pedido lythorf).
+  const cd = await prisma.sabotageCooldown.findUnique({ where: { planetId: planet.id } });
+  const cooldownLeft = cd ? Math.max(0, SAB_COOLDOWN - (tick - cd.lastTick)) : 0;
+  const cooldownUntilTick = cooldownLeft > 0 && cd ? cd.lastTick + SAB_COOLDOWN : 0;
+  res.json({ all: SABOTAGES, available, pending, history, tick, cooldownLeft, cooldownUntilTick });
 });
 gameRouter.post("/sabotage", async (req: AuthedRequest, res) => {
   const p = z.object({ galaxy: z.number().int().min(1), system: z.number().int().min(1), slot: z.number().int().min(1).max(15), key: z.string() }).safeParse(req.body);

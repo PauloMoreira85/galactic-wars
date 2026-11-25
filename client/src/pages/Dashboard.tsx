@@ -594,7 +594,9 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
               <div className="sh-name">
                 {view.commanderTitle}
                 {planet.protection?.active && (
-                  <span className="prot-badge" title={`Proteção de novato — ninguém pode te atacar (faltam ${planet.protection.ticksLeft} ticks)`}>P</span>
+                  <span className="prot-badge" title={`Proteção de novato — ninguém pode te atacar (faltam ${planet.protection.ticksLeft} ticks)`}>
+                    🛡️ {planet.protection.ticksLeft}t
+                  </span>
                 )}
               </div>
               <div className="sh-cargo">{planet.cargo ?? "Comandante"}</div>
@@ -763,7 +765,8 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                     <input type="number" min={1} placeholder="1" value={roidQty[key] || ""}
                       onChange={(e) => setRoidQty((q) => ({ ...q, [key]: e.target.value === "" ? 0 : Math.max(1, Math.floor(Number(e.target.value))) }))}
                       style={{ width: 64, margin: 0, padding: "4px 6px", textAlign: "center" }} />
-                    <button disabled={!canAffordRoid(key) || busy !== null} onClick={() => build(key, Math.max(1, roidQty[key] || 1))}>
+                    <button disabled={!canAffordRoid(key) || busy !== null} onClick={() => build(key, Math.max(1, roidQty[key] || 1))}
+                      style={{ minWidth: 150, whiteSpace: "nowrap" }}>
                       {busy === key ? "..." : `⛏️ minerar ${(roidQty[key] || 0) > 1 ? roidQty[key] + "x" : label}`}
                     </button>
                   </div>

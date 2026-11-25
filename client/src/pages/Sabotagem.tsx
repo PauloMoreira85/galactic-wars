@@ -33,6 +33,14 @@ export function Sabotagem() {
     <div className="panel">
       <h2>Sabotagem</h2>
 
+      {/* Cooldown travado em cima: enquanto espera, não dá pra enfileirar outra. */}
+      {data.cooldownLeft > 0 && (
+        <div className="panel" style={{ borderColor: "#ff6b6b", background: "rgba(255,107,107,0.08)", margin: "0 0 14px", padding: "10px 12px" }}>
+          <b style={{ color: "#ff6b6b" }}>⏳ Em espera</b> — faltam <b>{data.cooldownLeft} tick(s)</b> até você poder utilizar outra sabotagem.
+          <span className="roid-count"> Libera no tick <b>#{data.cooldownUntilTick}</b> (atual: #{data.tick}).</span>
+        </div>
+      )}
+
       {/* Fila EM ANDAMENTO no topo (igual à produção de agentes na Inteligência). */}
       {data.pending.length > 0 && (
         <div className="panel" style={{ borderColor: "var(--accent)", margin: "0 0 14px" }}>
@@ -76,7 +84,7 @@ export function Sabotagem() {
                 <td className="roid-count">{s.desc}</td>
                 <td className="roid-count">{s.plut.toLocaleString("pt-BR")} P</td>
                 <td className="roid-count">{s.ticks}t</td>
-                <td>{unlocked ? <button onClick={() => run(s.key)}>executar</button> : <span className="roid-count">🔒 pesquisar</span>}</td>
+                <td>{unlocked ? <button disabled={data.cooldownLeft > 0} title={data.cooldownLeft > 0 ? `Em espera — libera no tick #${data.cooldownUntilTick}` : undefined} onClick={() => run(s.key)}>executar</button> : <span className="roid-count">🔒 pesquisar</span>}</td>
               </tr>
             );
           })}

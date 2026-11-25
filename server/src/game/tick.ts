@@ -5,7 +5,8 @@ import { processBuildOrders, parseTech } from "./fleet.js";
 import { miningBonus } from "./tech.js";
 import { processFleets } from "./galaxy.js";
 import { processTax } from "./governance.js";
-import { processEffects, resolveSabotages } from "./sabotage.js";
+import { processEffects, resolveSabotages, SAB_COOLDOWN } from "./sabotage.js";
+import { addNews } from "./news.js";
 import { moraleMult, decayAndClampMorale, MORALE_DECAY_EVERY } from "./morale.js";
 import { softResetRound } from "./round.js";
 import { NEWBIE_PROTECTION_TICKS } from "./constants.js";
@@ -23,6 +24,24 @@ async function notifyProtectionEnd(fromTick: number, toTick: number) {
         title: "🛡️ Proteção encerrada",
         body: "Sua proteção de novato acabou — agora dá pra atacar e você pode ser atacado. Reforce a defesa!",
         tag: "protection", url: "/",
+      }).catch(() => {});
+    }
+  }
+}
+
+// Notícia "seu tempo de espera de sabotagem terminou" — 1x, no tick em que o
+// cooldown de 5 ticks cruza a linha. Best-effort (pedido lythorf).
+async function notifySabotageCooldownEnd(fromTick: number, toTick: number) {
+  const cds = await prisma.sabotageCooldown.findMany({ select: { planetId: true, lastTick: true } });
+  for (const cd of cds) {
+    const end = cd.lastTick + SAB_COOLDOWN;
+    if (end > fromTick && end <= toTick) {
+      const p = await prisma.planet.findUnique({ where: { id: cd.planetId }, select: { userId: true } });
+      if (!p) continue;
+      await addNews(cd.planetId, end, "🧨 Seu tempo de espera de sabotagem terminou — já dá pra sabotar de novo.").catch(() => {});
+      pushToUser(p.userId, {
+        title: "🧨 Sabotagem liberada", body: "Seu tempo de espera terminou — já dá pra sabotar de novo.",
+        tag: "sabotage-cd", url: "/sabotagem",
       }).catch(() => {});
     }
   }
@@ -130,6 +149,7 @@ async function applyTicks(fromTick: number, toTick: number) {
     if (t % MORALE_DECAY_EVERY === 0) await decayAndClampMorale(); // moral decai -1 a cada 5 ticks
   }
   await notifyProtectionEnd(fromTick, toTick); // push "proteção acabou" (1x, best-effort)
+  await notifySabotageCooldownEnd(fromTick, toTick); // notícia "sabotagem liberada" (1x)
   const t5 = Date.now();
   if (t5 - t0 >= 1000) {
     console.log(`[tick-perf] total=${t5 - t0}ms prod=${t1 - t0} tax=${t2 - t1} effects=${t3 - t2} build=${t4 - t3} fleets=${t5 - t4} (due=${due})`);

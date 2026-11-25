@@ -215,6 +215,27 @@ function Calculadora() {
     finally { setBusy(false); }
   }
 
+  // Pontuação ao vivo das frotas montadas (canon: (m+c) × 0.1 por nave).
+  // "combate" ignora roiders (igual ao motor), usada pro roidcap.
+  const scoreOf = (m: Record<string, number>, onlyCombat = false) => {
+    let s = 0;
+    for (const [n, q] of Object.entries(m)) {
+      const u = nameToRace[n] ? units.find((x) => x.name === n) : undefined;
+      if (!u) continue;
+      if (onlyCombat && u.roider) continue;
+      s += (q as number) * (u.m + u.c) * 0.1;
+    }
+    return Math.round(s);
+  };
+  const scoreA = scoreOf(atk), scoreD = scoreOf(def);
+  const combatA = scoreOf(atk, true), combatD = scoreOf(def, true);
+  // Puxa os pontos das frotas montadas direto pro roidcap rápido.
+  function roidcapFromFleets() {
+    if (combatA <= 0 && combatD <= 0) return;
+    setRcAtk(String(combatA)); setRcDef(String(combatD));
+    api.roidcapCalc(combatA, Math.max(1, combatD), parseInt(targetRoids, 10) || undefined)
+      .then(setRcResult).catch(() => {});
+  }
   const totalOf = (m: Record<string, number>) => Object.values(m).reduce((a, b) => a + b, 0);
   const cleanUnits = (o: any): Record<string, number> => {
     const out: Record<string, number> = {};
@@ -281,6 +302,7 @@ function Calculadora() {
   const Fleet = ({ side, map }: { side: "a" | "d"; map: Record<string, number> }) => (
     <div className="cost" style={{ lineHeight: 1.7 }}>
       <b>{side === "a" ? "⚔️ Ataque" : "🛡️ Defesa"}: {fmt(side === "a" ? totA : totD)} nave(s)</b>
+      {" "}<span className="roid-count">· <b style={{ color: "var(--carbonum)" }}>{fmt(side === "a" ? scoreA : scoreD)} pts</b></span>
       {Object.keys(map).length === 0 ? <span className="roid-count"> — vazio</span> : (
         <div className="roid-count">{Object.entries(map).map(([n, q]) => `${fmt(q)}× ${n}`).join(" · ")}</div>
       )}
@@ -307,6 +329,7 @@ function Calculadora() {
           <input type="text" inputMode="numeric" placeholder="ex: 1500" value={rcRoids}
             onChange={(e) => setRcRoids(e.target.value.replace(/\D/g, ""))} style={{ width: 100, margin: 0, padding: "6px 8px" }} />
           <button onClick={runRoidcap}>calcular</button>
+          {(combatA > 0 || combatD > 0) && <button className="link" onClick={roidcapFromFleets} title="Usa os pontos de combate das frotas que você montou na tabela abaixo">↓ usar frotas montadas</button>}
           {(rcAtk || rcDef || rcRoids || rcResult) && <button className="link" onClick={() => { setRcAtk(""); setRcDef(""); setRcRoids(""); setRcResult(null); }}>limpar</button>}
         </div>
         {rcResult && (
