@@ -594,7 +594,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
               <div className="sh-name">
                 {view.commanderTitle}
                 {planet.protection?.active && (
-                  <span className="prot-badge" title={`Proteção de novato — ninguém pode te atacar (faltam ${planet.protection.ticksLeft} ticks)`}>
+                  <span className="prot-badge has-text" title={`Proteção de novato — ninguém pode te atacar (faltam ${planet.protection.ticksLeft} ticks)`}>
                     🛡️ {planet.protection.ticksLeft}t
                   </span>
                 )}
