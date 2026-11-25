@@ -64,36 +64,53 @@ export async function allocateSlot() {
   const privateIds = new Set(
     (await prisma.galaxyState.findMany({ where: { isPrivate: true }, select: { galaxy: true } })).map((s) => s.galaxy)
   );
-  // Contagem por galáxia (id) e por SETOR.
+  // Contagem por galáxia (id).
   const count = new Array(GALAXIES + 1).fill(0);
-  const bySetor = new Array(NUM_SETORES + 1).fill(0);
   const taken = new Set<string>();
   for (const p of planets) {
     taken.add(`${p.galaxy}:${p.system}:${p.slot}`);
     const id = galaxyId(p.galaxy, p.system);
     if (id >= 1 && id <= GALAXIES) count[id]++;
-    if (p.galaxy >= 1 && p.galaxy <= NUM_SETORES) bySetor[p.galaxy]++;
   }
 
-  // Espalha por SETOR (round-robin): o novato cai no setor com menos gente, pra
-  // preencher o mapa por igual (não deixar setores inteiros vazios). Dentro do
-  // setor escolhido, vai pra galáxia (paralelo) mais vazia com vaga.
-  const setorOrder = Array.from({ length: NUM_SETORES }, (_, i) => i + 1)
-    .sort((a, b) => bySetor[a] - bySetor[b]); // setores mais vazios primeiro
-
-  for (const setor of setorOrder) {
-    // galáxia (paralelo) mais vazia desse setor que tenha vaga
-    let bestPar = -1, bestCount = Infinity;
+  // JUNTAR em vez de espalhar: enche as galáxias que JÁ têm gente antes de abrir
+  // novas — evita dezenas de galáxias com 1 planeta só. O novato cai na galáxia
+  // mais CHEIA que ainda tem vaga (preenche de baixo pra cima). Só abre uma galáxia
+  // nova (vazia) quando não há nenhuma começada com vaga, e ainda assim mantém um
+  // mínimo de MIN_OPEN galáxias "abertas" pra nunca deixar todo mundo na mesma
+  // (senão no comecinho todos virariam aliados).
+  const MIN_OPEN = 2; // nº mínimo de galáxias com gente, pra sempre haver "outra" galáxia
+  const todas: { id: number; setor: number; paralelo: number; count: number }[] = [];
+  for (let setor = 1; setor <= NUM_SETORES; setor++) {
     for (let paralelo = 1; paralelo <= NUM_PARALELOS; paralelo++) {
       const id = galaxyId(setor, paralelo);
-      if (privateIds.has(id)) continue; // nunca alocar novato numa galáxia privada
-      if (count[id] >= SLOTS_PER_SYSTEM) continue;
-      if (count[id] < bestCount) { bestCount = count[id]; bestPar = paralelo; }
+      if (privateIds.has(id)) continue; // nunca alocar novato numa privada
+      todas.push({ id, setor, paralelo, count: count[id] });
     }
-    if (bestPar === -1) continue; // setor cheio, tenta o próximo
-    for (let slot = 1; slot <= SLOTS_PER_SYSTEM; slot++) {
-      if (!taken.has(`${setor}:${bestPar}:${slot}`)) return { galaxy: setor, system: bestPar, slot };
-    }
+  }
+  const comGente = todas.filter((g) => g.count > 0);
+  const comVaga = todas.filter((g) => g.count < SLOTS_PER_SYSTEM);
+  if (comVaga.length === 0) throw new Error("Universo cheio (todas as galáxias lotadas)");
+
+  // Começadas (têm gente) que ainda têm vaga — preferir a MAIS cheia pra fechá-la.
+  const comecadasComVaga = comVaga.filter((g) => g.count > 0).sort((a, b) => b.count - a.count || a.id - b.id);
+  const vazias = comVaga.filter((g) => g.count === 0).sort((a, b) => a.id - b.id);
+
+  let alvo: { setor: number; paralelo: number } | null = null;
+  if (comGente.length < MIN_OPEN && vazias.length > 0) {
+    // Ainda não há galáxias começadas suficientes: abre uma nova pra garantir o mínimo.
+    alvo = vazias[0];
+  } else if (comecadasComVaga.length > 0) {
+    // Caso normal: enche a galáxia começada mais cheia que ainda tem espaço.
+    alvo = comecadasComVaga[0];
+  } else if (vazias.length > 0) {
+    // Todas as começadas estão cheias: abre a próxima galáxia vazia.
+    alvo = vazias[0];
+  }
+  if (!alvo) throw new Error("Universo cheio (todas as galáxias lotadas)");
+
+  for (let slot = 1; slot <= SLOTS_PER_SYSTEM; slot++) {
+    if (!taken.has(`${alvo.setor}:${alvo.paralelo}:${slot}`)) return { galaxy: alvo.setor, system: alvo.paralelo, slot };
   }
   throw new Error("Universo cheio (todas as galáxias lotadas)");
 }
