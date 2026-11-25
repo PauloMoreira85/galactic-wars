@@ -4,6 +4,7 @@ import { addNews } from "./news.js";
 import { addMorale } from "./morale.js";
 import { galaxyId, galaxyWhere, galaxyDecompose } from "./geo.js";
 import { parseUnits, totalUnits } from "./unitmap.js";
+import { radarVisibleCount } from "./catalog.js";
 
 // "setor:paralelo" para exibir uma galáxia (a partir do id interno).
 function coordLabel(id: number): string {
@@ -365,6 +366,51 @@ export async function mgFleets(mgPlanetId: string) {
       planet: p.name, commander: p.user.username,
       coords: `${p.galaxy}:${p.system}:${p.slot}`,
       base, baseTotal: totalUnits(base), fleets,
+    };
+  });
+}
+
+// ⚔️ INFORMAÇÃO DE GUERRA (MG + CG) — como no GW original: por PLANETA da galáxia,
+// os ATAQUES chegando (ordem de TEC) e, embaixo, as DEFESAS chegando (ordem de TEC).
+// Visível ao Ministro da Guerra OU ao Conselho da Galáxia (CG).
+export async function warInfo(viewerPlanetId: string) {
+  const g = await planetGalaxy(viewerPlanetId);
+  if (g == null) throw new Error("Planeta nao encontrado");
+  const st = await ensureGalaxy(g);
+  if (st.mgPlanetId !== viewerPlanetId && st.cgPlanetId !== viewerPlanetId) {
+    throw new Error("Apenas o Ministro da Guerra ou o Comandante da Galáxia podem ver isto");
+  }
+  const tick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
+  const { setor, paralelo } = galaxyDecompose(g);
+  // Planetas da galáxia (= par setor:paralelo).
+  const planets = await prisma.planet.findMany({ where: { galaxy: setor, system: paralelo }, include: { user: { select: { username: true } } }, orderBy: { slot: "asc" } });
+  // Frotas em movimento MIRANDO esta galáxia (vindas de qualquer lugar).
+  const incoming = await prisma.fleet.findMany({ where: { targetGalaxy: setor, targetSystem: paralelo, status: { in: ["outbound", "engaged", "garrison"] } } });
+  const ownerIds = [...new Set(incoming.map((f) => f.ownerPlanetId))];
+  const owners = await prisma.planet.findMany({ where: { id: { in: ownerIds } }, include: { user: { select: { username: true } } } });
+  const ownerMap = new Map(owners.map((o) => [o.id, o]));
+
+  return planets.map((p) => {
+    const mine = incoming.filter((f) => f.targetSlot === p.slot);
+    const row = (f: typeof incoming[number]) => {
+      const o = ownerMap.get(f.ownerPlanetId);
+      return {
+        fleetName: f.name,
+        from: o ? `${o.galaxy}:${o.system}:${o.slot}` : "?",
+        fromPlanet: o?.name ?? "?", fromCommander: o?.user.username ?? "?",
+        ships: radarVisibleCount(parseUnits(f.units)), // radar esconde invisíveis (Rakshasa)
+        status: f.status,
+        tec: f.status === "engaged" ? 0 : Math.max(0, f.arriveTick - tick),
+        engaged: f.status === "engaged",
+      };
+    };
+    const byTec = (a: { tec: number }, b: { tec: number }) => a.tec - b.tec;
+    const attacks = mine.filter((f) => f.mission === "attack").map(row).sort(byTec);
+    const defenses = mine.filter((f) => f.mission !== "attack").map(row).sort(byTec);
+    return {
+      planet: p.name, commander: p.user.username,
+      coords: `${p.galaxy}:${p.system}:${p.slot}`, slot: p.slot,
+      attacks, defenses,
     };
   });
 }

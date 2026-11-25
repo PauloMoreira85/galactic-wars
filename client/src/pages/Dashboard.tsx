@@ -6,7 +6,7 @@ import { Missoes } from "./Missoes";
 import { Trafego } from "./Trafego";
 import { Frotas } from "./Frotas";
 import { Combats } from "./Combats";
-import { Votacao, FundoGalaxia, CargoCG, CargoME, CargoMG, CargoMD } from "./Governo";
+import { Votacao, FundoGalaxia, CargoCG, CargoME, CargoMG, CargoMD, InfoGuerra } from "./Governo";
 import { Noticias } from "./Noticias";
 import { Aliancas } from "./Aliancas";
 import { Ranking, Relacoes } from "./Ranking";
@@ -134,7 +134,7 @@ function useRoundStatus(view: PlanetView | null) {
   return { label: "Próximo round", time: fmtDur(Math.floor((next - now) / 1000)) };
 }
 
-type Section = "planeta" | "missoes" | "galaxia" | "frotas" | "trafego" | "tecnologia" | "naves" | "recursos" | "combates" | "votacao" | "cargoCG" | "cargoME" | "cargoMG" | "cargoMD" | "noticias" | "aliancas" | "ranking" | "associados" | "preferencias" | "forum" | "forumgalaxia" | "chat" | "chatGalaxia" | "chatAlianca" | "chatAtaque" | "mensagens" | "sabotagem" | "intel";
+type Section = "planeta" | "missoes" | "galaxia" | "frotas" | "trafego" | "tecnologia" | "naves" | "recursos" | "combates" | "votacao" | "cargoCG" | "cargoME" | "cargoMG" | "cargoMD" | "guerra" | "noticias" | "aliancas" | "ranking" | "associados" | "preferencias" | "forum" | "forumgalaxia" | "chat" | "chatGalaxia" | "chatAlianca" | "chatAtaque" | "mensagens" | "sabotagem" | "intel";
 
 interface MenuItem {
   key: string;
@@ -209,6 +209,7 @@ const TITLES: Record<Section, string> = {
   cargoME: "💰 Ministro da Economia",
   cargoMG: "⚔️ Ministro da Guerra",
   cargoMD: "🕊️ Ministro da Diplomacia",
+  guerra: "🗺️ Informação de Guerra",
   noticias: "Notícias",
   aliancas: "Alianças",
   ranking: "Rankings",
@@ -443,6 +444,8 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     ...(gf.iAmME ? [{ key: "cargoME", label: "💰 Ministro Economia" }] : []),
     ...(gf.iAmMG ? [{ key: "cargoMG", label: "⚔️ Ministro Guerra" }] : []),
     ...(gf.iAmMD ? [{ key: "cargoMD", label: "🕊️ Ministro Diplomacia" }] : []),
+    // Informação de Guerra: ataques/defesas por planeta da galáxia (MG + CG).
+    ...((gf.iAmMG || gf.iAmCG) ? [{ key: "guerra", label: "🗺️ Informação de Guerra" }] : []),
   ];
   // Chats de aliança só pra quem está numa aliança. O endpoint /chat/unread só inclui
   // as salas "alianca"/"ataque" no byRoom quando o jogador é membro — usamos isso como sinal.
@@ -1055,6 +1058,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         {section === "cargoME" && <CargoME />}
         {section === "cargoMG" && <CargoMG />}
         {section === "cargoMD" && <CargoMD />}
+        {section === "guerra" && <InfoGuerra />}
 
         {section === "noticias" && <Noticias />}
 

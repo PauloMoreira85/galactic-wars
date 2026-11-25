@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { api, REFRESH_MS, type GovView, type MgPlanet } from "../api";
+import { api, REFRESH_MS, type GovView, type MgPlanet, type WarInfoPlanet, type WarMove } from "../api";
 import { CoordLink } from "../components/CoordLink";
+import { PlanetTag } from "../components/PlanetTag";
 
 // "Caça ×10 · Hela ×5" a partir do mapa de naves.
 function fmtUnits(u: Record<string, number>): string {
@@ -334,6 +335,56 @@ export function CargoMG() {
               🚀 {f.name} <span style={{ opacity: 0.8 }}>[{f.status === "idle" ? "na base" : <>{f.mission} → <CoordLink c={f.target} />{f.status === "engaged" ? " · em combate" : f.ticks > 0 ? <> · <b style={{ color: "var(--accent)" }}>TEC {f.ticks}t</b></> : ""}</>}]</span> ({f.total}): <span style={{ color: "var(--text)" }}>{fmtUnits(f.units)}</span>
             </div>
           ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ===================================================================
+// 🗺️ INFORMAÇÃO DE GUERRA (MG + CG) — ataques e defesas por planeta, por TEC.
+// ===================================================================
+function WarRow({ m, kind }: { m: WarMove; kind: "atk" | "def" }) {
+  return (
+    <div className="roid-count" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "baseline", marginTop: 2 }}>
+      <span style={{ minWidth: 54, fontFamily: "var(--mono)", color: m.engaged ? "var(--danger)" : "var(--accent)" }}>
+        {m.engaged ? "em combate" : `TEC ${m.tec}t`}
+      </span>
+      <span style={{ color: kind === "atk" ? "var(--danger)" : "var(--carbonum)" }}>{kind === "atk" ? "⚔️" : "🛡️"}</span>
+      <span><PlanetTag planet={m.fromPlanet} commander={m.fromCommander} /> <span style={{ opacity: 0.7 }}>(<CoordLink c={m.from} />)</span></span>
+      <span style={{ opacity: 0.8 }}>· {fmt(m.ships)} nave(s)</span>
+    </div>
+  );
+}
+
+export function InfoGuerra() {
+  const { gov } = useGov();
+  const [planets, setPlanets] = useState<WarInfoPlanet[]>([]);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    let alive = true;
+    async function load() { try { const r = await api.warInfo(); if (alive) { setPlanets(r.planets); setError(""); } } catch (e: any) { if (alive) setError(e.message ?? ""); } }
+    load(); const t = setInterval(load, REFRESH_MS); return () => { alive = false; clearInterval(t); };
+  }, []);
+  if (!gov) return LOADING;
+  if (!gov.iAmMG && !gov.iAmCG) return <div className="panel"><div className="roid-count">Só o Ministro da Guerra ou o Comandante da Galáxia veem a Informação de Guerra.</div></div>;
+  const comMovimento = planets.filter((p) => p.attacks.length > 0 || p.defenses.length > 0);
+  return (
+    <div className="panel">
+      <h2>🗺️ Informação de Guerra</h2>
+      <div className="cost" style={{ marginBottom: 10 }}>
+        Por planeta da galáxia: os <b style={{ color: "var(--danger)" }}>⚔️ ataques</b> chegando (ordem de TEC) e, embaixo, as <b style={{ color: "var(--carbonum)" }}>🛡️ defesas</b> (reforços) — também por TEC.
+      </div>
+      {error && <div className="error" style={{ marginBottom: 8 }}>{error}</div>}
+      {comMovimento.length === 0 ? (
+        <div className="roid-count">Nenhum ataque ou defesa em movimento na galáxia agora. ✌️</div>
+      ) : comMovimento.map((p) => (
+        <div key={p.coords} className="roid-row" style={{ display: "block", borderTop: "1px solid var(--border)", paddingTop: 8 }}>
+          <div style={{ marginBottom: 2 }}><b>{p.planet}</b> <span className="roid-count">({p.commander}) · <CoordLink c={p.coords} /></span></div>
+          {p.attacks.length > 0 ? (
+            p.attacks.map((m, i) => <WarRow key={`a${i}`} m={m} kind="atk" />)
+          ) : <div className="roid-count" style={{ opacity: 0.6 }}>⚔️ sem ataques</div>}
+          {p.defenses.map((m, i) => <WarRow key={`d${i}`} m={m} kind="def" />)}
         </div>
       ))}
     </div>

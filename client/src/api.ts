@@ -529,6 +529,8 @@ export const api = {
     request<GovView>("/game/galaxy/contribute", { method: "POST", body: JSON.stringify({ metalium, carbonum, plutonium }) }),
   mgFleets: () =>
     request<{ planets: MgPlanet[] }>("/game/galaxy/mg-fleets"),
+  warInfo: () =>
+    request<{ planets: WarInfoPlanet[] }>("/game/galaxy/war-info"),
 
   ranking: () =>
     request<{
@@ -614,6 +616,8 @@ export const api = {
 
 export interface MgFleet { name: string; mission: string; status: string; target: string; ticks: number; units: Record<string, number>; total: number }
 export interface MgPlanet { planet: string; commander: string; coords: string; base: Record<string, number>; baseTotal: number; fleets: MgFleet[] }
+export interface WarMove { fleetName: string; from: string; fromPlanet: string; fromCommander: string; ships: number; status: string; tec: number; engaged: boolean }
+export interface WarInfoPlanet { planet: string; commander: string; coords: string; slot: number; attacks: WarMove[]; defenses: WarMove[] }
 
 export type AdPlacement = "landing" | "cadastro" | "game" | "round" | "todas";
 export interface Ad { id: string; title: string; imageUrl: string; linkUrl: string; caption: string | null }
