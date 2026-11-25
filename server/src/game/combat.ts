@@ -10,12 +10,32 @@ import { addMorale } from "./morale.js";
 
 // ===== Balanceamento =====
 export const BATTLE_TICKS = 3;
-// % de roids saqueados por tick, LINEAR pela diferença de força (ratio atk/def):
-// 1× (equilíbrio) = 15% · 2× = 12,5% · 3× = 10% · 4× = 7,5% · 5× = 5% · ≥5× trava em 5%.
-// rate = MAX − (MAX−MIN)·(ratio−1)/4, limitado entre MIN e MAX.
-const CAP_MIN = 0.05;   // piso (a partir de 5× de diferença)
-const CAP_MAX = 0.15;   // teto (combate equilibrado / azarão)
-const CAP_RATIO_FULL = 5; // ratio em que chega no piso
+// % de roids saqueados por tick. Regra: furar uma DEFESA FORTE compensa MAIS — quanto
+// mais forte a defesa (que mesmo assim foi roidada), MAIOR o cap pro atacante. Atacar
+// alvo indefeso (atacante esmagando) rende o piso (não vale muito roidar quem não resiste).
+//   defesa ≥ 2× o atacante  → 15% (teto — furou defesa forte, recompensa máxima)
+//   equilíbrio (1×1)        → ~10% (base)
+//   atacante ≥ 3× a defesa  →  5% (piso — alvo indefeso)
+// Escala LINEAR pelo ratio DEFESA/ATAQUE entre o piso e o teto.
+const CAP_MIN = 0.05;   // piso (atacante domina — defesa fraca)
+const CAP_BASE = 0.10;  // combate equilibrado (defesa = ataque)
+const CAP_MAX = 0.15;   // teto (defesa forte furada)
+const CAP_DEF_FULL = 2;  // defesa ≥ 2× o atacante → teto
+const CAP_ATK_FULL = 3;  // atacante ≥ 3× a defesa → piso
+
+// Cap de roids por tick, pela força relativa (usa o score de COMBATE, sem roiders).
+export function roidCapRate(atkScore: number, defScore: number): number {
+  const d = Math.max(1, defScore) / Math.max(1, atkScore); // ratio defesa/ataque
+  if (d >= 1) {
+    // Defesa igual ou mais forte: sobe de BASE (1×) até MAX (≥ CAP_DEF_FULL×).
+    const t = Math.min(1, (d - 1) / (CAP_DEF_FULL - 1));
+    return CAP_BASE + (CAP_MAX - CAP_BASE) * t;
+  }
+  // Atacante mais forte: desce de BASE (1×) até MIN (atacante ≥ CAP_ATK_FULL× a defesa).
+  const a = 1 / d; // ratio ataque/defesa (>1)
+  const t = Math.min(1, (a - 1) / (CAP_ATK_FULL - 1));
+  return CAP_BASE - (CAP_BASE - CAP_MIN) * t;
+}
 // Mech: a assimilação CONSOME a assimiladora e é equilibrada por VALOR (custo),
 // não 1:1. Pra assimilar naves inimigas de valor V, gasta V em assimiladoras.
 
@@ -274,8 +294,7 @@ export function simulateCombat(attacker0: UnitMap, defender0: UnitMap, ticks = B
   for (let t = 1; t <= N; t++) {
     if (totalUnits(aCur) <= 0 || totalUnits(dCur) <= 0) break;
     // Cap de roids pelo score de COMBATE (sem roiders), igual ao combate real.
-    const ratio = combatScore(aCur) / Math.max(1, combatScore(dCur));
-    const rate = Math.max(CAP_MIN, Math.min(CAP_MAX, CAP_MAX - (CAP_MAX - CAP_MIN) * (ratio - 1) / (CAP_RATIO_FULL - 1)));
+    const rate = roidCapRate(combatScore(aCur), combatScore(dCur));
     const st: BattleState = { atkInit: { ...aCur }, defInit: { ...dCur }, aActive: { ...aCur }, dActive: { ...dCur }, aLost: {}, dLost: {}, aPem: {}, dPem: {}, rate };
     const firedA: UnitMap = {}, firedD: UnitMap = {};
     const { aAssim, dAssim } = oneRound(st, firedA, firedD); // aAssim = atacantes assimilados pela DEFESA; dAssim = defensores assimilados pelo ATACANTE
@@ -382,10 +401,9 @@ export async function resolveSiege(target: { galaxy: number; system: number; slo
   const dActive: UnitMap = {}; for (const c of defContribs) for (const n of Object.keys(c.units)) dActive[n] = (dActive[n] || 0) + c.units[n];
 
   // Cap de roids usa o score de COMBATE (sem roiders): atacar só com roiders não
-  // deve cair no cap mínimo. Se o ataque não tem naves de combate (só roiders), o
-  // ratio é 0 → cap máximo (15%), que é o certo pra quem vai só roidar.
-  const ratio = combatScore(aActive) / Math.max(1, combatScore(dActive));
-  const rate = Math.max(CAP_MIN, Math.min(CAP_MAX, CAP_MAX - (CAP_MAX - CAP_MIN) * (ratio - 1) / (CAP_RATIO_FULL - 1)));
+  // deve cair no cap mínimo. Sem naves de combate (atkScore 0), a defesa é
+  // "infinitamente" mais forte → cap máximo (15%), certo pra quem vai só roidar.
+  const rate = roidCapRate(combatScore(aActive), combatScore(dActive));
   const st: BattleState = { atkInit: { ...aActive }, defInit: { ...dActive }, aActive: { ...aActive }, dActive: { ...dActive }, aLost: {}, dLost: {}, aPem: {}, dPem: {}, rate };
   // dAssim = atacantes assimilados pela defesa; aAssim = defensores assimilados pelo atacante.
   const firedA: UnitMap = {}, firedD: UnitMap = {};
@@ -525,6 +543,7 @@ export async function resolveSiege(target: { galaxy: number; system: number; slo
   }
   // Moral do combate (canon): atacar planeta MAIS FORTE (+7/tick); atacar alvo
   // bem mais fraco = bullying (−1/tick); defensor perdendo roids p/ bem mais forte (+3/tick).
+  const ratio = combatScore(aActive) / Math.max(1, combatScore(dActive)); // ataque/defesa
   for (const ownerId of atkOwners) {
     if (ratio < 1) await addMorale(ownerId, 7);
     else if (ratio > 2) await addMorale(ownerId, -1);
