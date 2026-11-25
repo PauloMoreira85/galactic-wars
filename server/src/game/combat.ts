@@ -126,7 +126,11 @@ function fireAt(typeName: string, count: number, enemyActive: UnitMap, enemyLost
     const T = unitByName(t); return T ? A.alvos.includes(T.classe) : false;
   });
   if (targets.length === 0) return 0; // não foi usada: não há alvo pra esta nave
-  let shotsUsed = 0; // tiros que de fato surtiram efeito (paralisaram/abateram)
+  // "useful" = tiros que o inimigo ABSORVEU (até esgotar os alvos). Uma nave só "sobra
+  // sem atirar" quando os tiros da frota EXCEDEM o que era preciso pra lidar com todos
+  // os alvos. Mede a CAPACIDADE do alvo, não quantos tiros mataram no RNG — senão uma
+  // frota inteira necessária (ex.: 80 Njord pra fechar a defesa) apareceria "sem uso".
+  let usefulShots = 0;
   const sum = targets.reduce((s, t) => s + pool(t), 0);
   const shots = count * A.qarm;
   // Orçamento de assimilação = VALOR total da esquadra assimiladora (custo × qtd).
@@ -141,16 +145,25 @@ function fireAt(typeName: string, count: number, enemyActive: UnitMap, enemyLost
       const hit = Math.max(0, (100 - T.rp) / 100); // RP = chance de resistir
       const par = Math.min(enemyActive[t], Math.floor(shotsT * hit));
       enemyActive[t] -= par; enemyPem[t] = (enemyPem[t] || 0) + par;
-      // Tiros que de fato paralisaram (cada paralisação custou ~1/hit tiros).
-      if (hit > 0) shotsUsed += par / hit;
+      // Tiros que o alvo absorve = tiros pra paralisar TODAS as ativas (capacidade),
+      // limitado aos tiros alocados a este alvo. Se sobrou alvo, todos os tiros foram úteis.
+      if (hit > 0) {
+        const needed = enemyActive[t] > 0 ? shotsT /* ainda há alvo: tudo foi usado */ : par / hit;
+        usefulShots += Math.min(shotsT, needed);
+      }
       if (log && side && par > 0) log.push({ side, ini: A.ini, ship: typeName, count, target: t, shots: Math.round(shotsT), action: "pem", amount: par, chance: Math.round(hit * 100) });
     } else {
       // Chance Média de Acerto (oficial): CMA% = 25 + (Varm atacante - Agi defensor)
       const cma = Math.max(0, Math.min(100, 25 + A.varm - T.agi)) / 100;
       const dmg = shotsT * cma * A.pfog;
       const killed = Math.min(pool(t), Math.floor(dmg / T.fusel));
-      // Tiros que de fato abateram alguém (cada abate custou T.fusel de dano efetivo).
-      if (cma > 0 && A.pfog > 0) shotsUsed += (killed * T.fusel) / (cma * A.pfog);
+      // Tiros que o alvo absorve: se ainda sobrou alvo deste tipo, TODOS os tiros
+      // alocados foram úteis; se o alvo acabou, só os tiros que bastaram pra abatê-lo.
+      if (cma > 0 && A.pfog > 0) {
+        const poolLeft = pool(t) - killed;
+        const needed = poolLeft > 0 ? shotsT : (killed * T.fusel) / (cma * A.pfog);
+        usefulShots += Math.min(shotsT, needed);
+      }
       // Abate primeiro as PARALISADAS (indefesas), depois as ativas.
       const killPem = Math.min(enemyPem[t] || 0, killed);
       if (killPem > 0) enemyPem[t] -= killPem;
@@ -179,9 +192,10 @@ function fireAt(typeName: string, count: number, enemyActive: UnitMap, enemyLost
       if (log && side && killed > 0) log.push({ side, ini: A.ini, ship: typeName, count, target: t, shots: Math.round(shotsT), action: A.tipo === "Assimiladora" ? "assim" : "destroy", amount: killed, chance: Math.round(cma * 100), assimCost });
     }
   }
-  // Naves efetivamente necessárias = tiros usados ÷ armas por nave (arredonda p/ cima,
-  // mínimo 1 se surtiu algum efeito). O excedente são as que "sobraram sem atirar".
-  const usadas = shotsUsed > 0 ? Math.min(count, Math.max(1, Math.ceil(shotsUsed / A.qarm))) : 0;
+  // Naves efetivamente necessárias = tiros ÚTEIS (absorvidos pelo alvo) ÷ armas por nave.
+  // O excedente (count − usadas) são as que "sobraram sem atirar". Se ainda havia alvo pra
+  // todos os tiros, usefulShots == shots e usadas == count (nenhuma sobra).
+  const usadas = usefulShots > 0 ? Math.min(count, Math.max(1, Math.ceil(usefulShots / A.qarm))) : 0;
   return usadas;
 }
 
