@@ -163,6 +163,16 @@ function Calculadora() {
   const [def, setDef] = useState<Record<string, number>>({});
   const [targetRoids, setTargetRoids] = useState(""); // roids do alvo (pra ver o saque estimado)
   const [result, setResult] = useState<SimResult | null>(null);
+  // Mini-calc de roidcap rápido (sem montar frota): só pontos atk/def + roids.
+  const [rcAtk, setRcAtk] = useState("");
+  const [rcDef, setRcDef] = useState("");
+  const [rcRoids, setRcRoids] = useState("");
+  const [rcResult, setRcResult] = useState<{ ratePct: number; saque: number | null } | null>(null);
+  async function runRoidcap() {
+    const a = parseInt(rcAtk, 10) || 0, d = parseInt(rcDef, 10) || 0, r = parseInt(rcRoids, 10) || 0;
+    if (a <= 0 || d <= 0) { setRcResult(null); return; }
+    try { setRcResult(await api.roidcapCalc(a, d, r || undefined)); } catch { setRcResult(null); }
+  }
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   // Importar frota de uma espionagem pelo hash (evita digitar nave por nave).
@@ -280,6 +290,33 @@ function Calculadora() {
   return (
     <div className="panel">
       <h2>Calculadora de Combate</h2>
+
+      {/* Roidcap rápido: só pontos atk/def + roids, sem montar frota. */}
+      <div style={{ background: "rgba(69,230,165,0.06)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px", marginBottom: 12 }}>
+        <div className="cost" style={{ marginBottom: 8 }}>
+          💰 <b>Roidcap rápido</b> — informe a <b>pontuação do ataque</b>, a <b>pontuação da defesa</b> e os <b>roids do alvo</b> pra ver o <b>% de cap</b> e o saque por tick, sem precisar montar frota.
+        </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <span className="roid-count">⚔️ pts ataque</span>
+          <input type="text" inputMode="numeric" placeholder="ex: 50000" value={rcAtk}
+            onChange={(e) => setRcAtk(e.target.value.replace(/\D/g, ""))} style={{ width: 110, margin: 0, padding: "6px 8px" }} />
+          <span className="roid-count">🛡️ pts defesa</span>
+          <input type="text" inputMode="numeric" placeholder="ex: 40000" value={rcDef}
+            onChange={(e) => setRcDef(e.target.value.replace(/\D/g, ""))} style={{ width: 110, margin: 0, padding: "6px 8px" }} />
+          <span className="roid-count">roids do alvo</span>
+          <input type="text" inputMode="numeric" placeholder="ex: 1500" value={rcRoids}
+            onChange={(e) => setRcRoids(e.target.value.replace(/\D/g, ""))} style={{ width: 100, margin: 0, padding: "6px 8px" }} />
+          <button onClick={runRoidcap}>calcular</button>
+          {(rcAtk || rcDef || rcRoids || rcResult) && <button className="link" onClick={() => { setRcAtk(""); setRcDef(""); setRcRoids(""); setRcResult(null); }}>limpar</button>}
+        </div>
+        {rcResult && (
+          <div className="cost" style={{ marginTop: 8 }}>
+            Roidcap: <b style={{ color: "var(--carbonum)", fontSize: 16 }}>{rcResult.ratePct}%</b> por tick
+            {rcResult.saque != null && <> · saque estimado: <b style={{ color: "var(--carbonum)" }}>~{fmt(rcResult.saque)} roids</b>/tick</>}
+          </div>
+        )}
+      </div>
+
       <div className="cost" style={{ marginBottom: 10 }}>
         Monte a frota de <b>ataque</b> e a de <b>defesa</b> (qualquer raça) e simule o combate por <b>3 ticks</b> com o motor real do jogo
         (iniciativa, alvos por classe, CMA, PEM, assimilação). Use pra decidir: <b>mandar mais defesa</b> ou <b>recuar o ataque</b>.

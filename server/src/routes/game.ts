@@ -10,7 +10,7 @@ import { startUpgrade, buildUnit, buildAgent, parseTech, cancelOrder } from "../
 import { AGENTS, AGENT_KEYS, AGENT_FULL_NAME, isAgentKey, parseAgents, stringifyAgents, isShielded, ceNeeded, spySuccessChance, ROIDS_POR_CE } from "../game/agents.js";
 import { createFleet, setFleetComposition, transferUnits, renameFleet, dispatchFleet, fuelCost, viewSystem, galaxyTraffic, viewedTraffic, type ShipCounts } from "../game/galaxy.js";
 import { galaxyId, galaxyDecompose, NUM_SETORES, NUM_PARALELOS } from "../game/geo.js";
-import { recallFleet, BATTLE_TICKS, simulateCombat } from "../game/combat.js";
+import { recallFleet, BATTLE_TICKS, simulateCombat, roidCapRate } from "../game/combat.js";
 import { unitsOfRace, isUnitUnlocked, CLASS_LABEL, unitByName, shipImage, radarVisibleCount } from "../game/catalog.js";
 import { UNIT_TABLE } from "../game/unitTable.js";
 import { associadoView, becomeAssociado, changeName, changeSkin } from "../game/associados.js";
@@ -1619,6 +1619,22 @@ gameRouter.post("/tools/combat-sim", async (req: AuthedRequest, res) => {
     return res.status(400).json({ error: "Adicione naves no ataque e/ou na defesa." });
   }
   res.json(simulateCombat(attacker, defender, parsed.data.ticks ?? BATTLE_TICKS));
+});
+
+// Calculadora rápida de ROIDCAP: informa pontuação do ataque, da defesa e os roids do
+// alvo → devolve o % de cap e o saque por tick. Usa a MESMA função do combate real.
+gameRouter.post("/tools/roidcap", (req, res) => {
+  const parsed = z.object({
+    atkScore: z.number().min(0).max(1e12),
+    defScore: z.number().min(0).max(1e12),
+    roids: z.number().int().min(0).max(1e9).optional(),
+  }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "Dados inválidos" });
+  const { atkScore, defScore, roids } = parsed.data;
+  const rate = roidCapRate(atkScore, defScore);
+  const ratePct = Math.round(rate * 100);
+  const saque = roids && roids > 0 ? Math.floor(roids * rate) : null;
+  res.json({ ratePct, saque, roids: roids ?? null });
 });
 
 // Calculadora de Sabotagem: prevê chance/custo no jogo atual (catálogo + odds).

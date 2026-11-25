@@ -564,6 +564,8 @@ export const api = {
       aUnused: { name: string; count: number }[]; dUnused: { name: string; count: number }[];
       aUnusedTotal: number; dUnusedTotal: number;
     }>("/game/tools/combat-sim", { method: "POST", body: JSON.stringify({ attacker, defender, ticks }) }),
+  roidcapCalc: (atkScore: number, defScore: number, roids?: number) =>
+    request<{ ratePct: number; saque: number | null; roids: number | null }>("/game/tools/roidcap", { method: "POST", body: JSON.stringify({ atkScore, defScore, roids }) }),
   toolSabotages: () =>
     request<{ sabotages: { key: string; name: string; plut: number; ticks: number }[] }>("/game/tools/sabotage"),
   sabotageSim: (body: { key: string; attackerAE: number; targetRoids: number; targetRace: string; targetCE: number }) =>
