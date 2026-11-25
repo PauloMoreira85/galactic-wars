@@ -18,7 +18,8 @@ const AGENT_EMOJI: Record<string, string> = {
 // arte da raça -> arte genérica -> emoji. Só o dono vê (não vaza raça).
 const AGENT_ART = new Set(["P", "M", "T", "D", "AE", "CE"]);
 const AGENT_RACES = new Set(["humanos", "daharan", "rakshasa", "mech", "insecta"]);
-function AgentIcon({ k, race, size = 30 }: { k: string; race?: string; size?: number }) {
+// onZoom: se passado, clicar na ARTE amplia no lightbox (igual às naves no Hangar).
+function AgentIcon({ k, race, size = 30, onZoom }: { k: string; race?: string; size?: number; onZoom?: (src: string, alt: string) => void }) {
   // Candidatos de imagem em ordem de preferência.
   const sources: string[] = [];
   if (AGENT_ART.has(k)) {
@@ -32,10 +33,13 @@ function AgentIcon({ k, race, size = 30 }: { k: string; race?: string; size?: nu
     background: "rgba(0,0,0,0.3)", overflow: "hidden", flex: "0 0 auto",
   } as const;
   if (idx < sources.length) {
+    const src = sources[idx];
     return (
       <span style={box}>
-        <img src={sources[idx]} alt={k} width={size} height={size}
-          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+        <img src={src} alt={k} width={size} height={size}
+          title={onZoom ? "Clique para ampliar" : undefined}
+          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", cursor: onZoom ? "zoom-in" : undefined }}
+          onClick={onZoom ? (e) => { e.stopPropagation(); onZoom(src, k); } : undefined}
           onError={() => setIdx((i) => i + 1)} />
       </span>
     );
@@ -56,6 +60,13 @@ export function Inteligencia() {
   const [data, setData] = useState<AgentsData | null>(null);
   const [qty, setQty] = useState<Record<string, number>>({});
   const [msg, setMsg] = useState("");
+  const [zoom, setZoom] = useState<{ src: string; alt: string } | null>(null); // arte ampliada
+  useEffect(() => {
+    if (!zoom) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setZoom(null);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [zoom]);
 
   async function loadAgents() {
     try { setData(await api.agents()); } catch {}
@@ -138,7 +149,7 @@ export function Inteligencia() {
               {data.training.map((t) => (
                 <div key={t.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "6px 10px", border: "1px solid var(--border)", borderRadius: 8, background: "rgba(0,0,0,0.2)" }}>
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
-                    <AgentIcon k={t.key} race={data.race} size={34} />
+                    <AgentIcon k={t.key} race={data.race} size={34} onZoom={(src, alt) => setZoom({ src, alt })} />
                     <span><b style={{ color: "var(--text)" }}>{t.quantity}x {t.key}</b> <span className="roid-count">— faltam <b style={{ color: "var(--accent)" }}>{t.ticksRemaining}t</b></span></span>
                   </span>
                   <button className="btn-danger" onClick={() => cancelTraining(t.id)} title="Cancelar — reembolso proporcional ao tempo que falta" style={{ padding: "2px 10px", fontSize: 11 }}>cancelar</button>
@@ -152,7 +163,7 @@ export function Inteligencia() {
           <tbody>
             {data?.catalog.map((a: AgentCat) => (
               <tr key={a.key} style={!a.unlocked ? { opacity: 0.5 } : undefined}>
-                <td><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><AgentIcon k={a.key} race={data?.race} size={28} /><span><b>{a.key}</b> — {a.name}<div className="roid-count">{a.desc}</div></span></span></td>
+                <td><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><AgentIcon k={a.key} race={data?.race} size={28} onZoom={(src, alt) => setZoom({ src, alt })} /><span><b>{a.key}</b> — {a.name}<div className="roid-count">{a.desc}</div></span></span></td>
                 <td>{fmt(a.count)}</td>
                 <td className="roid-count">{fmt(a.cost.metalium)}/{fmt(a.cost.carbonum)}/{fmt(a.cost.plutonium)} · {a.ticks}t</td>
                 <td>
@@ -197,6 +208,15 @@ export function Inteligencia() {
         <div className="panel">
           <h2>🛰️ [{spy.agent}] {spy.name} (<CoordLink c={spy.coords} />)</h2>
           <IntelReport intel={spy} />
+        </div>
+      )}
+
+      {/* Lightbox: arte do agente ampliada (igual ao Hangar). */}
+      {zoom && (
+        <div className="lightbox" onClick={() => setZoom(null)}>
+          <button className="lightbox-close" onClick={() => setZoom(null)} aria-label="Fechar">✕</button>
+          <img src={zoom.src} alt={zoom.alt} onClick={(e) => e.stopPropagation()} />
+          <div className="lightbox-cap">{zoom.alt}</div>
         </div>
       )}
     </>
