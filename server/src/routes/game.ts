@@ -22,7 +22,7 @@ import { vote, appoint, setTax, setMarketFee, setMarketLocked, donate, contribut
 import { planetScore } from "../game/score.js";
 import { clampMorale, moraleMult } from "../game/morale.js";
 import { addNews, recentNews } from "../game/news.js";
-import { createAlliance, renameAlliance, requestJoin, cancelJoinRequest, acceptRequest, rejectRequest, leaveAlliance, kickMember, setMemberRole, allianceView, allianceFleetsView, setOrders, attackBoardView, toggleAttackLock, addAttackTarget, removeAttackTarget, claimTarget, unclaimTarget, setTargetShared, shareIntel, allianceIntelView, unshareIntel, runAttackCommand, pushAlliance } from "../game/alliance.js";
+import { createAlliance, renameAlliance, requestJoin, cancelJoinRequest, acceptRequest, rejectRequest, leaveAlliance, kickMember, setMemberRole, allianceView, allianceFleetsView, setOrders, attackBoardView, toggleAttackLock, addAttackTarget, removeAttackTarget, claimTarget, unclaimTarget, setTargetShared, shareIntel, allianceIntelView, unshareIntel, runAttackCommand, pushAlliance, allianceMateIds } from "../game/alliance.js";
 import { forumIndex, listTopics, createTopic, getTopic, reply as forumReply, isForum } from "../game/forum.js";
 import { sendChat, recentChat, olderChat, resolveRoom } from "../game/chat.js";
 import { pushPublicKey, saveSubscription, removeSubscription, PUSH_ENABLED, pushChatUniverso } from "../game/push.js";
@@ -1196,13 +1196,17 @@ gameRouter.get("/ranking", async (req: AuthedRequest, res) => {
     return planetScore(p, u);
   };
   const myScore = myPlanetId ? scoreOf(planets.find((p) => p.id === myPlanetId)!) : 0;
+  // Aliados (outros membros da minha aliança) — pra marcar a relação 🟢 no ranking.
+  const allyIds = myPlanetId ? new Set(await allianceMateIds(myPlanetId)) : new Set<string>();
   const ranked = planets
     .map((p) => {
       const score = scoreOf(p);
       const you = p.id === myPlanetId;
+      // Relação com o jogador (estática): mesma galáxia / aliado.
+      const sameGalaxy = !!myP && p.galaxy === myP.galaxy && p.system === myP.system;
+      const ally = allyIds.has(p.id);
       // Está no meu alcance de ataque? (mesma regra que o jogo valida ao atacar)
       // Fora: eu mesmo, aliado da minha galáxia, sob proteção de novato, ou score < 50% do meu.
-      const sameGalaxy = !!myP && p.galaxy === myP.galaxy && p.system === myP.system;
       const underProtection = nowTick < p.createdTick + NEWBIE_PROTECTION_TICKS;
       const inRange = !you && !!myP && !sameGalaxy && !underProtection &&
         (myScore <= 0 || score >= (myScore * ATTACK_RANGE_MIN_PCT) / 100);
@@ -1212,6 +1216,7 @@ gameRouter.get("/ranking", async (req: AuthedRequest, res) => {
         score, roids: totalRoids(p),
         you, // marca a própria linha
         inRange, // dá pra atacar a partir do meu planeta?
+        sameGalaxy, ally, // relações estáticas (🔵 mesma galáxia, 🟢 aliado)
       };
     })
     .sort((a, b) => b.score - a.score); // todos os planetas, por PONTUAÇÃO

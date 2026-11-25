@@ -5,6 +5,19 @@ import { CoordLink } from "../components/CoordLink";
 function fmt(n: number) { return n.toLocaleString("pt-BR"); }
 type Tab = "planetas" | "galaxias" | "aliancas";
 
+// Símbolos de relação (cumulativos): 🔵 mesma galáxia, 🟢 aliado. Legenda no hover.
+export function Relacoes({ sameGalaxy, ally }: { sameGalaxy?: boolean; ally?: boolean }) {
+  const sym: { e: string; t: string }[] = [];
+  if (sameGalaxy) sym.push({ e: "🔵", t: "Mesma galáxia" });
+  if (ally) sym.push({ e: "🟢", t: "Aliado" });
+  if (sym.length === 0) return <span className="roid-count">–</span>;
+  return (
+    <span style={{ display: "inline-flex", gap: 3 }}>
+      {sym.map((s, i) => <span key={i} title={s.t} style={{ cursor: "help" }}>{s.e}</span>)}
+    </span>
+  );
+}
+
 const RACE_COLOR: Record<string, string> = {
   humanos: "#5cc8ff", daharan: "#b98bff", rakshasa: "#ff6b6b",
   mech: "#ffb648", insecta: "#4bd47a",
@@ -69,7 +82,7 @@ function RankPlanetas() {
       )}
       <div style={{ overflowX: "auto" }}>
         <table>
-          <thead><tr><th className="rank-num">#</th><th>Comandante</th><th>Planeta</th><th className="hide-sm">Coord.</th><th>Pontuação</th><th>Roids</th><th title="Dá pra atacar a partir do seu planeta?">Alvo</th></tr></thead>
+          <thead><tr><th className="rank-num">#</th><th>Comandante</th><th>Planeta</th><th className="hide-sm">Coord.</th><th title="🔵 mesma galáxia · 🟢 aliado">Relações</th><th>Pontuação</th><th>Roids</th><th title="Dá pra atacar a partir do seu planeta?">Alvo</th></tr></thead>
           <tbody>
             {rows.map((r, i) => (
               <tr key={i} ref={r.you ? myRowRef : undefined} className={r.you ? "rank-me" : undefined}>
@@ -77,6 +90,7 @@ function RankPlanetas() {
                 <td><b>{r.username}</b>{r.you && <span className="roid-count" style={{ color: "var(--accent)" }}> (você)</span>}</td>
                 <td>{r.planet}</td>
                 <td className="hide-sm"><CoordLink c={r.coords} /></td>
+                <td>{r.you ? <span className="roid-count">–</span> : <Relacoes sameGalaxy={r.sameGalaxy} ally={r.ally} />}</td>
                 <td>{fmt(r.score)}</td>
                 <td className="roid-count">{fmt(r.roids)}</td>
                 <td>

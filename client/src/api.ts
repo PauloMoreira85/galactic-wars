@@ -525,7 +525,7 @@ export const api = {
 
   ranking: () =>
     request<{
-      ranking: { username: string; planet: string; coords: string; roids: number; score: number; you?: boolean; inRange?: boolean }[];
+      ranking: { username: string; planet: string; coords: string; roids: number; score: number; you?: boolean; inRange?: boolean; sameGalaxy?: boolean; ally?: boolean }[];
     }>("/game/ranking"),
   allianceRanking: () =>
     request<{ ranking: { id: string; name: string; tag: string; score: number; members: number; avg: number }[] }>("/game/ranking/alliances"),

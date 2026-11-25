@@ -9,7 +9,7 @@ import { Combats } from "./Combats";
 import { Votacao, FundoGalaxia, CargoCG, CargoME, CargoMG, CargoMD } from "./Governo";
 import { Noticias } from "./Noticias";
 import { Aliancas } from "./Aliancas";
-import { Ranking } from "./Ranking";
+import { Ranking, Relacoes } from "./Ranking";
 import { Associados } from "./Associados";
 import { Forum } from "./Forum";
 import { Chat } from "./Chat";
@@ -716,13 +716,13 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
               <h2>Ranking — comandantes do universo ({ranking.length})</h2>
               <table>
                 <thead>
-                  <tr><th className="rank-num">#</th><th>Comandante</th><th>Planeta</th><th>Coord.</th><th>Pontuação</th><th>Roids</th></tr>
+                  <tr><th className="rank-num">#</th><th>Comandante</th><th>Planeta</th><th>Coord.</th><th title="🔵 mesma galáxia · 🟢 aliado">Relações</th><th>Pontuação</th><th>Roids</th></tr>
                 </thead>
                 <tbody>
                   {ranking.map((r, i) => (
-                    <tr key={i}>
-                      <td className="rank-num">{i + 1}</td>
-                      <td>{r.username}</td>
+                    <tr key={i} className={r.you ? "rank-me" : undefined}>
+                      <td className="rank-num">{r.you && "⭐ "}{i + 1}</td>
+                      <td><b>{r.username}</b>{r.you && <span className="roid-count" style={{ color: "var(--accent)" }}> (você)</span>}</td>
                       <td>{r.planet}</td>
                       <td>
                         <button className="coord-link" title={`Ver a galáxia ${r.coords}`}
@@ -730,6 +730,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                           {r.coords}
                         </button>
                       </td>
+                      <td>{r.you ? <span className="roid-count">–</span> : <Relacoes sameGalaxy={r.sameGalaxy} ally={r.ally} />}</td>
                       <td><b>{(r.score ?? 0).toLocaleString("pt-BR")}</b></td>
                       <td>{r.roids}</td>
                     </tr>
