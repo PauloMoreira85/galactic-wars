@@ -134,6 +134,17 @@ function GalaxiaPrivada({ onChanged }: { onChanged: () => void }) {
       ) : (
         <>
           <div className="status-row"><span>Sua galáxia</span><b>{pv.owned.name} (galáxia {pv.owned.galaxy})</b></div>
+          {pv.canRecreate && (
+            <div style={{ margin: "8px 0", padding: "8px 10px", border: "1px solid var(--accent)", borderRadius: 8, background: "rgba(37,211,255,0.06)" }}>
+              <div className="cost" style={{ marginBottom: 6 }}>
+                Sua galáxia privada é de uma versão antiga do jogo. Você pode <b>recriá-la no universo novo</b> — <b>só você</b> muda de lugar (sorteado); os membros atuais continuam onde estão.
+              </div>
+              <button disabled={busy} onClick={() => {
+                if (!window.confirm("Recriar sua galáxia privada no universo novo? Só VOCÊ será movido (sorteado); os outros membros ficam onde estão.")) return;
+                act(() => api.privateRecreate());
+              }}>{busy ? "..." : "🔄 recriar no universo novo"}</button>
+            </div>
+          )}
           <div style={{ display: "flex", gap: 8, margin: "10px 0", flexWrap: "wrap" }}>
             <input value={invite} onChange={(e) => setInvite(e.target.value)} placeholder="convidar (nome do líder)..." style={{ width: 200, margin: 0, padding: "6px 10px" }} />
             <button disabled={busy || !invite.trim()} onClick={() => act(() => api.privateInvite(invite.trim()))}>{busy ? "..." : "convidar"}</button>

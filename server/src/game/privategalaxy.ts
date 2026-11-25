@@ -3,8 +3,26 @@ import { GALAXIES } from "./constants.js";
 import { relocate } from "./relocation.js";
 import { galaxyId, galaxyWhere, NUM_SETORES, NUM_PARALELOS } from "./geo.js";
 
+const UNIVERSO_MAX_ID = NUM_SETORES * NUM_PARALELOS; // 30
+
 async function userOf(planetId: string) {
   return prisma.planet.findUnique({ where: { id: planetId }, include: { user: true } });
+}
+
+// Sorteia uma galáxia VAZIA do universo (sem GalaxyState e sem planetas). null se não houver.
+async function sortearGalaxiaVazia(): Promise<number | null> {
+  const livres: number[] = [];
+  for (let setor = 1; setor <= NUM_SETORES; setor++) {
+    for (let par = 1; par <= NUM_PARALELOS; par++) {
+      const id = galaxyId(setor, par);
+      const st = await prisma.galaxyState.findUnique({ where: { galaxy: id } });
+      if (st) continue; // já tem estado (pública em uso ou outra privada)
+      const occupied = await prisma.planet.count({ where: { galaxy: setor, system: par } });
+      if (occupied === 0) livres.push(id);
+    }
+  }
+  if (livres.length === 0) return null;
+  return livres[Math.floor(Math.random() * livres.length)];
 }
 
 // Associado cria uma galáxia privada (vira dono e é realocado para lá).
@@ -17,25 +35,55 @@ export async function createPrivateGalaxy(planetId: string, name: string) {
   const already = await prisma.galaxyState.findFirst({ where: { ownerPlanetId: planetId } });
   if (already) throw new Error("Você já tem uma galáxia privada");
 
-  // Candidatas = todas as galáxias do universo (setor×paralelo) que estão VAZIAS:
-  // sem GalaxyState registrado E sem nenhum planeta. Sorteia uma delas.
-  const livres: number[] = [];
-  for (let setor = 1; setor <= NUM_SETORES; setor++) {
-    for (let par = 1; par <= NUM_PARALELOS; par++) {
-      const id = galaxyId(setor, par);
-      const st = await prisma.galaxyState.findUnique({ where: { galaxy: id } });
-      if (st) continue; // já tem estado (pública em uso ou outra privada)
-      const occupied = await prisma.planet.count({ where: { galaxy: setor, system: par } });
-      if (occupied === 0) livres.push(id);
-    }
-  }
-  if (livres.length === 0) throw new Error("Sem galáxia vazia no universo para criar uma privada agora");
-  const g = livres[Math.floor(Math.random() * livres.length)]; // sorteio
+  const g = await sortearGalaxiaVazia();
+  if (g == null) throw new Error("Sem galáxia vazia no universo para criar uma privada agora");
   await prisma.galaxyState.create({
     data: { galaxy: g, isPrivate: true, ownerPlanetId: planetId, name: name.trim().slice(0, 40) || `Galáxia Privada` },
   });
   await relocate(planetId, g); // dono entra na própria galáxia
   return { galaxy: g };
+}
+
+// RECRIAR a galáxia privada na regra NOVA (sorteio no universo). Só pra quem é
+// DONO de uma privada da regra ANTIGA (fora do universo, id > 30). Só o CRIADOR
+// muda: ele sai da privada antiga e é realocado pra uma galáxia vazia sorteada em
+// 1..30, onde cria uma privada nova. Os MEMBROS continuam onde estão — a galáxia
+// antiga passa a posse pro próximo membro (ou se dissolve se ficar vazia).
+export async function recreatePrivateGalaxy(planetId: string) {
+  const old = await prisma.galaxyState.findFirst({ where: { ownerPlanetId: planetId, isPrivate: true } });
+  if (!old) throw new Error("Você não tem uma galáxia privada para recriar");
+  if (old.galaxy <= UNIVERSO_MAX_ID) throw new Error("Sua galáxia privada já está na regra nova");
+
+  const novoId = await sortearGalaxiaVazia();
+  if (novoId == null) throw new Error("Sem galáxia vazia no universo agora — tente de novo mais tarde");
+
+  // Quem continua na galáxia antiga (todos menos o criador que vai sair).
+  const w = galaxyWhere(old.galaxy);
+  const restantes = await prisma.planet.findMany({
+    where: { galaxy: w.galaxy, system: w.system, id: { not: planetId } },
+    select: { id: true },
+  });
+
+  // Passa a posse da galáxia antiga pro próximo membro; se ninguém ficar, dissolve.
+  if (restantes.length > 0) {
+    const novoDono = restantes[0].id;
+    const data: any = { ownerPlanetId: novoDono };
+    if (old.cgPlanetId === planetId) data.cgPlanetId = null;
+    if (old.mePlanetId === planetId) data.mePlanetId = null;
+    if (old.mgPlanetId === planetId) data.mgPlanetId = null;
+    if (old.mdPlanetId === planetId) data.mdPlanetId = null;
+    await prisma.galaxyState.update({ where: { galaxy: old.galaxy }, data });
+  } else {
+    await prisma.galaxyInvite.deleteMany({ where: { galaxy: old.galaxy } });
+    await prisma.galaxyState.delete({ where: { galaxy: old.galaxy } });
+  }
+
+  // Cria a nova privada só pro criador (sorteada) e realoca ELE pra lá.
+  await prisma.galaxyState.create({
+    data: { galaxy: novoId, isPrivate: true, ownerPlanetId: planetId, name: old.name ?? "Galáxia Privada" },
+  });
+  await relocate(planetId, novoId);
+  return { galaxy: novoId };
 }
 
 // Dono convida um jogador (por nome de líder) para a galáxia privada.
@@ -83,6 +131,9 @@ export async function privateView(planetId: string) {
   }));
   return {
     owned: owned ? { galaxy: owned.galaxy, name: owned.name, members } : null,
+    // canRecreate: a privada do dono está na regra ANTIGA (id > 30) e pode ser
+    // recriada no universo novo (leva os membros junto).
+    canRecreate: !!owned && owned.galaxy > UNIVERSO_MAX_ID,
     invites: inviteList,
   };
 }

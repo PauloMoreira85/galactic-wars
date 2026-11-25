@@ -16,7 +16,7 @@ import { UNIT_TABLE } from "../game/unitTable.js";
 import { associadoView, becomeAssociado, changeName, changeSkin, activateShield } from "../game/associados.js";
 import { autoExile } from "../game/relocation.js";
 import { randomBytes } from "node:crypto";
-import { createPrivateGalaxy, invitePrivate, joinPrivate, declinePrivate, privateView } from "../game/privategalaxy.js";
+import { createPrivateGalaxy, recreatePrivateGalaxy, invitePrivate, joinPrivate, declinePrivate, privateView } from "../game/privategalaxy.js";
 import { effectiveTec, galaxyPenalty, travelTime } from "../game/travel.js";
 import { vote, appoint, setTax, setMarketFee, setMarketLocked, donate, contributeToFund, govView, mgFleets, warInfo, setGalaxyName, setGalaxyFlag, proposeTreaty, acceptTreaty, cancelTreaty } from "../game/governance.js";
 import { planetScore } from "../game/score.js";
@@ -1542,6 +1542,14 @@ gameRouter.post("/private/create", async (req: AuthedRequest, res) => {
   const planet = await prisma.planet.findUnique({ where: { userId: req.userId! } });
   if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
   try { await createPrivateGalaxy(planet.id, name); }
+  catch (e: any) { return res.status(400).json({ error: e.message ?? "Falha" }); }
+  res.json(await privateView(planet.id));
+});
+// Recria a galáxia privada da regra antiga no universo novo (leva os membros).
+gameRouter.post("/private/recreate", async (req: AuthedRequest, res) => {
+  const planet = await prisma.planet.findUnique({ where: { userId: req.userId! } });
+  if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
+  try { await recreatePrivateGalaxy(planet.id); }
   catch (e: any) { return res.status(400).json({ error: e.message ?? "Falha" }); }
   res.json(await privateView(planet.id));
 });

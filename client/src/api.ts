@@ -599,6 +599,8 @@ export const api = {
     request<PrivateView>("/game/private"),
   privateCreate: (name: string) =>
     request<PrivateView>("/game/private/create", { method: "POST", body: JSON.stringify({ name }) }),
+  privateRecreate: () =>
+    request<PrivateView>("/game/private/recreate", { method: "POST" }),
   privateInvite: (username: string) =>
     request<PrivateView>("/game/private/invite", { method: "POST", body: JSON.stringify({ username }) }),
   privateJoin: (galaxy: number) =>
@@ -628,6 +630,7 @@ export interface AdInput { title: string; imageUrl: string; linkUrl: string; cap
 
 export interface PrivateView {
   owned: { galaxy: number; name: string | null; members: { name: string; commander: string; coords: string }[] } | null;
+  canRecreate?: boolean; // privada do dono está na regra antiga e pode ser recriada no universo novo
   invites: { galaxy: number; name: string }[];
 }
 
