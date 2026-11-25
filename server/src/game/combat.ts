@@ -351,6 +351,24 @@ export async function startEngagement(fleetId: string, _defenderPlanetId: string
   });
 }
 
+// Avisa quem mandou DEFESA (guarnição) num planeta que o ataque terminou/recuou —
+// assim o aliado sabe que pode recuar a frota de defesa. Notifica o dono de cada
+// guarnição no planeta (menos o próprio dono do planeta defendido). `exceptPlanetId`
+// evita duplicar aviso pra um dono já notificado por outra via.
+async function notifyDefendersAttackEnded(
+  target: { galaxy: number; system: number; slot: number }, tick: number, motivo: string, defendedPlanetId?: string,
+) {
+  const garr = await prisma.fleet.findMany({
+    where: { status: "garrison", targetGalaxy: target.galaxy, targetSystem: target.system, targetSlot: target.slot },
+    select: { ownerPlanetId: true },
+  });
+  const coord = `${target.galaxy}:${target.system}:${target.slot}`;
+  const owners = [...new Set(garr.map((f) => f.ownerPlanetId))].filter((id) => id !== defendedPlanetId);
+  for (const ownerId of owners) {
+    await addNews(ownerId, tick, `🏳️ ${motivo} em ${coord} — sua defesa já pode recuar pra base.`).catch(() => {});
+  }
+}
+
 // Resolve UMA rodada de combate de um PLANETA num tick: junta TODAS as frotas
 // atacantes engajadas + a defesa (base + frotas idle do dono + guarnições),
 // roda 1 rodada e redistribui perdas/espólio. Gera 1 relatório por planeta atacante.
@@ -508,6 +526,16 @@ export async function resolveSiege(target: { galaxy: number; system: number; slo
     } });
   }
 
+  // O CERCO ACABOU? Se não sobrou nenhum atacante ainda engajado neste planeta
+  // (todos recuaram, terminaram ou foram dizimados), avisa quem mandou DEFESA
+  // (guarnições) que o ataque acabou — assim o aliado sabe que pode recuar.
+  const aindaEngajados = await prisma.fleet.count({
+    where: { status: "engaged", targetGalaxy: target.galaxy, targetSystem: target.system, targetSlot: target.slot },
+  });
+  if (aindaEngajados === 0) {
+    await notifyDefendersAttackEnded(target, tick, "O ataque terminou", def.id);
+  }
+
   // 1 relatório por planeta atacante (cada um vê o combate COMBINADO).
   const atkCoordsList: string[] = [];
   for (const ownerId of atkOwners) {
@@ -608,6 +636,10 @@ export async function finalize(fleetId: string, tick: number) {
     if (fleet.mission === "attack") {
       if (tgt) await addNews(tgt.id, tick, `🏳️ Um ataque a caminho recuou — o atacante desistiu antes de chegar`);
       if (atkP) await addNews(atkP.id, tick, `↩️ Você recuou do ataque a ${tgtCoord} — a frota está voltando`);
+      // Avisa quem está defendendo esse planeta (guarnições) que o ataque recuou.
+      await notifyDefendersAttackEnded(
+        { galaxy: fleet.targetGalaxy, system: fleet.targetSystem, slot: fleet.targetSlot },
+        tick, "Um ataque recuou", tgt?.id);
     } else {
       // Defesa recuada (o reforço voltou antes de chegar ao aliado).
       if (atkP) await addNews(atkP.id, tick, `↩️ Você recuou a defesa a ${tgtCoord} — a frota está voltando`);
