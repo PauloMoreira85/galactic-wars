@@ -293,6 +293,10 @@ export async function processFleets(uptoTick: number) {
 
   // Planetas que terão combate resolvido NESTE tick (1 batalha combinada cada).
   const besieged = new Set<string>();
+  // Guarnições que terminam HOJE num planeta sob ataque: a volta é processada
+  // DEPOIS do combate (no mesmo tick), pra levar as naves assimiladas sem esticar
+  // a estadia. Guarda o id da frota (relê do banco após o resolveSiege).
+  const returnAfterCombat: string[] = [];
 
   // Alvos que estão SOB ATAQUE neste tick (frota já engajada, ou atacante chegando
   // agora). Numa guarnição, se o alvo está sob ataque, o COMBATE gera o relatório —
@@ -339,13 +343,13 @@ export async function processFleets(uptoTick: number) {
     }
     if (fleet.status === "garrison") {
       const gcoord = `${fleet.targetGalaxy}:${fleet.targetSystem}:${fleet.targetSlot}`;
-      // Guarnição que terminaria AGORA mas o planeta está SOB ATAQUE neste tick:
-      // adia a volta 1 tick. Assim ela defende e (se for Mech) ASSIMILA no combate
-      // de hoje; sai só no próximo tick, já levando as naves assimiladas. Sem isso,
-      // ela voltaria ANTES do combate rodar e perderia as assimiladas deste tick.
+      // Guarnição que termina HOJE num planeta SOB ATAQUE: NÃO adia a volta (senão
+      // a estadia esticaria 1 tick). Defende/assimila no combate de hoje e volta
+      // no MESMO tick, DEPOIS do combate — a volta é processada após o resolveSiege
+      // (returnAfterCombat), relendo as units do banco pra levar as assimiladas.
       if (fleet.arriveTick <= uptoTick && underAttackThisTick.has(gcoord)) {
-        await prisma.fleet.update({ where: { id: fleet.id }, data: { arriveTick: uptoTick + 1 } });
         besieged.add(gcoord);
+        returnAfterCombat.push(fleet.id);
         continue;
       }
       // Guarnição: fica estacionada até arriveTick (= fim do reforço), aí volta.
@@ -413,6 +417,25 @@ export async function processFleets(uptoTick: number) {
   for (const key of besieged) {
     const [g, s, slot] = key.split(":").map(Number);
     await resolveSiege({ galaxy: g, system: s, slot }, uptoTick);
+  }
+
+  // Guarnições que terminaram HOJE num planeta que teve combate: agora que o
+  // combate rodou (e gravou as naves assimiladas na frota), processa a volta no
+  // MESMO tick. scheduleReturn relê as units do banco, então leva as assimiladas
+  // junto — e a estadia continua sendo a combinada (não esticou 1 tick).
+  for (const fleetId of returnAfterCombat) {
+    const fleet = await prisma.fleet.findUnique({ where: { id: fleetId } });
+    if (!fleet || fleet.status !== "garrison") continue; // pode ter sido finalizada no combate
+    if (totalUnits(parseUnits(fleet.units)) <= 0) continue; // frota aniquilada: nada volta
+    const coord = `${fleet.targetGalaxy}:${fleet.targetSystem}:${fleet.targetSlot}`;
+    await prisma.news.create({ data: { planetId: fleet.ownerPlanetId, tick: uptoTick, message: `🔙 Sua guarnição em ${coord} terminou — ${fleet.name} está voltando pra base` } });
+    const defended = await prisma.planet.findUnique({ where: { galaxy_system_slot: { galaxy: fleet.targetGalaxy, system: fleet.targetSystem, slot: fleet.targetSlot } }, select: { id: true } });
+    if (defended && defended.id !== fleet.ownerPlanetId) {
+      const sender = await prisma.planet.findUnique({ where: { id: fleet.ownerPlanetId }, select: { name: true, galaxy: true, system: true, slot: true } });
+      const sc = sender ? ` (${sender.galaxy}:${sender.system}:${sender.slot})` : "";
+      await prisma.news.create({ data: { planetId: defended.id, tick: uptoTick, message: `🔙 O reforço de ${sender?.name ?? "um aliado"}${sc} terminou a defesa e está voltando pra base` } });
+    }
+    await scheduleReturn(fleet.id, fleet, parseUnits(fleet.units));
   }
 }
 
