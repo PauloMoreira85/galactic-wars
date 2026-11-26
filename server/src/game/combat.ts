@@ -358,12 +358,19 @@ export async function startEngagement(fleetId: string, _defenderPlanetId: string
 async function notifyDefendersAttackEnded(
   target: { galaxy: number; system: number; slot: number }, tick: number, motivo: string, defendedPlanetId?: string,
 ) {
-  const garr = await prisma.fleet.findMany({
-    where: { status: "garrison", targetGalaxy: target.galaxy, targetSystem: target.system, targetSlot: target.slot },
+  // Defensores do alvo = frotas de DEFESA (transport) nesse planeta, tanto as que
+  // já guarnecem (garrison) quanto as que estão A CAMINHO (outbound) — os dois
+  // precisam saber que o ataque acabou pra decidir recuar.
+  const defs = await prisma.fleet.findMany({
+    where: {
+      mission: "transport",
+      status: { in: ["garrison", "outbound"] },
+      targetGalaxy: target.galaxy, targetSystem: target.system, targetSlot: target.slot,
+    },
     select: { ownerPlanetId: true },
   });
   const coord = `${target.galaxy}:${target.system}:${target.slot}`;
-  const owners = [...new Set(garr.map((f) => f.ownerPlanetId))].filter((id) => id !== defendedPlanetId);
+  const owners = [...new Set(defs.map((f) => f.ownerPlanetId))].filter((id) => id !== defendedPlanetId);
   for (const ownerId of owners) {
     await addNews(ownerId, tick, `🏳️ ${motivo} em ${coord} — sua defesa já pode recuar pra base.`).catch(() => {});
   }
