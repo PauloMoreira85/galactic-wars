@@ -1,6 +1,6 @@
 import { prisma } from "../db.js";
 import { isRaceKey, type RaceKey } from "./races.js";
-import { unitByName, raceTable } from "./catalog.js";
+import { unitByName, raceTable, radarVisibleCount } from "./catalog.js";
 import { parseUnits, stringifyUnits, totalUnits, addUnits, type UnitMap } from "./unitmap.js";
 import { travelTime } from "./travel.js";
 import { galaxyId } from "./geo.js";
@@ -610,6 +610,19 @@ export async function finalize(fleetId: string, tick: number) {
         await addNews(atkP.id, tick, `↩️ Frota recuada no mesmo tick — combustível (${fuel} P) devolvido.`);
       }
     }
+    // Avisa o ALVO e seus defensores que o ataque recuou — mas SÓ se a frota era
+    // visível no radar (se era 100% invisível, o alvo nunca soube da ameaça, então
+    // avisar do recuo vazaria). Só vale pra missão de ATAQUE.
+    if (!fleet.fake && fleet.mission === "attack" && radarVisibleCount(atkSurv) > 0) {
+      const tgt0 = await prisma.planet.findUnique({
+        where: { galaxy_system_slot: { galaxy: fleet.targetGalaxy, system: fleet.targetSystem, slot: fleet.targetSlot } },
+        select: { id: true },
+      });
+      if (tgt0) await addNews(tgt0.id, tick, `🏳️ Um ataque a caminho recuou — o atacante desistiu antes de chegar`);
+      await notifyDefendersAttackEnded(
+        { galaxy: fleet.targetGalaxy, system: fleet.targetSystem, slot: fleet.targetSlot },
+        tick, "Um ataque recuou", tgt0?.id);
+    }
     return;
   }
   const back = arrived
@@ -634,12 +647,15 @@ export async function finalize(fleetId: string, tick: number) {
       select: { id: true },
     });
     if (fleet.mission === "attack") {
-      if (tgt) await addNews(tgt.id, tick, `🏳️ Um ataque a caminho recuou — o atacante desistiu antes de chegar`);
       if (atkP) await addNews(atkP.id, tick, `↩️ Você recuou do ataque a ${tgtCoord} — a frota está voltando`);
-      // Avisa quem está defendendo esse planeta (guarnições) que o ataque recuou.
-      await notifyDefendersAttackEnded(
-        { galaxy: fleet.targetGalaxy, system: fleet.targetSystem, slot: fleet.targetSlot },
-        tick, "Um ataque recuou", tgt?.id);
+      // Avisa o ALVO e os defensores só se a frota era VISÍVEL no radar (se era
+      // invisível, o alvo nunca soube da ameaça — avisar do recuo vazaria).
+      if (radarVisibleCount(atkSurv) > 0) {
+        if (tgt) await addNews(tgt.id, tick, `🏳️ Um ataque a caminho recuou — o atacante desistiu antes de chegar`);
+        await notifyDefendersAttackEnded(
+          { galaxy: fleet.targetGalaxy, system: fleet.targetSystem, slot: fleet.targetSlot },
+          tick, "Um ataque recuou", tgt?.id);
+      }
     } else {
       // Defesa recuada (o reforço voltou antes de chegar ao aliado).
       if (atkP) await addNews(atkP.id, tick, `↩️ Você recuou a defesa a ${tgtCoord} — a frota está voltando`);
