@@ -818,7 +818,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                   </div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div className="roid-count">próximo: {fmt(roidCost(key))} Metalium{(roidQty[key] || 0) > 1 ? ` · ${roidQty[key]}x = ${fmt(roidTotalCost(key, roidQty[key]))}` : ""}</div>
+                  <div className="roid-count" style={!canAffordRoid(key) ? { color: "var(--danger)" } : undefined}>próximo: {fmt(roidCost(key))} Metalium{(roidQty[key] || 0) > 1 ? ` · ${roidQty[key]}x = ${fmt(roidTotalCost(key, roidQty[key]))}` : ""}{!canAffordRoid(key) && " ⚠️ falta Metalium"}</div>
                   <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", alignItems: "center" }}>
                     <input type="number" min={1} placeholder="1" value={roidQty[key] || ""}
                       onChange={(e) => setRoidQty((q) => ({ ...q, [key]: e.target.value === "" ? 0 : Math.max(1, Math.floor(Number(e.target.value))) }))}

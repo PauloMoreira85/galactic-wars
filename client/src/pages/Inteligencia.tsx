@@ -176,9 +176,23 @@ export function Inteligencia() {
                 <td className="roid-count">{fmt(a.cost.metalium)}/{fmt(a.cost.carbonum)}/{fmt(a.cost.plutonium)} · {a.ticks}t</td>
                 <td>
                   {a.unlocked ? (
-                    <input type="number" min={0} value={qty[a.key] || ""} placeholder="0"
-                      onChange={(e) => setQty((q) => ({ ...q, [a.key]: Math.max(0, Number(e.target.value)) }))}
-                      style={{ width: 90, margin: 0, padding: "6px 8px" }} />
+                    <>
+                      <input type="number" min={0} value={qty[a.key] || ""} placeholder="0"
+                        onChange={(e) => setQty((q) => ({ ...q, [a.key]: Math.max(0, Number(e.target.value)) }))}
+                        style={{ width: 90, margin: 0, padding: "6px 8px" }} />
+                      {(() => {
+                        const n = qty[a.key] || 0;
+                        if (n < 1 || !data) return null;
+                        const tm = a.cost.metalium * n, tc = a.cost.carbonum * n, tp = a.cost.plutonium * n;
+                        const r = data.resources;
+                        const ok = r.metalium >= tm && r.carbonum >= tc && r.plutonium >= tp;
+                        return (
+                          <div className="roid-count" style={{ marginTop: 3, fontSize: 11, color: ok ? undefined : "var(--danger)" }}>
+                            total: {fmt(tm)}/{fmt(tc)}/{fmt(tp)}{!ok && " ⚠️ falta recurso"}
+                          </div>
+                        );
+                      })()}
+                    </>
                   ) : <span className="roid-count">pesquise nível {a.level}</span>}
                 </td>
                 <td>{a.unlocked && <button disabled={!(qty[a.key] > 0)} onClick={() => train(a.key)}>treinar</button>}</td>

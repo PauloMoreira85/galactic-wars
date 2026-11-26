@@ -501,6 +501,8 @@ gameRouter.get("/agents", async (req: AuthedRequest, res) => {
         unlocked: lvl >= d.level, count: counts[k] ?? 0 };
     }),
     protection: { ce: myCE, needed: need, shielded: myCE >= need, roids: myRoids, roidsPerCE: ROIDS_POR_CE },
+    // Estoque atual — o cliente usa pra mostrar "total: X/Y/Z · falta recurso" (pedido Zima).
+    resources: { metalium: me.metalium, carbonum: me.carbonum, plutonium: me.plutonium },
     training: orders.map((o) => ({ id: o.id, key: o.shipClass, quantity: o.quantity, ticksRemaining: Math.max(0, o.completeTick - tick) })),
   });
 });

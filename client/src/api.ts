@@ -299,6 +299,7 @@ export const api = {
       race: string;
       catalog: { key: string; name: string; desc: string; level: number; offensive: boolean; cost: Record<Resource, number>; ticks: number; unlocked: boolean; count: number }[];
       protection: { ce: number; needed: number; shielded: boolean; roids: number; roidsPerCE: number };
+      resources: Record<Resource, number>;
       training: { id: string; key: string; quantity: number; ticksRemaining: number }[];
     }>("/game/agents"),
   buildAgent: (key: string, quantity: number) =>
