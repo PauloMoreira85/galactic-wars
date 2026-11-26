@@ -3,7 +3,7 @@ import { config } from "../config.js";
 import { ROID_PRODUCTION_PER_TICK, RESOURCE_CAP } from "./constants.js";
 import { processBuildOrders, parseTech } from "./fleet.js";
 import { miningBonus } from "./tech.js";
-import { processFleets } from "./galaxy.js";
+import { processFleets, launchScheduledFleets } from "./galaxy.js";
 import { processTax } from "./governance.js";
 import { processEffects, resolveSabotages, SAB_COOLDOWN } from "./sabotage.js";
 import { addNews } from "./news.js";
@@ -144,6 +144,7 @@ async function applyTicks(fromTick: number, toTick: number) {
   await processBuildOrders(toTick);
   const t4 = Date.now();
   for (let t = fromTick + 1; t <= toTick; t++) {
+    await launchScheduledFleets(t); // frotas agendadas partem antes de processar viagens
     await processFleets(t);
     await resolveSabotages(t);
     if (t % MORALE_DECAY_EVERY === 0) await decayAndClampMorale(); // moral decai -1 a cada 5 ticks

@@ -401,8 +401,10 @@ export const api = {
         id: string;
         name: string;
         mission: string;
-        status: "idle" | "outbound" | "engaged" | "returning";
+        status: "idle" | "outbound" | "engaged" | "returning" | "scheduled";
         idle: boolean;
+        scheduled: boolean;
+        launchIn: number;
         origin: string;
         target: string;
         units: Record<string, number>;
@@ -423,7 +425,7 @@ export const api = {
     request<PlanetView>("/game/fleets/transfer", { method: "POST", body: JSON.stringify({ from, to, units }) }),
   renameFleet: (id: string, name: string) =>
     request<{ ok: true }>(`/game/fleets/${id}/rename`, { method: "POST", body: JSON.stringify({ name }) }),
-  dispatchFleet: (id: string, body: { galaxy: number; system: number; slot: number; mission: "attack" | "transport"; ticks?: number; fake?: boolean }) =>
+  dispatchFleet: (id: string, body: { galaxy: number; system: number; slot: number; mission: "attack" | "transport"; ticks?: number; fake?: boolean; launchDelay?: number }) =>
     request<{ ok: true }>(`/game/fleets/${id}/dispatch`, { method: "POST", body: JSON.stringify(body) }),
 
   recallFleet: (id: string) =>

@@ -676,5 +676,15 @@ export async function recallFleet(fleetId: string, ownerPlanetId: string, tick: 
   if (!fleet) throw new Error("Frota nao encontrada");
   if (fleet.ownerPlanetId !== ownerPlanetId) throw new Error("Essa frota nao e sua");
   if (fleet.status === "returning") throw new Error("A frota ja esta voltando");
+  // Agendada (ainda nem partiu): só cancela — devolve o combustível e volta pra base.
+  if (fleet.status === "scheduled") {
+    const units = parseUnits(fleet.units);
+    let fuel = 0;
+    for (const name of Object.keys(units)) { const u = unitByName(name); if (u) fuel += units[name] * u.comb; }
+    await prisma.planet.update({ where: { id: ownerPlanetId }, data: { plutonium: { increment: fuel } } });
+    await prisma.fleet.update({ where: { id: fleetId }, data: { status: "idle", departTick: 0, arriveTick: 0, launchTick: 0 } });
+    await addNews(ownerPlanetId, tick, `🚫 ${fleet.name} (agendada) cancelada — combustível (${fuel} P) devolvido.`).catch(() => {});
+    return;
+  }
   await finalize(fleetId, tick);
 }

@@ -168,6 +168,11 @@ model Fleet {
   departTick Int
   arriveTick Int
 
+  // Envio AGENDADO: tick em que a frota deve PARTIR (vira "outbound"). 0 = sai agora.
+  // Enquanto não chega esse tick, a frota fica status="scheduled" na base (combustível
+  // já debitado). Máx. 6 ticks pra frente. O alvo só é avisado na partida real.
+  launchTick Int @default(0)
+
   // Quantos ticks a frota fica engajada (ataque): 1, 2 ou 3 (escolhido no envio).
   engageTicks Int @default(3)
 

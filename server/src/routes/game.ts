@@ -344,11 +344,17 @@ gameRouter.get("/fleets", async (req: AuthedRequest, res) => {
       origin: `${f.originGalaxy}:${f.originSystem}:${f.originSlot}`,
       target: `${f.targetGalaxy}:${f.targetSystem}:${f.targetSlot}`,
       units, totalShips: totalUnits(units),
-      ticksRemaining: f.status === "engaged" ? Math.max(0, BATTLE_TICKS - f.battleTicksDone) : Math.max(0, f.arriveTick - tick),
+      // Agendada (scheduled): ainda na base, parte em launchTick. Mostra a contagem até a partida.
+      scheduled: f.status === "scheduled",
+      launchIn: f.status === "scheduled" ? Math.max(0, f.launchTick - tick) : 0,
+      ticksRemaining: f.status === "engaged" ? Math.max(0, BATTLE_TICKS - f.battleTicksDone)
+        : f.status === "scheduled" ? Math.max(0, f.launchTick - tick)
+        : Math.max(0, f.arriveTick - tick),
       captured: { metalium: f.capMetalium, carbonum: f.capCarbonum, plutonium: f.capPlutonium },
       // Pode recuar enquanto está fora: indo, em combate OU guarnecendo/defendendo
-      // (garrison). Só não dá quando já está voltando (returning) ou na base (idle).
-      canRecall: f.status === "outbound" || f.status === "engaged" || f.status === "garrison",
+      // (garrison). Agendada também dá pra cancelar (ainda nem partiu). Só não dá
+      // quando já está voltando (returning) ou na base (idle).
+      canRecall: f.status === "outbound" || f.status === "engaged" || f.status === "garrison" || f.status === "scheduled",
       // Tempo/custo de viagem por distância (Galáxia / Setor-Paralelo / Universo)
       travel: { galaxia: tecBase, setor: tecBase + 2, universo: tecBase + 4, fuel: fuelCost(units) },
     };
@@ -431,11 +437,12 @@ const dispatchSchema = z.object({
   mission: z.enum(["attack", "transport"]),
   ticks: z.number().int().min(1).max(6).optional(), // ataque clampa 3, defesa 6 (em dispatchFleet)
   fake: z.boolean().optional(),
+  launchDelay: z.number().int().min(0).max(6).optional(), // envio agendado: parte em N ticks (0 = agora)
 });
 gameRouter.post("/fleets/:id/dispatch", async (req: AuthedRequest, res) => {
   const parsed = dispatchSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Pedido invalido" });
-  const { galaxy, system, slot, mission, ticks, fake } = parsed.data;
+  const { galaxy, system, slot, mission, ticks, fake, launchDelay } = parsed.data;
   const planet = await prisma.planet.findUnique({ where: { userId: req.userId! } });
   if (!planet) return res.status(404).json({ error: "Planeta nao encontrado" });
   // Anti multi-conta: não pode atacar/defender um planeta de conta do mesmo IP.
@@ -453,7 +460,7 @@ gameRouter.post("/fleets/:id/dispatch", async (req: AuthedRequest, res) => {
       const clash = await prisma.fleet.findFirst({
         where: {
           ownerPlanetId: { in: linkedIds },
-          status: { in: ["outbound", "engaged", "garrison"] },
+          status: { in: ["scheduled", "outbound", "engaged", "garrison"] },
           targetGalaxy: galaxy, targetSystem: system, targetSlot: slot,
         },
         select: { id: true },
@@ -461,7 +468,7 @@ gameRouter.post("/fleets/:id/dispatch", async (req: AuthedRequest, res) => {
       if (clash) return res.status(403).json({ error: "Interação bloqueada: uma conta do mesmo IP já está atacando/defendendo este planeta (proteção anti multi-conta)." });
     }
   }
-  try { await dispatchFleet(planet.id, req.params.id, { galaxy, system, slot }, mission, ticks ?? 3, !!fake); }
+  try { await dispatchFleet(planet.id, req.params.id, { galaxy, system, slot }, mission, ticks ?? 3, !!fake, launchDelay ?? 0); }
   catch (e: any) { return res.status(400).json({ error: e.message ?? "Falha ao enviar frota" }); }
   res.json({ ok: true });
 });

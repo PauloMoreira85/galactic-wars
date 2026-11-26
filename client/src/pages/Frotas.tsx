@@ -9,6 +9,7 @@ function fmt(n: number) {
 
 const STATUS_LABEL: Record<string, string> = {
   idle: "na base", outbound: "indo", engaged: "em combate", returning: "voltando", garrison: "defendendo",
+  scheduled: "🕓 agendada",
 };
 
 // Gerenciamento de frotas (estilo "Frotas sob o seu comando"): Base + frotas
@@ -26,6 +27,7 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
   const [dMission, setDMission] = useState<"attack" | "transport">("attack");
   const [dTicks, setDTicks] = useState(3);
   const [dFake, setDFake] = useState(false);
+  const [dDelay, setDDelay] = useState(0); // envio agendado: parte em N ticks (0 = agora)
   const [dFleet, setDFleet] = useState("");
   // Transferência direta entre frotas (ou base): origem, destino e qtd por nave.
   const [tFrom, setTFrom] = useState("base");
@@ -54,7 +56,7 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
     if (!(g >= 1) || !(s >= 1) || !(sl >= 1)) { setError("Digite a coordenada completa (setor:paralelo:slot)."); return; }
     setBusy(true); setError("");
     try {
-      await api.dispatchFleet(dFleet, { galaxy: g, system: s, slot: sl, mission: dMission, ticks: dTicks, fake: dFake });
+      await api.dispatchFleet(dFleet, { galaxy: g, system: s, slot: sl, mission: dMission, ticks: dTicks, fake: dFake, launchDelay: dDelay });
       setDFleet("");
       await load(); onChanged();
     } catch (e: any) { setError(e.message ?? "Falha ao enviar"); }
@@ -208,7 +210,8 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
                   {fleets.map((f) => (
                     <td key={f.id} style={{ color: f.idle ? "var(--muted)" : f.mission === "attack" ? "var(--danger)" : "var(--carbonum)" }}>
                       {STATUS_LABEL[f.status] ?? f.status}
-                      {!f.idle && <div className="roid-count"><CoordLink c={f.target} /> · {f.ticksRemaining}t</div>}
+                      {f.scheduled ? <div className="roid-count"><CoordLink c={f.target} /> · parte em {f.launchIn}t</div>
+                        : !f.idle && <div className="roid-count"><CoordLink c={f.target} /> · {f.ticksRemaining}t</div>}
                     </td>
                   ))}
                 </tr>
@@ -232,8 +235,13 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
                   {fleets.map((f) => (
                     <td key={f.id}>
                       {!f.idle && f.canRecall ? (
-                        <button disabled={busy} className="btn-danger" style={{ padding: "2px 8px", fontSize: 11 }}
-                          onClick={() => { if (window.confirm(`Recuar a ${f.name} (${f.totalShips} naves) que vai pra ${f.target}?\n\nA frota volta pra base.`)) act(() => api.recallFleet(f.id)); }}>↩ recuar</button>
+                        f.scheduled ? (
+                          <button disabled={busy} className="btn-danger" style={{ padding: "2px 8px", fontSize: 11 }}
+                            onClick={() => { if (window.confirm(`Cancelar o envio agendado da ${f.name} (${f.totalShips} naves) pra ${f.target}?\n\nO combustível é devolvido.`)) act(() => api.recallFleet(f.id)); }}>✖ cancelar</button>
+                        ) : (
+                          <button disabled={busy} className="btn-danger" style={{ padding: "2px 8px", fontSize: 11 }}
+                            onClick={() => { if (window.confirm(`Recuar a ${f.name} (${f.totalShips} naves) que vai pra ${f.target}?\n\nA frota volta pra base.`)) act(() => api.recallFleet(f.id)); }}>↩ recuar</button>
+                        )
                       ) : <span className="roid-count">—</span>}
                     </td>
                   ))}
@@ -325,11 +333,17 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
                 ))}
               </select>
             )}
+            <select value={dDelay} onChange={(e) => setDDelay(Number(e.target.value))} title="Envio agendado: a frota só parte daqui a N ticks (o alvo só é avisado na partida). Máx 6." style={{ width: "auto", margin: 0, background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
+              <option value={0}>🕓 partir agora</option>
+              {Array.from({ length: 6 }, (_, i) => i + 1).map((n) => (
+                <option key={n} value={n}>🕓 partir em {n} tick{n > 1 ? "s" : ""}</option>
+              ))}
+            </select>
             <select value={dFleet} onChange={(e) => setDFleet(e.target.value)} style={{ width: "auto", margin: 0, background: "rgba(0,0,0,0.3)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 8px" }}>
               <option value="">escolha a frota...</option>
               {fleets.filter((f) => f.idle && f.totalShips > 0).map((f) => <option key={f.id} value={f.id}>{f.name} ({fmt(f.totalShips)} naves)</option>)}
             </select>
-            <button disabled={busy || !dFleet} onClick={dispatch}>{busy ? "..." : "🚀 enviar"}</button>
+            <button disabled={busy || !dFleet} onClick={dispatch}>{busy ? "..." : dDelay > 0 ? `🕓 agendar (${dDelay}t)` : "🚀 enviar"}</button>
           </div>
         )}
       </div>

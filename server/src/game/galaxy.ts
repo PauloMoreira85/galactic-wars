@@ -9,6 +9,7 @@ import { unitByName, radarVisibleCount } from "./catalog.js";
 import { planetScore } from "./score.js";
 import { allianceTagsForViewer, sameAlliance, allianceMateIds } from "./alliance.js";
 import { hasActiveTreaty } from "./governance.js";
+import { addNews } from "./news.js";
 import { nextFleetSlotCost, NEWBIE_PROTECTION_TICKS, ATTACK_RANGE_MIN_PCT, SLOTS_PER_SYSTEM } from "./constants.js";
 
 // Combustível (plutonium) para enviar uma frota = soma do Comb de cada nave.
@@ -134,10 +135,14 @@ export async function transferUnits(planetId: string, fromId: string, toId: stri
 }
 
 // Envia uma frota IDLE (já carregada) para um destino.
-export async function dispatchFleet(planetId: string, fleetId: string, target: Coords, mission: "attack" | "transport", ticks = 3, fake = false) {
+export const MAX_LAUNCH_DELAY = 6; // envio agendado: no máx. 6 ticks pra frente
+
+export async function dispatchFleet(planetId: string, fleetId: string, target: Coords, mission: "attack" | "transport", ticks = 3, fake = false, launchDelay = 0) {
   // Ataque engaja no máx. 3 ticks; defesa (transport) pode guarnecer até 6 ticks.
   const maxTicks = mission === "transport" ? 6 : 3;
   const engageTicks = Math.max(1, Math.min(maxTicks, Math.floor(ticks)));
+  // Envio agendado: 0 = sai agora; 1..6 = parte daqui a N ticks (fica "scheduled" na base).
+  const delay = Math.max(0, Math.min(MAX_LAUNCH_DELAY, Math.floor(launchDelay)));
   const result = await withWrite(() => prisma.$transaction(async (tx) => {
     const planet = await tx.planet.findUnique({ where: { id: planetId } });
     if (!planet) throw new Error("Planeta nao encontrado");
@@ -158,7 +163,7 @@ export async function dispatchFleet(planetId: string, fleetId: string, target: C
     }
     // Não dá pra ATACAR e DEFENDER o mesmo planeta ao mesmo tempo.
     const opposite = mission === "attack" ? "transport" : "attack";
-    const conflict = await tx.fleet.count({ where: { ownerPlanetId: planetId, mission: opposite, status: { in: ["outbound", "engaged", "garrison"] }, targetGalaxy: target.galaxy, targetSystem: target.system, targetSlot: target.slot } });
+    const conflict = await tx.fleet.count({ where: { ownerPlanetId: planetId, mission: opposite, status: { in: ["scheduled", "outbound", "engaged", "garrison"] }, targetGalaxy: target.galaxy, targetSystem: target.system, targetSlot: target.slot } });
     if (conflict > 0) throw new Error(mission === "attack" ? "Você já tem uma frota DEFENDENDO esse planeta — não dá pra atacar e defender o mesmo ao mesmo tempo" : "Você já tem uma frota ATACANDO esse planeta — não dá pra defender e atacar o mesmo ao mesmo tempo");
     if (mission === "attack" && target.galaxy === origin.galaxy && target.system === origin.system) {
       throw new Error("Nao e possivel atacar planetas da mesma galaxia (sao aliados)");
@@ -205,20 +210,28 @@ export async function dispatchFleet(planetId: string, fleetId: string, target: C
     await tx.planet.update({ where: { id: planetId }, data: { plutonium: { decrement: fuel } } });
 
     const tick = await currentTick();
+    const launchTick = tick + delay; // tick da PARTIDA real (= tick se delay 0)
     const tt = travelTime(galaxyId(origin.galaxy, origin.system), galaxyId(target.galaxy, target.system), fleetUnits, propLevelOf(planet.tech));
     await tx.fleet.update({
       where: { id: fleetId },
       data: {
-        mission, status: "outbound",
+        mission, status: delay > 0 ? "scheduled" : "outbound",
         originGalaxy: origin.galaxy, originSystem: origin.system, originSlot: origin.slot,
         targetGalaxy: target.galaxy, targetSystem: target.system, targetSlot: target.slot,
-        departTick: tick, arriveTick: tick + tt, capMetalium: 0, capCarbonum: 0, capPlutonium: 0,
+        departTick: launchTick, arriveTick: launchTick + tt, launchTick,
+        capMetalium: 0, capCarbonum: 0, capPlutonium: 0,
         engageTicks, fake,
       },
     });
+    const tipoMsg = mission === "attack" ? "ataque" : "defesa";
+    // AGENDADA: só avisa o próprio dono; o alvo é avisado quando ela PARTIR (no tick),
+    // pra não vazar a estratégia antes da hora.
+    if (delay > 0) {
+      await tx.news.create({ data: { planetId, tick, message: `🕓 ${fleet.name} (${tipoMsg}) agendada para ${target.galaxy}:${target.system}:${target.slot} — parte em ${delay}t (chega ${delay + tt}t depois do envio)` } });
+      return { ok: true, arriveIn: tt, scheduled: delay, pushMsg: null as any };
+    }
     // NÃO revela "falso/falsa" nas notícias: se o inimigo espionar com agente de
     // Transmissão, não pode descobrir que é uma finta (senão estraga a estratégia).
-    const tipoMsg = mission === "attack" ? "ataque" : "defesa";
     await tx.news.create({ data: { planetId, tick, message: `${fleet.name} (${tipoMsg}) enviada para ${target.galaxy}:${target.system}:${target.slot} (chega em ${tt}t)` } });
 
     // Avisa o ALVO na hora do envio. Ataque = radar (Rakshasa mostra só roiders;
@@ -252,6 +265,54 @@ export async function dispatchFleet(planetId: string, fleetId: string, target: C
     pushToUser(result.pushMsg.userId, { title: result.pushMsg.title, body: result.pushMsg.body, tag: result.pushMsg.tag, url: "/" }).catch(() => {});
   }
   return result;
+}
+
+// Envio AGENDADO: toda frota "scheduled" cujo launchTick chegou PARTE agora (vira
+// "outbound") e só então o alvo é avisado — a estratégia não vaza antes da partida.
+// Chamado no início de cada tick, ANTES do processFleets.
+export async function launchScheduledFleets(tick: number) {
+  const due = await prisma.fleet.findMany({ where: { status: "scheduled", launchTick: { lte: tick } } });
+  for (const fleet of due) {
+    const planet = await prisma.planet.findUnique({ where: { id: fleet.ownerPlanetId }, select: { id: true, name: true, galaxy: true, system: true, slot: true } });
+    if (!planet) continue;
+    const fleetUnits = parseUnits(fleet.units);
+    const target = { galaxy: fleet.targetGalaxy, system: fleet.targetSystem, slot: fleet.targetSlot };
+    // Isolamento militar que caiu DEPOIS do agendamento cancela a partida (devolve o
+    // combustível e volta pra base — não dá pra burlar o lock agendando antes).
+    const lock = await prisma.planetEffect.findFirst({ where: { planetId: planet.id, kind: "fleetlock", expiresTick: { gt: tick } } });
+    if (lock) {
+      await prisma.planet.update({ where: { id: planet.id }, data: { plutonium: { increment: fuelCost(fleetUnits) } } });
+      await prisma.fleet.update({ where: { id: fleet.id }, data: { status: "idle", departTick: 0, arriveTick: 0, launchTick: 0 } });
+      await addNews(planet.id, tick, `🚫 ${fleet.name} não partiu: planeta isolado militarmente (sabotagem). Combustível devolvido.`);
+      continue;
+    }
+    // Parte: scheduled -> outbound (arriveTick já foi calculado no agendamento).
+    await prisma.fleet.update({ where: { id: fleet.id }, data: { status: "outbound", departTick: tick } });
+    const tt = Math.max(0, fleet.arriveTick - tick);
+    const tipoMsg = fleet.mission === "attack" ? "ataque" : "defesa";
+    await addNews(planet.id, tick, `🚀 ${fleet.name} (${tipoMsg}) partiu agora para ${target.galaxy}:${target.system}:${target.slot} (chega em ${tt}t)`);
+
+    // Avisa o ALVO na partida (mesma regra do envio imediato: radar no ataque).
+    const tgtP = await prisma.planet.findUnique({ where: { galaxy_system_slot: { galaxy: target.galaxy, system: target.system, slot: target.slot } }, select: { id: true, userId: true } });
+    if (!tgtP || tgtP.id === planet.id) continue;
+    const fromCoord = `${planet.galaxy}:${planet.system}:${planet.slot}`;
+    if (fleet.mission === "attack") {
+      if (fleet.fake) continue; // finta não avisa? segue a mesma regra: avisa pelo radar
+      const visible = radarVisibleCount(fleetUnits);
+      if (visible > 0) {
+        await addNews(tgtP.id, tick, `🚨 ATAQUE! ${planet.name} (${fromCoord}) está te atacando com ${visible} nave(s) — chega em ${tt} tick(s)!`);
+        pushToUser(tgtP.userId, { title: "🚨 ATAQUE a caminho!", body: `${planet.name} (${fromCoord}) está te atacando com ${visible} nave(s) — chega em ${tt} tick(s)!`, tag: "ataque", url: "/" }).catch(() => {});
+        const mates = await allianceMateIds(tgtP.id);
+        if (mates.length) {
+          const coord = `${target.galaxy}:${target.system}:${target.slot}`;
+          for (const pid of mates) await addNews(pid, tick, `🛡️ Aliado sob ataque! ${planet.name} (${fromCoord}) está atacando o aliado em ${coord} — chega em ${tt}t. Mande defesa!`);
+        }
+      }
+    } else {
+      await addNews(tgtP.id, tick, `🛡️ Reforço a caminho: ${planet.name} (${fromCoord}) mandou ${totalUnits(fleetUnits)} nave(s) pra te defender — chega em ${tt} tick(s).`);
+      pushToUser(tgtP.userId, { title: "🛡️ Defesa a caminho!", body: `${planet.name} (${fromCoord}) mandou ${totalUnits(fleetUnits)} nave(s) pra te defender — chega em ${tt} tick(s).`, tag: "defesa", url: "/" }).catch(() => {});
+    }
+  }
 }
 
 // Frota volta pra base: vira IDLE mantendo as naves; espólio (roids) vai pro planeta.
