@@ -309,8 +309,8 @@ export const api = {
   sabotage: () => request<{
     all: { key: string; name: string; building: string; desc: string; ticks: number; plut: number }[];
     available: string[];
-    pending: { id: string; key: string; name: string; coords: string; tec: number }[];
-    history: { id: string; key: string; name: string; target: string; coords: string; success: boolean; detail: string; tick: number }[];
+    pending: { id: string; key: string; name: string; coords: string; commander: string | null; tec: number }[];
+    history: { id: string; key: string; name: string; target: string; coords: string; commander: string | null; success: boolean; detail: string; tick: number }[];
     tick: number; cooldownLeft: number; cooldownUntilTick: number;
   }>("/game/sabotage"),
   sabotageRun: (galaxy: number, system: number, slot: number, key: string) =>

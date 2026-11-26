@@ -946,18 +946,33 @@ gameRouter.get("/sabotage", async (req: AuthedRequest, res) => {
   const tick = (await prisma.gameState.findUnique({ where: { id: 1 } }))?.tickNumber ?? 0;
   // Em andamento: sabotagens lançadas por mim, aguardando efeito (TEC = ticks restantes).
   const orders = await prisma.sabotageOrder.findMany({ where: { saboteurPlanetId: planet.id }, orderBy: { resolveTick: "asc" } });
-  const pending = orders.map((o) => ({
-    id: o.id, key: o.key, name: nameOf(o.key),
-    coords: `${o.targetGalaxy}:${o.targetSystem}:${o.targetSlot}`,
-    tec: Math.max(0, o.resolveTick - tick), // Tempo Estimado de Chegada (ticks até o efeito)
-  }));
   // Histórico: sabotagens já concluídas (sucesso ou barradas), mais recentes primeiro.
   const logs = await prisma.sabotageLog.findMany({ where: { saboteurPlanetId: planet.id }, orderBy: { tick: "desc" }, take: 40 });
-  const history = logs.map((l) => ({
-    id: l.id, key: l.key, name: nameOf(l.key), target: l.targetName,
-    coords: `${l.targetGalaxy}:${l.targetSystem}:${l.targetSlot}`,
-    success: l.success, detail: l.detail, tick: l.tick,
-  }));
+  // Comandante de cada alvo (padrão "Planeta (Comandante)" — pedido Felipe).
+  const coordKeys = new Set<string>();
+  for (const o of orders) coordKeys.add(`${o.targetGalaxy}:${o.targetSystem}:${o.targetSlot}`);
+  for (const l of logs) coordKeys.add(`${l.targetGalaxy}:${l.targetSystem}:${l.targetSlot}`);
+  const tgtPlanets = await prisma.planet.findMany({
+    where: { OR: [...coordKeys].map((c) => { const [g, s, sl] = c.split(":").map(Number); return { galaxy: g, system: s, slot: sl }; }) },
+    select: { galaxy: true, system: true, slot: true, name: true, user: { select: { username: true } } },
+  });
+  const cmdByCoord = new Map(tgtPlanets.map((p) => [`${p.galaxy}:${p.system}:${p.slot}`, p.user.username]));
+  const pending = orders.map((o) => {
+    const coords = `${o.targetGalaxy}:${o.targetSystem}:${o.targetSlot}`;
+    return {
+      id: o.id, key: o.key, name: nameOf(o.key),
+      coords, commander: cmdByCoord.get(coords) ?? null,
+      tec: Math.max(0, o.resolveTick - tick), // Tempo Estimado de Chegada (ticks até o efeito)
+    };
+  });
+  const history = logs.map((l) => {
+    const coords = `${l.targetGalaxy}:${l.targetSystem}:${l.targetSlot}`;
+    return {
+      id: l.id, key: l.key, name: nameOf(l.key), target: l.targetName,
+      coords, commander: cmdByCoord.get(coords) ?? null,
+      success: l.success, detail: l.detail, tick: l.tick,
+    };
+  });
   // Cooldown: trava a lista e diz em qual tick libera (pedido lythorf).
   const cd = await prisma.sabotageCooldown.findUnique({ where: { planetId: planet.id } });
   const cooldownLeft = cd ? Math.max(0, SAB_COOLDOWN - (tick - cd.lastTick)) : 0;
@@ -1162,6 +1177,22 @@ gameRouter.get("/combats", async (req: AuthedRequest, res) => {
   const oppIds = [...new Set(reports.map((r) => (r.attackerPlanetId === planet.id ? r.defenderPlanetId : r.attackerPlanetId)))];
   const oppPlanets = await prisma.planet.findMany({ where: { id: { in: oppIds } }, select: { id: true, user: { select: { username: true } } } });
   const oppCmd = new Map(oppPlanets.map((p) => [p.id, p.user.username]));
+  // No ally-defense o oponente é o planeta DEFENDIDO (por coords) — resolve o comandante dele tbm,
+  // senão em defesa de aliado o nome do líder somia (bug Felipe).
+  const defendedCoords = new Set<string>();
+  for (const r of reports) {
+    if (r.winner !== "ally-defense") continue;
+    const d = JSON.parse(r.report);
+    if (d.defendedCoords) defendedCoords.add(d.defendedCoords);
+  }
+  const defCmdByCoord = new Map<string, string>();
+  if (defendedCoords.size > 0) {
+    const defPlanets = await prisma.planet.findMany({
+      where: { OR: [...defendedCoords].map((c) => { const [g, s, sl] = c.split(":").map(Number); return { galaxy: g, system: s, slot: sl }; }) },
+      select: { galaxy: true, system: true, slot: true, user: { select: { username: true } } },
+    });
+    for (const p of defPlanets) defCmdByCoord.set(`${p.galaxy}:${p.system}:${p.slot}`, p.user.username);
+  }
   const out = reports.map((r) => {
     const iAmAttacker = r.attackerPlanetId === planet.id;
     const oppId = iAmAttacker ? r.defenderPlanetId : r.attackerPlanetId;
@@ -1178,7 +1209,7 @@ gameRouter.get("/combats", async (req: AuthedRequest, res) => {
       id: r.id, tick: r.tick, role,
       // No ally-defense o "oponente" é quem foi defendido (defendedName), não o def.name genérico.
       opponent: isAllyDefense ? (detail.defendedName ?? r.attackerName) : (iAmAttacker ? r.defenderName : r.attackerName),
-      opponentCommander: isAllyDefense ? null : (oppCmd.get(oppId) ?? null),
+      opponentCommander: isAllyDefense ? (defCmdByCoord.get(detail.defendedCoords) ?? null) : (oppCmd.get(oppId) ?? null),
       opponentCoords: isAllyDefense ? (detail.defendedCoords ?? r.attackerCoords) : (iAmAttacker ? r.defenderCoords : r.attackerCoords),
       // Perdas do MEU lado: atacante olha detail.attacker; defensor (base ou aliado) olha detail.defender.
       myLost: isDefense ? 0 : sumLost((iAmAttacker && !isAllyDefense ? detail.attacker : detail.defender) ?? []),

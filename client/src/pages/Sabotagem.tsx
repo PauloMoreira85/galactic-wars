@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
 import { CoordLink } from "../components/CoordLink";
+import { PlanetTag } from "../components/PlanetTag";
 
 type Sab = Awaited<ReturnType<typeof api.sabotage>>;
 
@@ -52,7 +53,7 @@ export function Sabotagem() {
                 {data.pending.map((p) => (
                   <tr key={p.id}>
                     <td><b>{p.name}</b></td>
-                    <td><CoordLink c={p.coords} /></td>
+                    <td><PlanetTag planet={p.commander} commander={null} /> <span className="roid-count">(<CoordLink c={p.coords} />)</span></td>
                     <td><b style={{ color: "var(--accent)" }}>{p.tec}t</b></td>
                   </tr>
                 ))}
@@ -102,7 +103,7 @@ export function Sabotagem() {
                 {data.history.map((h) => (
                   <tr key={h.id} style={{ opacity: h.success ? 1 : 0.6 }}>
                     <td><b>{h.name}</b></td>
-                    <td><b>{h.target}</b> <span className="roid-count">(<CoordLink c={h.coords} />)</span></td>
+                    <td><PlanetTag planet={h.target} commander={h.commander} bold /> <span className="roid-count">(<CoordLink c={h.coords} />)</span></td>
                     <td className="roid-count">
                       {h.success ? <span style={{ color: "#37e07a" }}>✅ </span> : <span style={{ color: "#ff6b6b" }}>🛡️ </span>}
                       {h.detail}

@@ -8,7 +8,7 @@ export function IntelReport({ intel }: { intel: any }) {
   return (
     <>
       <div className="cost">
-        Comandante: <b>{intel.commander}</b> · Raça: <b>{intel.race}</b>
+        {intel.name && <>Planeta: <b>{intel.name}</b> · </>}Comandante: <b>{intel.commander}</b> · Raça: <b>{intel.race}</b>
         {intel.online != null && ` · ${intel.online ? "online" : "offline"}`}
         {intel.tick != null && <span className="roid-count"> · enviado no tick <b>#{intel.tick}</b></span>}
       </div>

@@ -2,6 +2,7 @@ import { useEffect, useState, Fragment } from "react";
 import { api } from "../api";
 import { CoordLink, CoordNavContext } from "../components/CoordLink";
 import { IntelReport } from "../components/IntelReport";
+import { planetLabel } from "../components/PlanetTag";
 import { GLOSSARIO } from "../components/Termo";
 
 function fmt(n: number) {
@@ -181,7 +182,7 @@ function Calculadora() {
   const [hashMsg, setHashMsg] = useState("");
   // Fontes de naves do relatório carregado: base + cada frota (agente Duplo) ou
   // a frota total (agente Militar). Cada uma pode ir pro Ataque ou pra Defesa.
-  const [hashInfo, setHashInfo] = useState<{ targetName: string; targetCoords: string; race?: string } | null>(null);
+  const [hashInfo, setHashInfo] = useState<{ targetName: string; targetCoords: string; commander?: string; race?: string } | null>(null);
   const [hashSources, setHashSources] = useState<{ label: string; detail?: string; units: Record<string, number>; total: number }[]>([]);
 
   useEffect(() => { api.toolUnits().then((d) => setUnits(d.units)).catch(() => {}); }, []);
@@ -271,7 +272,7 @@ function Calculadora() {
         setHashMsg("⚠️ Esse relatório não lista as naves do alvo. Use uma espionagem com agente Militar (M) ou Duplo (D), que revelam a frota.");
         return;
       }
-      setHashInfo({ targetName: r.targetName, targetCoords: r.targetCoords, race: intel.race });
+      setHashInfo({ targetName: r.targetName, targetCoords: r.targetCoords, commander: intel.commander, race: intel.race });
       setHashSources(sources);
       // Alinha a aba de raça com a do alvo, pra facilitar conferir.
       if (intel.race && races.includes(intel.race)) setRace(intel.race);
@@ -359,7 +360,7 @@ function Calculadora() {
         {hashInfo && hashSources.length > 0 && (
           <div style={{ marginTop: 10 }}>
             <div className="roid-count" style={{ marginBottom: 6, fontSize: 12 }}>
-              Alvo: <b>{hashInfo.targetName}</b> (<CoordLink c={hashInfo.targetCoords} />){hashInfo.race ? ` · ${RACE_LABEL[hashInfo.race] ?? hashInfo.race}` : ""}
+              Alvo: <b>{planetLabel(hashInfo.targetName, hashInfo.commander)}</b> (<CoordLink c={hashInfo.targetCoords} />){hashInfo.race ? ` · ${RACE_LABEL[hashInfo.race] ?? hashInfo.race}` : ""}
               {hashSources.length > 1 && " — escolha qual frota importar:"}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
