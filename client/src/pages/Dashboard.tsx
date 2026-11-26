@@ -744,6 +744,32 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                   </div>
                 ))}
               </div>
+
+              {/* Resumo do andamento do planeta: Tecnologia e Naves (ideia do Lion). */}
+              <div className="grid2" style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 10 }}>
+                {([
+                  { titulo: "🔬 Tecnologia", icon: "🔬", items: view.queue.filter((q) => q.kind === "tech"), sec: "tecnologia" as Section },
+                  { titulo: "🛠️ Naves", icon: "🛠️", items: view.queue.filter((q) => q.kind === "ship"), sec: "naves" as Section },
+                ]).map(({ titulo, items, sec }) => (
+                  <button key={sec} onClick={() => setSection(sec)} title="Abrir"
+                    style={{ textAlign: "left", padding: "10px 12px", border: "1px solid var(--border)", borderRadius: 10, background: items.length ? "rgba(37,211,255,0.06)" : "rgba(0,0,0,0.2)", cursor: "pointer" }}>
+                    <div className="combat-ini" style={{ marginBottom: 6 }}>{titulo}</div>
+                    {items.length === 0 ? (
+                      <div className="roid-count">— ocioso <span style={{ opacity: 0.7 }}>(clique pra produzir)</span></div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        {items.slice(0, 3).map((q) => (
+                          <div key={q.id} className="roid-count" style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                            <span style={{ color: "var(--text)" }}>{q.kind === "ship" ? `${q.quantity}x ${q.shipClass ?? q.label}` : q.label}</span>
+                            <b style={{ color: "var(--accent)", whiteSpace: "nowrap" }}>{q.ticksRemaining}t</b>
+                          </div>
+                        ))}
+                        {items.length > 3 && <div className="roid-count" style={{ opacity: 0.7 }}>+{items.length - 3} na fila…</div>}
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="panel">
