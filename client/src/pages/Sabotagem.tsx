@@ -97,13 +97,12 @@ export function Sabotagem() {
           <h3 style={{ margin: "0 0 6px" }}>📜 Histórico</h3>
           <div style={{ overflowX: "auto" }}>
             <table>
-              <thead><tr><th>Sabotagem</th><th>Alvo</th><th className="hide-sm">Coord.</th><th>Resultado</th><th className="hide-sm">Tick</th></tr></thead>
+              <thead><tr><th>Sabotagem</th><th>Alvo</th><th>Resultado</th><th className="hide-sm">Tick</th></tr></thead>
               <tbody>
                 {data.history.map((h) => (
                   <tr key={h.id} style={{ opacity: h.success ? 1 : 0.6 }}>
                     <td><b>{h.name}</b></td>
-                    <td>{h.target}</td>
-                    <td className="hide-sm"><CoordLink c={h.coords} /></td>
+                    <td><b>{h.target}</b> <span className="roid-count">(<CoordLink c={h.coords} />)</span></td>
                     <td className="roid-count">
                       {h.success ? <span style={{ color: "#37e07a" }}>✅ </span> : <span style={{ color: "#ff6b6b" }}>🛡️ </span>}
                       {h.detail}
