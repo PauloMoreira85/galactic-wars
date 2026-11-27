@@ -11,11 +11,23 @@ export function CoordLink({ c, label }: { c: string; label?: string }) {
   const nav = useContext(CoordNavContext);
   // Só as 2 primeiras partes (setor:paralelo) importam pra navegar; o slot é o planeta.
   const valid = /^\d+:\d+(:\d+)?$/.test(c);
-  if (!nav || !valid) return <span className="roid-count">{label ?? c}</span>;
+  if (!valid) return <span className="roid-count">{label ?? c}</span>;
+  // Link REAL (href com ?goto=): clique normal navega sem recarregar (SPA);
+  // Ctrl/Cmd/⌘+clique, botão do meio ou "abrir em nova aba" abre a galáxia numa
+  // aba nova (o Dashboard lê ?goto= no carregamento). Pedido do Endless.
+  const href = `/?goto=${encodeURIComponent(c)}`;
   return (
-    <button className="coord-link" title={`Ver a galáxia ${c}`} onClick={() => nav(c)}>
+    <a
+      className="coord-link" href={href} title={`Ver a galáxia ${c}`}
+      onClick={(e) => {
+        // Deixa o navegador abrir nova aba em ctrl/cmd/shift/meio; só intercepta o clique simples.
+        if (!nav || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        e.preventDefault();
+        nav(c);
+      }}
+    >
       {label ?? c}
-    </button>
+    </a>
   );
 }
 
