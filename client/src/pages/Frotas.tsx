@@ -165,6 +165,25 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
   const totalCols = 2 + fleets.length; // Naves + Base + 1 por frota (colSpan do cabeçalho de raça)
   const nextCost = view.planet.nextFleetSlotCost;
 
+  // === Prévia do envio (pedido do Felipe): quantos ticks a viagem leva (G/S/U) e
+  // em qual tick o combate "bate", já considerando o delay do agendamento. ===
+  const envioPreview = (() => {
+    const g = parseInt(dGalaxy, 10), s = parseInt(dSystem, 10), sl = parseInt(dSlot, 10);
+    if (!(g >= 1) || !(s >= 1) || !(sl >= 1)) return null;
+    const sel = fleets.find((f) => f.id === dFleet);
+    if (!sel) return null;
+    const [og, os] = view.planet.coords.split(":").map(Number);
+    // Classe de distância: mesma galáxia (setor+paralelo) · mesmo setor OU paralelo · resto.
+    let tt: number, dist: string;
+    if (g === og && s === os) { tt = sel.travel.galaxia; dist = "mesma galáxia"; }
+    else if (g === og || s === os) { tt = sel.travel.setor; dist = "mesmo setor/paralelo"; }
+    else { tt = sel.travel.universo; dist = "outro setor"; }
+    const tick = view.game.tickNumber;
+    const partida = tick + dDelay;        // sai agora, ou daqui a dDelay ticks
+    const chegada = partida + tt;         // chega/combate
+    return { tt, dist, partida, chegada, tick, fake: dFake, mission: dMission };
+  })();
+
   return (
     <>
       <div className="panel">
@@ -376,6 +395,20 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
               {fleets.filter((f) => f.idle && f.totalShips > 0).map((f) => <option key={f.id} value={f.id}>{f.name} ({fmt(f.totalShips)} naves)</option>)}
             </select>
             <button disabled={busy || !dFleet} onClick={dispatch}>{busy ? "..." : dDelay > 0 ? `🕓 agendar (${dDelay}t)` : "🚀 enviar"}</button>
+          </div>
+        )}
+        {/* Prévia: ticks de viagem (G/S/U) e em qual tick o combate "bate" (Felipe). */}
+        {envioPreview && (
+          <div className="cost" style={{ marginTop: 8, borderTop: "1px solid var(--border)", paddingTop: 8 }}>
+            🧭 <b>{envioPreview.dist}</b> · viagem <b style={{ color: "var(--accent)" }}>{envioPreview.tt}t</b>
+            {dDelay > 0 && <> · parte no tick <b>#{envioPreview.partida}</b> (daqui a {dDelay}t)</>}
+            {" · "}
+            {envioPreview.fake
+              ? <>a finta chega no tick <b style={{ color: "var(--accent)" }}>#{envioPreview.chegada}</b> e volta</>
+              : envioPreview.mission === "attack"
+                ? <>⚔️ o combate <b>bate no tick</b> <b style={{ color: "var(--danger)" }}>#{envioPreview.chegada}</b></>
+                : <>🛡️ a defesa <b>chega no tick</b> <b style={{ color: "var(--carbonum)" }}>#{envioPreview.chegada}</b></>}
+            <span className="roid-count"> (tick atual #{envioPreview.tick})</span>
           </div>
         )}
       </div>
