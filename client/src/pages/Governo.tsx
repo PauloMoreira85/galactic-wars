@@ -13,6 +13,18 @@ function fmt(n: number) {
   return n.toLocaleString("pt-BR");
 }
 
+// Estado claro de uma frota pro MG: diz se está atacando, defendendo, recuando,
+// em combate, guarnecendo ou agendada (pedido do lythorf — o TEC sozinho não dizia).
+function fleetEstado(mission: string, status: string): { label: string; color: string } {
+  if (status === "returning") return { label: "↩️ recuando", color: "var(--muted)" };
+  if (status === "engaged") return { label: "⚔️ em combate", color: "var(--danger)" };
+  if (status === "garrison") return { label: "🛡️ defendendo", color: "var(--carbonum)" };
+  if (status === "scheduled") return { label: "🕓 agendada", color: "var(--accent)" };
+  // outbound: depende da missão
+  if (mission === "attack") return { label: "⚔️ atacando", color: "var(--danger)" };
+  return { label: "🛡️ defendendo", color: "var(--carbonum)" };
+}
+
 // Hook compartilhado: carrega o governo + expõe `act` (executa uma ação e atualiza).
 function useGov() {
   const [gov, setGov] = useState<GovView | null>(null);
@@ -332,7 +344,7 @@ export function CargoMG() {
             <div className="roid-count">Sem frotas montadas.</div>
           ) : p.fleets.map((f, j) => (
             <div key={j} className="roid-count" style={{ marginTop: 2 }}>
-              🚀 {f.name} <span style={{ opacity: 0.8 }}>[{f.status === "idle" ? "na base" : <>{f.mission} → <CoordLink c={f.target} />{f.status === "engaged" ? " · em combate" : f.ticks > 0 ? <> · <b style={{ color: "var(--accent)" }}>TEC {f.ticks}t</b></> : ""}</>}]</span> ({f.total}): <span style={{ color: "var(--text)" }}>{fmtUnits(f.units)}</span>
+              🚀 {f.name} <span style={{ opacity: 0.85 }}>[{f.status === "idle" ? "na base" : (() => { const est = fleetEstado(f.mission, f.status); return <><b style={{ color: est.color }}>{est.label}</b> → <CoordLink c={f.target} />{f.status === "engaged" ? "" : f.ticks > 0 ? <> · <b style={{ color: "var(--accent)" }}>TEC {f.ticks}t</b></> : ""}</>; })()}]</span> ({f.total}): <span style={{ color: "var(--text)" }}>{fmtUnits(f.units)}</span>
             </div>
           ))}
         </div>
@@ -369,26 +381,96 @@ export function InfoGuerra() {
   }, []);
   if (!gov) return LOADING;
   if (!gov.iAmMG && !gov.iAmCG) return <div className="panel"><div className="roid-count">Só o Ministro da Guerra ou o Comandante da Galáxia veem a Informação de Guerra.</div></div>;
-  const comMovimento = planets.filter((p) => p.attacks.length > 0 || p.defenses.length > 0);
+  // Mostra o planeta se tem movimento, produção de naves (MG) ou combate recente (MG).
+  const comInfo = planets.filter((p) => p.attacks.length > 0 || p.defenses.length > 0 || (p.production?.length ?? 0) > 0 || (p.combats?.length ?? 0) > 0);
   return (
     <div className="panel">
       <h2>🗺️ Informação de Guerra</h2>
       <div className="cost" style={{ marginBottom: 10 }}>
         Por planeta da galáxia: os <b style={{ color: "var(--danger)" }}>⚔️ ataques</b> chegando (ordem de TEC) e, embaixo, as <b style={{ color: "var(--carbonum)" }}>🛡️ defesas</b> (reforços) — também por TEC.
-        {!canSeeShips && <> <span className="roid-count">A <b>força (nº de naves)</b> é inteligência do <b>Ministro da Guerra</b> — como CG você vê os movimentos e o TEC, mas não a quantidade.</span></>}
+        {canSeeShips
+          ? <> O MG também vê a <b>🏭 produção de naves</b> e os <b>⚔️ combates recentes</b> de cada planeta.</>
+          : <> <span className="roid-count">A <b>força (nº de naves)</b>, a <b>produção</b> e os <b>combates</b> são inteligência do <b>Ministro da Guerra</b> — como CG você vê os movimentos e o TEC, mas não a quantidade.</span></>}
       </div>
       {error && <div className="error" style={{ marginBottom: 8 }}>{error}</div>}
-      {comMovimento.length === 0 ? (
-        <div className="roid-count">Nenhum ataque ou defesa em movimento na galáxia agora. ✌️</div>
-      ) : comMovimento.map((p) => (
+      {comInfo.length === 0 ? (
+        <div className="roid-count">Nenhum movimento, produção ou combate na galáxia agora. ✌️</div>
+      ) : comInfo.map((p) => (
         <div key={p.coords} className="roid-row" style={{ display: "block", borderTop: "1px solid var(--border)", paddingTop: 8 }}>
           <div style={{ marginBottom: 2 }}><b>{p.planet}</b> <span className="roid-count">({p.commander}) · <CoordLink c={p.coords} /></span></div>
-          {p.attacks.length > 0 ? (
-            p.attacks.map((m, i) => <WarRow key={`a${i}`} m={m} kind="atk" />)
-          ) : <div className="roid-count" style={{ opacity: 0.6 }}>⚔️ sem ataques</div>}
-          {p.defenses.map((m, i) => <WarRow key={`d${i}`} m={m} kind="def" />)}
+          {(p.attacks.length > 0 || p.defenses.length > 0) && (
+            <>
+              {p.attacks.length > 0 ? p.attacks.map((m, i) => <WarRow key={`a${i}`} m={m} kind="atk" />)
+                : <div className="roid-count" style={{ opacity: 0.6 }}>⚔️ sem ataques</div>}
+              {p.defenses.map((m, i) => <WarRow key={`d${i}`} m={m} kind="def" />)}
+            </>
+          )}
+          {/* Produção de naves (só MG) */}
+          {(p.production?.length ?? 0) > 0 && (
+            <div className="roid-count" style={{ marginTop: 3 }}>
+              🏭 <b>Produção:</b> {p.production.map((pr, i) => (
+                <span key={i}>{i > 0 ? " · " : " "}{fmt(pr.quantity)}× {pr.ship} <span style={{ color: "var(--accent)" }}>({pr.ticks}t)</span></span>
+              ))}
+            </div>
+          )}
+          {/* Combates recentes (só MG) */}
+          {(p.combats?.length ?? 0) > 0 && (
+            <div className="roid-count" style={{ marginTop: 3 }}>
+              ⚔️ <b>Combates:</b> {p.combats.map((c, i) => (
+                <span key={i}>{i > 0 ? " · " : " "}tick #{c.tick} vs <b>{c.attacker}</b> (<CoordLink c={c.attackerCoords} />){c.winner === "attack" ? " 🔴" : c.winner === "defense" || c.winner === "ally-defense" ? " 🟢" : ""}</span>
+              ))}
+            </div>
+          )}
         </div>
       ))}
+    </div>
+  );
+}
+
+// ===================================================================
+// 💰 INFORMAÇÃO DE ECONOMIA (ME + CG) — recursos e roids de cada planeta.
+// ===================================================================
+export function InfoEconomia() {
+  const { gov } = useGov();
+  const [data, setData] = useState<Awaited<ReturnType<typeof api.economyInfo>> | null>(null);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    let alive = true;
+    async function load() { try { const r = await api.economyInfo(); if (alive) { setData(r); setError(""); } } catch (e: any) { if (alive) setError(e.message ?? ""); } }
+    load(); const t = setInterval(load, REFRESH_MS); return () => { alive = false; clearInterval(t); };
+  }, []);
+  if (!gov) return LOADING;
+  if (!gov.iAmME && !gov.iAmCG) return <div className="panel"><div className="roid-count">Só o Ministro da Economia ou o Comandante da Galáxia veem a Informação de Economia.</div></div>;
+  return (
+    <div className="panel">
+      <h2>💰 Informação de Economia</h2>
+      <div className="cost" style={{ marginBottom: 10 }}>
+        Recursos em estoque e <b>roids</b> de cada recurso, por planeta da galáxia — pra planejar imposto e doações.
+      </div>
+      {error && <div className="error" style={{ marginBottom: 8 }}>{error}</div>}
+      {!data ? LOADING : (
+        <div style={{ overflowX: "auto" }}>
+          <table>
+            <thead><tr><th>Planeta</th><th title="Metalium / Carbonum / Plutonium em estoque">Recursos (M/C/P)</th><th title="Roids de cada recurso">Roids (M/C/P)</th><th>Total roids</th></tr></thead>
+            <tbody>
+              {data.planets.map((p) => (
+                <tr key={p.coords}>
+                  <td><b>{p.planet}</b> <span className="roid-count">({p.commander}) <CoordLink c={p.coords} /></span></td>
+                  <td className="roid-count">{fmt(p.resources.metalium)} / {fmt(p.resources.carbonum)} / {fmt(p.resources.plutonium)}</td>
+                  <td className="roid-count">{fmt(p.roids.metalium)} / {fmt(p.roids.carbonum)} / {fmt(p.roids.plutonium)}</td>
+                  <td><b style={{ color: "var(--accent)" }}>{fmt(p.roidTotal)}</b></td>
+                </tr>
+              ))}
+              <tr className="fg-meta">
+                <td><b>Total da galáxia</b></td>
+                <td className="roid-count">{fmt(data.totals.metalium)} / {fmt(data.totals.carbonum)} / {fmt(data.totals.plutonium)}</td>
+                <td className="roid-count">—</td>
+                <td><b style={{ color: "var(--accent)" }}>{fmt(data.totals.roids)}</b></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

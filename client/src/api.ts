@@ -535,6 +535,8 @@ export const api = {
     request<{ planets: MgPlanet[] }>("/game/galaxy/mg-fleets"),
   warInfo: () =>
     request<{ canSeeShips: boolean; planets: WarInfoPlanet[] }>("/game/galaxy/war-info"),
+  economyInfo: () =>
+    request<EcoInfo>("/game/galaxy/economy-info"),
 
   ranking: () =>
     request<{
@@ -625,7 +627,17 @@ export const api = {
 export interface MgFleet { name: string; mission: string; status: string; target: string; ticks: number; units: Record<string, number>; total: number }
 export interface MgPlanet { planet: string; commander: string; coords: string; base: Record<string, number>; baseTotal: number; fleets: MgFleet[] }
 export interface WarMove { fleetName: string; from: string; fromPlanet: string; fromCommander: string; ships: number | null; status: string; tec: number; engaged: boolean }
-export interface WarInfoPlanet { planet: string; commander: string; coords: string; slot: number; attacks: WarMove[]; defenses: WarMove[] }
+export interface WarProd { ship: string; quantity: number; ticks: number }
+export interface WarCombat { tick: number; attacker: string; attackerCoords: string; winner: string }
+export interface WarInfoPlanet { planet: string; commander: string; coords: string; slot: number; attacks: WarMove[]; defenses: WarMove[]; production: WarProd[]; combats: WarCombat[] }
+
+export interface EcoPlanet {
+  planet: string; commander: string; coords: string; slot: number;
+  resources: Record<Resource, number>;
+  roids: Record<Resource, number>; roidTotal: number;
+  production: Record<Resource, number>;
+}
+export interface EcoInfo { planets: EcoPlanet[]; totals: { metalium: number; carbonum: number; plutonium: number; roids: number } }
 
 export type AdPlacement = "landing" | "cadastro" | "game" | "round" | "todas";
 export interface Ad { id: string; title: string; imageUrl: string; linkUrl: string; caption: string | null }

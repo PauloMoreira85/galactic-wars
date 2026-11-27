@@ -394,6 +394,35 @@ export async function warInfo(viewerPlanetId: string) {
   const owners = await prisma.planet.findMany({ where: { id: { in: ownerIds } }, include: { user: { select: { username: true } } } });
   const ownerMap = new Map(owners.map((o) => [o.id, o]));
 
+  // Linha de PRODUÇÃO de naves de cada planeta da galáxia (pedido lythorf) — só o MG
+  // vê (é inteligência militar); o CG vê o resto, mas não a produção/combate detalhado.
+  const planetIds = planets.map((p) => p.id);
+  const shipOrders = isMG
+    ? await prisma.buildOrder.findMany({ where: { planetId: { in: planetIds }, kind: "ship" }, orderBy: { completeTick: "asc" } })
+    : [];
+  const prodByPlanet = new Map<string, { ship: string; quantity: number; ticks: number }[]>();
+  for (const o of shipOrders) {
+    const arr = prodByPlanet.get(o.planetId) ?? [];
+    arr.push({ ship: o.shipClass ?? "?", quantity: o.quantity, ticks: Math.max(0, o.completeTick - tick) });
+    prodByPlanet.set(o.planetId, arr);
+  }
+  // COMBATES recentes em cada slot da galáxia (pedido lythorf): últimos relatórios
+  // onde o planeta DEFENSOR é daqui. Só o MG vê.
+  const combatsByPlanet = new Map<string, { tick: number; attacker: string; attackerCoords: string; winner: string }[]>();
+  if (isMG) {
+    const reports = await prisma.battleReport.findMany({
+      where: { defenderPlanetId: { in: planetIds } },
+      orderBy: { tick: "desc" }, take: 60,
+    });
+    for (const r of reports) {
+      const arr = combatsByPlanet.get(r.defenderPlanetId) ?? [];
+      if (arr.length < 5) { // no máx 5 por planeta pra não poluir
+        arr.push({ tick: r.tick, attacker: r.attackerName, attackerCoords: r.attackerCoords, winner: r.winner });
+        combatsByPlanet.set(r.defenderPlanetId, arr);
+      }
+    }
+  }
+
   const rows = planets.map((p) => {
     const mine = incoming.filter((f) => f.targetSlot === p.slot);
     const row = (f: typeof incoming[number]) => {
@@ -416,7 +445,53 @@ export async function warInfo(viewerPlanetId: string) {
       planet: p.name, commander: p.user.username,
       coords: `${p.galaxy}:${p.system}:${p.slot}`, slot: p.slot,
       attacks, defenses,
+      // Produção de naves e combates recentes — só preenchidos pro MG.
+      production: prodByPlanet.get(p.id) ?? [],
+      combats: combatsByPlanet.get(p.id) ?? [],
     };
   });
   return { canSeeShips: isMG, planets: rows };
+}
+
+// 💰 INFORMAÇÃO DE ECONOMIA (ME + CG): recursos em estoque e roids de cada recurso
+// de TODOS os planetas da galáxia. Visível ao Ministro da Economia OU ao CG. (lythorf)
+export async function economyInfo(viewerPlanetId: string) {
+  const g = await planetGalaxy(viewerPlanetId);
+  if (g == null) throw new Error("Planeta nao encontrado");
+  const st = await ensureGalaxy(g);
+  const isME = st.mePlanetId === viewerPlanetId;
+  const isCG = st.cgPlanetId === viewerPlanetId;
+  if (!isME && !isCG) {
+    throw new Error("Apenas o Ministro da Economia ou o Comandante da Galáxia podem ver isto");
+  }
+  const planets = await prisma.planet.findMany({
+    where: galaxyWhere(g),
+    include: { user: { select: { username: true } } },
+    orderBy: { slot: "asc" },
+  });
+  const rows = planets.map((p) => {
+    const roids = { metalium: p.roidMetalium, carbonum: p.roidCarbonum, plutonium: p.roidPlutonium };
+    const prod = {
+      metalium: p.roidMetalium * ROID_PRODUCTION_PER_TICK,
+      carbonum: p.roidCarbonum * ROID_PRODUCTION_PER_TICK,
+      plutonium: p.roidPlutonium * ROID_PRODUCTION_PER_TICK,
+    };
+    return {
+      planet: p.name, commander: p.user.username,
+      coords: `${p.galaxy}:${p.system}:${p.slot}`, slot: p.slot,
+      resources: { metalium: p.metalium, carbonum: p.carbonum, plutonium: p.plutonium },
+      roids, roidTotal: roids.metalium + roids.carbonum + roids.plutonium,
+      // Produção/tick aproximada dos roids (sem o bônus FLAT de tecnologia — é interno
+      // de cada planeta; aqui mostramos a base dos roids, que já dá a dimensão).
+      production: prod,
+    };
+  });
+  // Totais da galáxia (útil pro ME planejar imposto/doação).
+  const totals = rows.reduce((acc, r) => ({
+    metalium: acc.metalium + r.resources.metalium,
+    carbonum: acc.carbonum + r.resources.carbonum,
+    plutonium: acc.plutonium + r.resources.plutonium,
+    roids: acc.roids + r.roidTotal,
+  }), { metalium: 0, carbonum: 0, plutonium: 0, roids: 0 });
+  return { planets: rows, totals };
 }
