@@ -58,7 +58,7 @@ gameRouter.use(async (req, res, next) => {
 async function planetView(userId: string) {
   const planet = await prisma.planet.findUnique({
     where: { userId },
-    include: { user: { select: { username: true, race: true, avatar: true, raceRound: true } } },
+    include: { user: { select: { username: true, race: true, avatar: true, raceRound: true, onlineMs: true } } },
   });
   if (!planet) return null;
   const state = await prisma.gameState.findUnique({ where: { id: 1 } });
@@ -178,6 +178,7 @@ async function planetView(userId: string) {
     commander: planet.user.username,
     commanderAvatar: planet.user.avatar ?? null,
     commanderTitle: `${planet.user.username} ${planet.preposition} ${planet.name}`,
+    onlineMs: Number(planet.user.onlineMs ?? 0n), // tempo total no GW (brincadeira do Lythorf)
     race: { key: race.key, name: race.name, tagline: race.tagline, lore: race.lore, traits: race.traits, img: `/art/races/${race.key}.png` },
     planet: {
       id: planet.id, name: planet.name, coords: `${planet.galaxy}:${planet.system}:${planet.slot}`,
@@ -250,7 +251,15 @@ async function planetView(userId: string) {
 }
 
 gameRouter.get("/me", async (req: AuthedRequest, res) => {
-  await withWrite(() => prisma.user.update({ where: { id: req.userId! }, data: { lastSeen: new Date() } })).catch(() => {});
+  // Acumula o TEMPO ONLINE: soma o intervalo desde o último ping, se for curto
+  // (< 2 min = jogador seguia ativo). Intervalo maior = ficou fora, não conta.
+  await withWrite(async () => {
+    const prev = await prisma.user.findUnique({ where: { id: req.userId! }, select: { lastSeen: true } });
+    const now = new Date();
+    const deltaMs = prev ? now.getTime() - new Date(prev.lastSeen).getTime() : 0;
+    const add = deltaMs > 0 && deltaMs < 2 * 60 * 1000 ? deltaMs : 0;
+    await prisma.user.update({ where: { id: req.userId! }, data: { lastSeen: now, onlineMs: { increment: BigInt(add) } } });
+  }).catch(() => {});
   trackIp(req.userId!, clientIp(req)); // anti multi-conta (1 escrita por IP/processo)
   // Verifica/concede missões de novato cumpridas (recompensa automática).
   const myP = await prisma.planet.findUnique({ where: { userId: req.userId! }, select: { id: true } });

@@ -27,6 +27,21 @@ function fileToAvatar(file: File): Promise<string> {
   });
 }
 
+// Formata tempo online acumulado: "3d 14h 22m" (brincadeira do Lythorf — ver as
+// horas no jogo). Mostra minutos até <1h, aí horas, aí dias.
+function fmtOnline(ms: number): string {
+  const totalMin = Math.floor(ms / 60000);
+  if (totalMin < 1) return "menos de 1 min";
+  const d = Math.floor(totalMin / 1440);
+  const h = Math.floor((totalMin % 1440) / 60);
+  const m = totalMin % 60;
+  const parts: string[] = [];
+  if (d > 0) parts.push(`${d}d`);
+  if (h > 0) parts.push(`${h}h`);
+  if (m > 0 || parts.length === 0) parts.push(`${m}m`);
+  return parts.join(" ");
+}
+
 // Minha Conta: avatar, e-mail, contato p/ premiação, senha + auto-exílio.
 export function Preferencias({ view, onChanged }: { view: PlanetView; onChanged: () => void }) {
   const [error, setError] = useState("");
@@ -262,6 +277,10 @@ export function Preferencias({ view, onChanged }: { view: PlanetView; onChanged:
             <button onClick={saveProfile} style={{ alignSelf: "flex-start" }}>Salvar perfil</button>
             {profMsg && <div className="cost" style={{ color: "var(--carbonum)" }}>{profMsg}</div>}
             {profErr && <div className="error">{profErr}</div>}
+            <div style={{ borderTop: "1px solid var(--border)", marginTop: 6, paddingTop: 8 }}>
+              <span className="roid-count">⏱️ Tempo no GW:</span> <b style={{ color: "var(--accent)" }}>{fmtOnline(view.onlineMs)}</b>
+              <div className="roid-count" style={{ fontSize: 11, opacity: 0.75 }}>tempo total que você passou com o jogo aberto 👀</div>
+            </div>
           </div>
         </div>
       </div>

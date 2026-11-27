@@ -111,6 +111,7 @@ export interface PlanetView {
   commander: string;
   commanderAvatar: string | null;
   commanderTitle: string;
+  onlineMs: number; // tempo total online no GW
   race: RaceInfo & {
     traits: Record<string, unknown>;
   };
