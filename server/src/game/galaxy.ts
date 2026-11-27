@@ -227,7 +227,7 @@ export async function dispatchFleet(planetId: string, fleetId: string, target: C
     // AGENDADA: só avisa o próprio dono; o alvo é avisado quando ela PARTIR (no tick),
     // pra não vazar a estratégia antes da hora.
     if (delay > 0) {
-      await tx.news.create({ data: { planetId, tick, message: `🕓 ${fleet.name} (${tipoMsg}) agendada para ${target.galaxy}:${target.system}:${target.slot} — parte em ${delay}t (chega ${delay + tt}t depois do envio)` } });
+      await tx.news.create({ data: { planetId, tick, message: `🕓 ${fleet.name} (${tipoMsg}) agendada para ${target.galaxy}:${target.system}:${target.slot} — parte em ${delay}t · viagem ${tt}t (chega no tick #${launchTick + tt})` } });
       return { ok: true, arriveIn: tt, scheduled: delay, pushMsg: null as any };
     }
     // NÃO revela "falso/falsa" nas notícias: se o inimigo espionar com agente de
