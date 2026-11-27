@@ -1709,16 +1709,17 @@ gameRouter.get("/tools/galaxy-ranking", async (_req, res) => {
   const nameOf = new Map(states.map((s) => [s.galaxy, s.name]));
   const fleetUnitsBy: Record<string, Record<string, number>> = {};
   for (const f of fleets) { const fu = parseUnits(f.units); const m = (fleetUnitsBy[f.ownerPlanetId] ??= {}); for (const n of Object.keys(fu)) m[n] = (m[n] || 0) + fu[n]; }
-  const byGalaxy: Record<number, { score: number; planets: number }> = {};
+  const byGalaxy: Record<number, { score: number; planets: number; roids: number }> = {};
   for (const p of planets) {
     const u: Record<string, number> = { ...parseUnits(p.units) };
     const fl = fleetUnitsBy[p.id] ?? {}; for (const n of Object.keys(fl)) u[n] = (u[n] || 0) + fl[n];
-    const g = (byGalaxy[galaxyId(p.galaxy, p.system)] ??= { score: 0, planets: 0 });
+    const g = (byGalaxy[galaxyId(p.galaxy, p.system)] ??= { score: 0, planets: 0, roids: 0 });
     g.score += planetScore(p, u);
+    g.roids += p.roidMetalium + p.roidCarbonum + p.roidPlutonium;
     g.planets++;
   }
   const ranking = Object.entries(byGalaxy)
-    .map(([g, v]) => { const { setor, paralelo } = galaxyDecompose(Number(g)); return { galaxy: Number(g), coord: `${setor}:${paralelo}`, name: nameOf.get(Number(g)) ?? null, score: v.score, planets: v.planets, morale: null as number | null }; })
+    .map(([g, v]) => { const { setor, paralelo } = galaxyDecompose(Number(g)); return { galaxy: Number(g), coord: `${setor}:${paralelo}`, name: nameOf.get(Number(g)) ?? null, score: v.score, roids: v.roids, planets: v.planets, morale: null as number | null }; })
     .sort((a, b) => b.score - a.score).slice(0, 25);
   res.json({ ranking });
 });

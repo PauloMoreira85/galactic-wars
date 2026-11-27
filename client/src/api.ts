@@ -561,7 +561,7 @@ export const api = {
       m: number; c: number; p: number; ticks: number; comb: number; tec: number;
     }[] }>("/game/tools/units"),
   galaxyRanking: () =>
-    request<{ ranking: { galaxy: number; coord: string; name: string | null; score: number; planets: number; morale: number | null }[] }>("/game/tools/galaxy-ranking"),
+    request<{ ranking: { galaxy: number; coord: string; name: string | null; score: number; roids: number; planets: number; morale: number | null }[] }>("/game/tools/galaxy-ranking"),
   toolTechtree: () =>
     request<{ techs: { key: string; name: string; category: string; kind: string; desc: string; max: number; cost: number; ticks: number; requires: { name: string; level: number }[] }[] }>("/game/tools/techtree"),
   combatSim: (attacker: Record<string, number>, defender: Record<string, number>, ticks = 3) =>

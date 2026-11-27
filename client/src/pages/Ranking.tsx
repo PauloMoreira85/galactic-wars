@@ -76,12 +76,35 @@ export function Ranking() {
   );
 }
 
+type SortKey = "score" | "roids" | "username" | "planet";
+
 function RankPlanetas() {
   const [rows, setRows] = useState<Awaited<ReturnType<typeof api.ranking>>["ranking"]>([]);
+  // Ordenação tipo "Excel" (pedido do Lythorf): clica no cabeçalho pra ordenar.
+  // Default = pontuação desc (como vem do servidor).
+  const [sortKey, setSortKey] = useState<SortKey>("score");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const myRowRef = useRef<HTMLTableRowElement>(null);
   useEffect(() => { api.ranking().then((d) => setRows(d.ranking)).catch(() => {}); }, []);
-  const myPos = rows.findIndex((r) => r.you); // índice da minha linha (−1 se não achou)
+  // Posição OFICIAL (por pontuação, como o servidor manda) — não muda com a ordenação.
+  const myPos = rows.findIndex((r) => r.you);
   const scrollToMe = () => myRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  // Clica no cabeçalho: alterna direção se já é a coluna atual; senão vira a nova coluna.
+  const clickSort = (k: SortKey) => {
+    if (k === sortKey) setSortDir((d) => (d === "desc" ? "asc" : "desc"));
+    else { setSortKey(k); setSortDir(k === "username" || k === "planet" ? "asc" : "desc"); }
+  };
+  const arrow = (k: SortKey) => (k === sortKey ? (sortDir === "desc" ? " ▼" : " ▲") : "");
+  const sorted = rows.map((r, idx) => ({ r, idx })).sort((a, b) => {
+    let cmp = 0;
+    if (sortKey === "score") cmp = a.r.score - b.r.score;
+    else if (sortKey === "roids") cmp = a.r.roids - b.r.roids;
+    else if (sortKey === "username") cmp = a.r.username.localeCompare(b.r.username, "pt-BR");
+    else cmp = a.r.planet.localeCompare(b.r.planet, "pt-BR");
+    if (cmp === 0) cmp = a.idx - b.idx; // desempate = ordem oficial (pontuação)
+    return sortDir === "desc" ? -cmp : cmp;
+  }).map((x) => x.r);
+  const thSort = { cursor: "pointer", userSelect: "none" as const, whiteSpace: "nowrap" as const };
   return (
     <>
       {myPos >= 0 && (
@@ -106,11 +129,13 @@ function RankPlanetas() {
       </div>
       <div style={{ overflowX: "auto" }}>
         <table>
-          <thead><tr><th className="rank-num">#</th><th>Comandante</th><th>Planeta</th><th className="hide-sm">Coord.</th><th title="🔵 mesma galáxia · 🟢 aliado">Relações</th><th>Pontuação</th><th>Roids</th><th title="Dá pra atacar a partir do seu planeta?">Alvo</th></tr></thead>
+          <thead><tr><th className="rank-num" title="posição oficial (por pontuação)">#</th><th style={thSort} onClick={() => clickSort("username")}>Comandante{arrow("username")}</th><th style={thSort} onClick={() => clickSort("planet")}>Planeta{arrow("planet")}</th><th className="hide-sm">Coord.</th><th title="🔵 mesma galáxia · 🟢 aliado">Relações</th><th style={thSort} onClick={() => clickSort("score")} title="clique pra ordenar">Pontuação{arrow("score")}</th><th style={thSort} onClick={() => clickSort("roids")} title="clique pra ordenar">Roids{arrow("roids")}</th><th title="Dá pra atacar a partir do seu planeta?">Alvo</th></tr></thead>
           <tbody>
-            {rows.map((r, i) => (
-              <tr key={i} ref={r.you ? myRowRef : undefined} className={r.you ? "rank-me" : undefined}>
-                <td className="rank-num">{r.you && "⭐ "}{i + 1}º</td>
+            {sorted.map((r) => {
+              const oficial = rows.indexOf(r); // posição oficial (por pontuação)
+              return (
+              <tr key={oficial} ref={r.you ? myRowRef : undefined} className={r.you ? "rank-me" : undefined}>
+                <td className="rank-num">{r.you && "⭐ "}{oficial + 1}º</td>
                 <td><b>{r.username}</b>{r.you && <span className="roid-count" style={{ color: "var(--accent)" }}> (você)</span>}</td>
                 <td>{r.planet}</td>
                 <td className="hide-sm"><CoordLink c={r.coords} /></td>
@@ -124,7 +149,8 @@ function RankPlanetas() {
                       : <span className="roid-count" title="Fora do alcance (aliado, sob proteção de novato, ou pontuação baixa demais)">🔒 fora</span>}
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -134,18 +160,32 @@ function RankPlanetas() {
 
 function RankGalaxias() {
   const [rows, setRows] = useState<Awaited<ReturnType<typeof api.galaxyRanking>>["ranking"]>([]);
+  const [sortKey, setSortKey] = useState<"score" | "roids" | "planets">("score");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   useEffect(() => { api.galaxyRanking().then((d) => setRows(d.ranking)).catch(() => {}); }, []);
+  const clickSort = (k: "score" | "roids" | "planets") => {
+    if (k === sortKey) setSortDir((d) => (d === "desc" ? "asc" : "desc"));
+    else { setSortKey(k); setSortDir("desc"); }
+  };
+  const arrow = (k: string) => (k === sortKey ? (sortDir === "desc" ? " ▼" : " ▲") : "");
+  const thSort = { cursor: "pointer", userSelect: "none" as const, whiteSpace: "nowrap" as const };
+  const sorted = [...rows].sort((a, b) => {
+    const cmp = (a[sortKey] as number) - (b[sortKey] as number);
+    return sortDir === "desc" ? -cmp : cmp;
+  });
   return (
     <div style={{ overflowX: "auto" }}>
+      <div className="cost" style={{ marginBottom: 8, fontSize: 12 }}>Clique no cabeçalho pra ordenar por pontuação, roids ou planetas. 📊</div>
       <table>
-        <thead><tr><th className="rank-num">#</th><th>Galáxia</th><th>Planetas</th><th>Pontuação</th></tr></thead>
+        <thead><tr><th className="rank-num">#</th><th>Galáxia</th><th style={thSort} onClick={() => clickSort("planets")}>Planetas{arrow("planets")}</th><th style={thSort} onClick={() => clickSort("score")}>Pontuação{arrow("score")}</th><th style={thSort} onClick={() => clickSort("roids")} title="total de roids da galáxia">Roids{arrow("roids")}</th></tr></thead>
         <tbody>
-          {rows.map((g, i) => (
-            <tr key={i}>
+          {sorted.map((g, i) => (
+            <tr key={g.galaxy}>
               <td className="rank-num">{i + 1}º</td>
               <td><b>{g.name ?? `Galáxia ${g.coord}`}</b> <span className="roid-count">(<CoordLink c={g.coord} />)</span></td>
               <td>{g.planets}</td>
               <td>{fmt(g.score)}</td>
+              <td className="roid-count">{fmt(g.roids)}</td>
             </tr>
           ))}
         </tbody>
