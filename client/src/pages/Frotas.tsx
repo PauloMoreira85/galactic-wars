@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, Fragment } from "react";
 import { api, REFRESH_MS, type PlanetView } from "../api";
 import { ShipIcon } from "../components/ShipIcon";
 import { CoordLink } from "../components/CoordLink";
@@ -129,11 +129,28 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
     finally { setBusy(false); }
   }
 
-  // Naves a listar: as que existem na Base ou em qualquer frota.
-  const shipNames = Array.from(new Set([
+  // Naves a listar: as que existem na Base OU em qualquer frota — mas SEMPRE na mesma
+  // ordem do Hangar (raça própria primeiro, depois por classe Caça>Corveta>...>Roider),
+  // pra não bagunçar quando a nave sai da base pra uma frota (pedido do Jah e do áudio).
+  const presentes = new Set<string>([
     ...view.units.filter((u) => u.count > 0).map((u) => u.name),
-    ...fleets.flatMap((f) => Object.keys(f.units)),
-  ]));
+    ...fleets.flatMap((f) => Object.entries(f.units).filter(([, n]) => (n ?? 0) > 0).map(([nm]) => nm)),
+  ]);
+  const CLASS_ORDER: Record<string, number> = { Ca: 0, Co: 1, Fr: 2, De: 3, Cr: 4, Na: 5, Ro: 6 };
+  const ownRace = view.race.name;
+  const raceRank = (r: string) => (r === ownRace ? "" : r); // a própria raça primeiro
+  const ordenadas = view.units
+    .filter((u) => presentes.has(u.name))
+    .slice()
+    .sort((a, b) =>
+      raceRank(a.race).localeCompare(raceRank(b.race), "pt-BR")
+      || (CLASS_ORDER[a.classe] ?? 9) - (CLASS_ORDER[b.classe] ?? 9)
+      || a.name.localeCompare(b.name, "pt-BR"))
+    .map((u) => u.name);
+  // Fallback: qualquer nave que esteja só numa frota e não apareça em view.units
+  // (não deveria ocorrer) vai pro fim, pra não sumir da tela.
+  const ordenadasSet = new Set(ordenadas);
+  const shipNames = [...ordenadas, ...[...presentes].filter((n) => !ordenadasSet.has(n))];
   const baseOf = (name: string) => view.units.find((u) => u.name === name)?.count ?? 0;
   // Alvos de uma nave (texto curto) — pra não ter que consultar a tabela de unidades.
   const alvosOf = (name: string) => {
@@ -143,6 +160,9 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
   };
   // Classe (tamanho) da nave — ex.: "Caça", "Cruzador". Pedido do Reda: saber o tamanho.
   const classeOf = (name: string) => view.units.find((x) => x.name === name)?.classeLabel ?? "";
+  // Raça da nave — pra agrupar com cabeçalho igual ao Hangar.
+  const raceOf = (name: string) => view.units.find((x) => x.name === name)?.race ?? "";
+  const totalCols = 2 + fleets.length; // Naves + Base + 1 por frota (colSpan do cabeçalho de raça)
   const nextCost = view.planet.nextFleetSlotCost;
 
   return (
@@ -184,8 +204,18 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
                 </tr>
               </thead>
               <tbody>
-                {shipNames.map((name) => (
-                  <tr key={name}>
+                {shipNames.map((name, i) => {
+                  // Cabeçalho de raça quando a raça muda (igual ao Hangar): ⚙️ própria, 🛸 capturadas.
+                  const race = raceOf(name);
+                  const prevRace = i > 0 ? raceOf(shipNames[i - 1]) : null;
+                  const showHead = race !== prevRace;
+                  const captured = race !== ownRace;
+                  return (
+                  <Fragment key={name}>
+                  {showHead && race && (
+                    <tr className="ship-race-head"><td colSpan={totalCols}>{captured ? "🛸 " : "⚙️ "}{race}{captured ? " (capturadas)" : ""}</td></tr>
+                  )}
+                  <tr>
                     <td className="fg-name"><span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}><ShipIcon name={name} size={26} /><span><b>{name}</b> <span className="roid-count" style={{ fontSize: 10.5 }}>({classeOf(name)})</span><div className="roid-count" style={{ fontSize: 10.5, opacity: 0.85 }}>🎯 {alvosOf(name)}</div></span></span></td>
                     <td className="fleet-base-col">{fmt(baseOf(name))}</td>
                     {fleets.map((f) => (
@@ -204,7 +234,9 @@ export function Frotas({ view, onChanged }: { view: PlanetView; onChanged: () =>
                       </td>
                     ))}
                   </tr>
-                ))}
+                  </Fragment>
+                  );
+                })}
                 <tr className="fg-meta">
                   <td>Estado</td><td>—</td>
                   {fleets.map((f) => (

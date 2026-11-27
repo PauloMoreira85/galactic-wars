@@ -339,8 +339,14 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   useEffect(() => {
     if (section === "noticias") { setNewsUnread(0); api.newsSeen(); }
     // Abrir qualquer sala de chat marca tudo como lido (zera os alertas amarelos).
+    // IMPORTANTE: zera as CONTAGENS mas MANTÉM as chaves do byRoom — a presença da
+    // chave "alianca" é o sinal de que o jogador está numa aliança (mostra os itens
+    // Chat da Aliança / Sala de Ataque no menu). Apagar o mapa fazia esses itens
+    // sumirem até o próximo poll (bug do Enders).
     if (section === "chat" || section === "chatGalaxia" || section === "chatAlianca" || section === "chatAtaque") {
-      setChatUnread(0); setChatByRoom({}); api.chatSeen?.();
+      setChatUnread(0);
+      setChatByRoom((prev) => { const z: Record<string, number> = {}; for (const k of Object.keys(prev)) z[k] = 0; return z; });
+      api.chatSeen?.();
     }
     // Abrindo Recursos: carrega o governo (fundo + livro-caixa, visível a todos).
     if (section === "recursos") { api.gov().then(setMeGov).catch(() => {}); }
